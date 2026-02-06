@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useUserStore } from "../stores/user";
-import { userAPI } from "../services/api";
+import { userAPI } from "../services";
 
 const emit = defineEmits(["close"]);
 const userStore = useUserStore();

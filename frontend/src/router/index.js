@@ -4,6 +4,7 @@ import CreateMeeting from "../pages/CreateMeeting.vue";
 import MeetingDetail from "../pages/MeetingDetail.vue";
 import ScheduleInput from "../pages/ScheduleInput.vue";
 import Login from "../pages/Login.vue";
+import OAuthCallback from "../pages/OAuthCallback.vue";
 
 const routes = [
   {
@@ -32,6 +33,11 @@ const routes = [
     path: "/login",
     name: "Login",
     component: Login,
+  },
+  {
+    path: "/oauth/callback",
+    name: "OAuthCallback",
+    component: OAuthCallback,
   },
 ];
 
