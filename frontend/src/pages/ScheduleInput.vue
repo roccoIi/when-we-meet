@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Calendar from "../components/Calendar.vue";
 import TimeCalendar from "../components/TimeCalendar.vue";
-import { scheduleAPI } from "../services/api";
+import { scheduleAPI } from "../services";
 
 const route = useRoute();
 const router = useRouter();

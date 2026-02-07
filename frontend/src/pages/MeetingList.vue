@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/user";
 import { useMeetingsStore } from "../stores/meetings";
 import MeetingCard from "../components/MeetingCard.vue";
-import { meetingAPI } from "../services/api";
+import { meetingAPI } from "../services";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -35,6 +35,23 @@ onMounted(async () => {
 
   await loadMeetings();
 });
+
+// ========== 테스트용 코드 (나중에 삭제) ==========
+import apiClient from '../services/api'
+
+const testAPI = async () => {
+  try {
+    console.log('🧪 [TEST] /api/user/test 호출...')
+    const response = await apiClient.get('/api/user/test')
+    console.log('✅ [TEST] 성공:', response.data)
+    console.log('✅ [TEST] 헤더:', response.headers)
+    alert(`테스트 성공!\nStatus: ${response.status}\n데이터: ${JSON.stringify(response.data)}`)
+  } catch (error) {
+    console.error('❌ [TEST] 실패:', error)
+    alert(`테스트 실패!\n${error.message}`)
+  }
+}
+// ========== 테스트용 코드 끝 ==========
 
 const loadMeetings = async () => {
   isLoading.value = true;
@@ -118,6 +135,17 @@ const sortedMeetings = computed(() => meetingsStore.getSortedMeetings());
         />
       </div>
     </div>
+
+    <!-- ========== 테스트용 버튼 (나중에 삭제) ========== -->
+<div class="p-4">
+  <button 
+    @click="testAPI"
+    class="w-full py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
+  >
+    🧪 API 테스트 (401 인터셉터 확인)
+  </button>
+</div>
+<!-- ========== 테스트용 버튼 끝 ========== -->
 
     <div
       class="fixed bottom-0 left-0 right-0 max-w-app mx-auto px-5 py-4 bg-white border-t border-gray-300 flex justify-between items-center gap-3"

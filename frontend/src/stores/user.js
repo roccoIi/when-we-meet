@@ -7,6 +7,7 @@ export const useUserStore = defineStore('user', () => {
   const nickname = ref('')
   const userId = ref(null)
   const showNicknameModal = ref(false)
+  const accessToken = ref(null) // accessToken을 메모리에 저장
 
   // 액션
   const login = (userInfo) => {
@@ -24,6 +25,15 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn.value = false
     nickname.value = ''
     userId.value = null
+    accessToken.value = null // accessToken 초기화
+  }
+
+  const setAccessToken = (token) => {
+    accessToken.value = token
+  }
+
+  const getAccessToken = () => {
+    return accessToken.value
   }
 
   const setNickname = (newNickname) => {
@@ -44,8 +54,11 @@ export const useUserStore = defineStore('user', () => {
     nickname,
     userId,
     showNicknameModal,
+    accessToken,
     login,
     logout,
+    setAccessToken,
+    getAccessToken,
     setNickname,
     openNicknameModal,
     closeNicknameModal

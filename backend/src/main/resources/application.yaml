@@ -20,9 +20,14 @@ spring:
           max-wait: ${SPRING_DATA_REDIS_JEDIS_POOL_MAX_WAIT}
 
   jwt:
+    name:
+      access-token: ${SPRING_JWT_NAME_ACCESS_TOKEN}
+      refresh-token: ${SPRING_JWT_NAME_REFRESH_TOKEN}
+      guest-token: ${SPRING_JWT_NAME_GUEST_TOKEN}
     expiration:
       access-token: ${SPRING_JWT_EXPIRATION_ACCESS_TOKEN}
       refresh-token: ${SPRING_JWT_EXPIRATION_REFRESH_TOKEN}
+      guest-token: ${SPRING_JWT_EXPIRATION_GUEST_TOKEN}
     secret: ${SPRING_JWT_SECRET}
     issuer: ${SPRING_JWT_ISSUER}
 
@@ -72,3 +77,11 @@ spring:
             token-uri: ${KAKAO_TOKEN_URI}
             user-info-uri: ${KAKAO_USER_INFO_URI}
             user-name-attribute: ${KAKAO_USER_NAME_ATTRIBUTE}
+
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          servlet:
+            DispatcherServlet: debug

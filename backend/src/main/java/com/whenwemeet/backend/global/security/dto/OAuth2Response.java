@@ -1,6 +1,7 @@
 package com.whenwemeet.backend.global.security.dto;
 
 import com.whenwemeet.backend.domain.user.entity.User;
+import com.whenwemeet.backend.domain.user.entity.UserType;
 import com.whenwemeet.backend.global.exception.type.UnAuthorizedException;
 import lombok.Builder;
 import lombok.Getter;
@@ -49,8 +50,9 @@ public class OAuth2Response {
         return User.builder()
                 .provider(provider)
                 .providerID(providerId)
+                .role(UserType.MEMBER)
                 .nickname(nickname)
-                .profilePic(thumbnail)
+                .profileImgUrl(thumbnail)
                 .build();
     }
 }

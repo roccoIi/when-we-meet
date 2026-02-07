@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useMeetingsStore } from "../stores/meetings";
-import { meetingAPI } from "../services/api";
+import { meetingAPI } from "../services";
 
 const router = useRouter();
 const meetingsStore = useMeetingsStore();

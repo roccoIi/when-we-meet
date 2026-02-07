@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Calendar from "../components/Calendar.vue";
-import { meetingAPI } from "../services/api";
+import { meetingAPI } from "../services";
 
 const route = useRoute();
 const router = useRouter();

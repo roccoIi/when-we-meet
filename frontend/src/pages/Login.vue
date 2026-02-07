@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/user";
-import { authAPI } from "../services/api";
+import { KAKAO_AUTH_URL, GOOGLE_AUTH_URL } from "../config/constants";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -12,13 +12,12 @@ const isLoading = ref(false);
 const handleKakaoLogin = async () => {
   isLoading.value = true;
   try {
-    // 실제 카카오 로그인 구현 시 주석 해제
-    // const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`
-    // window.location.href = kakaoAuthUrl
+    // 카카오 로그인 페이지로 리다이렉트
+    window.location.href = KAKAO_AUTH_URL;
 
-    // 임시: 로그인 처리
-    userStore.login({ id: 1, nickname: "테스트유저" });
-    router.push("/");
+    // 임시: 로그인 처리 (실제로는 OAuth 콜백에서 처리)
+    // userStore.login({ id: 1, nickname: "테스트유저" });
+    // router.push("/");
   } catch (error) {
     console.error("카카오 로그인 실패:", error);
     alert("로그인에 실패했습니다");
@@ -54,7 +53,7 @@ const handleGoogleLogin = async () => {
       <div class="text-center mb-12">
         <div class="text-7xl mb-4 animate-bounce">📅</div>
         <h1 class="text-4xl font-bold text-white mb-2 drop-shadow-md">
-          언제만나
+          언제볼래
         </h1>
         <p class="text-base text-white/90">모임 날짜를 쉽게 정해보세요</p>
       </div>
