@@ -8,8 +8,6 @@ import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import static com.whenwemeet.backend.global.exception.ErrorCode.U001;
@@ -25,7 +23,7 @@ public class AuthenticationFactory {
         Long userId = jwtUtil.getUserId(token);
 
         // 2. 해당 UserId를 통해 User 객체 반환
-        User user = userRepository.findUserByUserId(userId)
+        User user = userRepository.findUserById(userId)
                 .orElseThrow(() -> new NotFoundException(U001));
 
         // 3. User 객체를 활용해 Authentication 객체를 위한 CustomOAuth2User 객체 (principal)를 만든다.

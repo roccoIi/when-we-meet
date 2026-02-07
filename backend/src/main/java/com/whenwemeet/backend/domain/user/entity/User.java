@@ -1,5 +1,6 @@
 package com.whenwemeet.backend.domain.user.entity;
 
+import com.whenwemeet.backend.global.entity.BaseEntity;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,12 +20,15 @@ import lombok.*;
                 )
         }
 )
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @Tsid
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(name = "id")
+    private Long id;
+
+    @Column(name = "nickname")
+    private String nickname;
 
     @Column(name="provider")
     private String provider;
@@ -32,13 +36,20 @@ public class User {
     @Column(name = "provider_id")
     private Long providerID;
 
-    @Column(name = "token")
-    private Long token;
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private UserType role;
 
-    @Column(name = "nickname")
-    private String nickname;
+    @Column(name="profile_img_url")
+    private String profileImgUrl;
 
-    @Column(name="profile_pic")
-    private String profilePic;
+    public static User createGuest(){
+        return User.builder()
+                .role(UserType.GUEST)
+                .build();
+    }
 
+    public void changeNickName(String nickname){
+        this.nickname = nickname;
+    }
 }

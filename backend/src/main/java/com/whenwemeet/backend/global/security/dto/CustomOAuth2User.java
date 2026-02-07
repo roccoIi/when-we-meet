@@ -6,6 +6,8 @@ import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +25,9 @@ public class CustomOAuth2User implements OAuth2User {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        Collection<GrantedAuthority> collection = new ArrayList<>();
+        collection.add(() -> "ROLE_" + user.getRole());
+        return collection;
     }
 
     @Override
@@ -32,6 +36,6 @@ public class CustomOAuth2User implements OAuth2User {
     }
 
     public Long getUserId(){
-        return user.getUserId();
+        return user.getId();
     }
 }

@@ -3,11 +3,9 @@ package com.whenwemeet.backend.global.response;
 import com.whenwemeet.backend.global.exception.ErrorCode;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
 @Builder
-@RequiredArgsConstructor
 public class CommonResponse<T> {
     private String code;
     private String message;

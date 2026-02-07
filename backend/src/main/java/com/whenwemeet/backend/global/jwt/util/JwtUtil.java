@@ -2,12 +2,15 @@ package com.whenwemeet.backend.global.jwt.util;
 
 import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
+import com.whenwemeet.backend.global.exception.type.UnAuthorizedException;
 import com.whenwemeet.backend.global.redis.RefreshRepository;
 import com.whenwemeet.backend.global.redis.RefreshToken;
 import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +34,13 @@ public class JwtUtil {
     
     @Value("${spring.jwt.expiration.refresh-token}")
     private long REFRESH_TOKEN_EXPIRE_TIME;
+    @Value("${spring.jwt.name.refresh-token}")
+    private String REFRESH_TOKEN_NAME;
+
+    @Value("${spring.jwt.expiration.guest-token}")
+    private long GUEST_TOKEN_EXPIRE_TIME;
+    @Value("${spring.jwt.name.guest-token}")
+    private String GUEST_TOKEN_NAME;
 
     @Value("${spring.jwt.issuer}")
     private String ISSUER;
@@ -49,7 +59,7 @@ public class JwtUtil {
     }
 
     /**
-     * Refresh Token 생성 및 저장
+     * Refresh Token 생성 및 쿠키 저장
      */
     public void generateRefreshToken(Authentication authentication, HttpServletResponse response) {
         String token = createToken(authentication, REFRESH_TOKEN_EXPIRE_TIME);
@@ -60,10 +70,34 @@ public class JwtUtil {
         refreshRepository.save(refreshToken);
 
         // 쿠키 생성
-        ResponseCookie cookie = createCookie(token);
+        ResponseCookie cookie = createCookie(REFRESH_TOKEN_NAME, token, REFRESH_TOKEN_EXPIRE_TIME);
 
         // 쿠키 저장
         response.setHeader("Set-Cookie", cookie.toString());
+    }
+
+    /**
+     * Guest Token 생성 및 쿠키 저장
+     */
+    public String generateGuestToken(Long userId, HttpServletResponse response){
+        Date now = new Date();
+        Date expireDate = new Date(now.getTime() + GUEST_TOKEN_EXPIRE_TIME);
+
+        String token = Jwts.builder()
+                .subject(userId.toString())
+                .issuedAt(now)
+                .expiration(expireDate)
+                .issuer(ISSUER)
+                .signWith(secretKey, Jwts.SIG.HS512) // 서명 (HS512 알고리즘)
+                .compact();
+
+        // 쿠키 생성
+        ResponseCookie cookie = createCookie(GUEST_TOKEN_NAME, token, GUEST_TOKEN_EXPIRE_TIME);
+
+        // 쿠키 저장
+        response.setHeader("Set-Cookie", cookie.toString());
+
+        return token;
     }
 
     /**
@@ -114,13 +148,13 @@ public class JwtUtil {
         }
     }
 
-    private ResponseCookie createCookie(String token) {
-        return ResponseCookie.from("refreshToken", token)
+    private ResponseCookie createCookie(String key, String value, long expireTime) {
+        return ResponseCookie.from(key, value)
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Strict")
                 .path("/")
-                .maxAge(REFRESH_TOKEN_EXPIRE_TIME / 1000)
+                .maxAge(expireTime / 1000)
                 .build();
     }
 
@@ -141,6 +175,26 @@ public class JwtUtil {
                 .orElseThrow(() -> new NotFoundException(T001));
 
         return tokenInRedis.getRefreshToken().equals(token);
+    }
+
+    public String tokenByCookie(HttpServletRequest request, String tokenName){
+        Cookie[] cookies = request.getCookies();
+
+        if(cookies == null) {
+            log.info("쿠키가 존재하지 않습니다.");
+            return null;
+        }
+
+        // 원하는 이름의 토큰이 있는지 확인한다.
+        log.info("토큰을 확인합니다.");
+        String token = null;
+        for (Cookie cookie : cookies) {
+            if(cookie.getName().equals(tokenName)){
+                token = cookie.getValue();
+            }
+        }
+
+        return token;
     }
 
 }
