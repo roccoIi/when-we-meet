@@ -34,8 +34,8 @@ public class UserMeetingRoomCustomRepositoryImpl implements UserMeetingRoomCusto
                                 meetingRoom.meetingDate)
                 )
                 .from(userMeetingRoom)
-                .join(userMeetingRoom.meetingRoom, meetingRoom)
-                .where(userMeetingRoom.user.id.eq(userId))
+                .leftJoin(userMeetingRoom.meetingRoom, meetingRoom)
+                .where(userMeetingRoom.user.id.eq(userId), meetingRoom.isDeleted.isFalse())
                 .orderBy(createOrderSpecifier(type, direction))
                 .fetch();
     }

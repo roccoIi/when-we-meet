@@ -4,14 +4,11 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Data
+@NoArgsConstructor
 public class MeetingListResponse {
 
-    private String meetingName;
-
+    private String name;
     private Long memberNumber;
-
-    private LocalDate meetingDay;
+    private LocalDate meetingDate;
 }

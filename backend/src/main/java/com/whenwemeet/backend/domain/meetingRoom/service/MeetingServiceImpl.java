@@ -7,6 +7,7 @@ import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortDirection;
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.EnterShareLinkResponse;
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingListResponse;
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.UnavailableTimeList;
+import com.whenwemeet.backend.domain.meetingRoom.dto.response.UnavailableTimeListImpl;
 import com.whenwemeet.backend.domain.meetingRoom.entity.MeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.enumType.Role;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -138,15 +140,16 @@ public class MeetingServiceImpl implements MeetingService{
 
     @Override
     public List<UnavailableTimeList> getAllUnavailableTimeList(String shareCode) {
+        // 1) 미팅룸 조회
         MeetingRoom room = meetingRoomRepository.findAllByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException(M003));
 
-        List<UnavailableTimeList> list = unavailableRepository.findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(room, LocalDateTime.now());
+        // 2) 오늘 날짜 이후의 모든 불가능한 시간대 조회
+        List<UnavailableTimeList> times = unavailableRepository
+                .findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(room, LocalDateTime.now());
 
-
-
-
-        return List.of();
+        // 3) Sweepline 알고리즘을 사용하여 중복되는 시간대 병합
+        return mergeOverlappingTimeIntervals(times);
     }
 
 
@@ -162,6 +165,54 @@ public class MeetingServiceImpl implements MeetingService{
                 .getRole() != Role.HOST;
     }
 
+    /**
+     * Sweepline 알고리즘을 사용하여 중복되는 시간대를 병합합니다.
+     * @param timeList 병합할 시간대 리스트
+     * @return 병합된 시간대 리스트
+     */
+    private List<UnavailableTimeList> mergeOverlappingTimeIntervals(List<UnavailableTimeList> timeList) {
+        // 빈 리스트인 경우 그대로 반환
+        if (timeList == null || timeList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 1) 시작 시간 기준으로 정렬
+        List<UnavailableTimeList> sortedTimes = new ArrayList<>(timeList);
+        sortedTimes.sort(Comparator.comparing(UnavailableTimeList::getStartTime));
+
+        // 2) 병합 결과를 저장할 리스트
+        List<UnavailableTimeList> mergedList = new ArrayList<>();
+
+        // 3) 첫 번째 시간대로 초기화
+        LocalDateTime start = sortedTimes.get(0).getStartTime();
+        LocalDateTime end = sortedTimes.get(0).getEndTime();
+
+        // 4) Sweepline 알고리즘 적용
+        for (int i = 1; i < sortedTimes.size(); i++) {
+            UnavailableTimeList current = sortedTimes.get(i);
+            
+            // 현재 구간과 다음 구간이 겹치거나 인접한 경우
+            if (current.getStartTime().isAfter(end)) {
+                // 겹치지 않는 경우: 현재까지의 병합된 구간을 결과에 추가
+                mergedList.add(new UnavailableTimeListImpl(start, end));
+
+                // 새로운 구간 시작
+                start = current.getStartTime();
+                end = current.getEndTime();
+            } else {
+                // 끝 시간을 더 큰 값으로 확장
+                if (current.getEndTime().isAfter(end)) {
+                    end = current.getEndTime();
+                }
+            }
+        }
+
+        // 5) 마지막 구간 추가
+        mergedList.add(new UnavailableTimeListImpl(start, end));
+
+        return mergedList;
+    }
+
     private String generateShareCode() {
         for(int i = 0; i < MAX_RETRY; i++){
             String code = UUID.randomUUID()
@@ -175,4 +226,5 @@ public class MeetingServiceImpl implements MeetingService{
         }
         throw new NotFoundException(T003);
     }
+    
 }
