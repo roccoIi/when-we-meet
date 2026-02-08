@@ -3,6 +3,7 @@ import MeetingList from "../pages/MeetingList.vue";
 import CreateMeeting from "../pages/CreateMeeting.vue";
 import MeetingDetail from "../pages/MeetingDetail.vue";
 import ScheduleInput from "../pages/ScheduleInput.vue";
+import MeetingInvite from "../pages/MeetingInvite.vue";
 import Login from "../pages/Login.vue";
 import OAuthCallback from "../pages/OAuthCallback.vue";
 
@@ -18,15 +19,21 @@ const routes = [
     component: CreateMeeting,
   },
   {
-    path: "/meeting/:id",
+    path: "/meeting/:shareCode",
     name: "MeetingDetail",
     component: MeetingDetail,
     props: true,
   },
   {
-    path: "/meeting/:id/schedule",
+    path: "/meeting/:shareCode/schedule",
     name: "ScheduleInput",
     component: ScheduleInput,
+    props: true,
+  },
+  {
+    path: "/invite/:shareCode",
+    name: "MeetingInvite",
+    component: MeetingInvite,
     props: true,
   },
   {

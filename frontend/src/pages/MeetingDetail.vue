@@ -2,18 +2,23 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Calendar from "../components/Calendar.vue";
+import ShareModal from "../components/ShareModal.vue";
 import { meetingAPI } from "../services";
 
 const route = useRoute();
 const router = useRouter();
 
-const meetingId = route.params.id;
+const shareCode = route.params.shareCode;
 const meeting = ref(null);
 const currentYear = ref(new Date().getFullYear());
 const currentMonth = ref(new Date().getMonth() + 1);
 const unavailableDates = ref([]);
 const recommendedDates = ref([]);
 const isLoading = ref(false);
+
+// 공유 모달 상태
+const isShareModalOpen = ref(false);
+const shareUrl = ref("");
 
 onMounted(async () => {
   await loadMeetingDetail();
@@ -24,11 +29,11 @@ onMounted(async () => {
 const loadMeetingDetail = async () => {
   try {
     // API 호출 (실제 백엔드 연동 시 주석 해제)
-    // meeting.value = await meetingAPI.getMeetingDetail(meetingId)
+    // meeting.value = await meetingAPI.getMeetingDetailByShareCode(shareCode)
 
     // 임시 데이터
     meeting.value = {
-      id: meetingId,
+      shareCode: shareCode,
       name: "친구들 모임",
       participantCount: 5,
     };
@@ -40,7 +45,7 @@ const loadMeetingDetail = async () => {
 const loadCalendarData = async () => {
   try {
     // API 호출 (실제 백엔드 연동 시 주석 해제)
-    // const data = await meetingAPI.getMeetingCalendar(meetingId, currentYear.value, currentMonth.value)
+    // const data = await meetingAPI.getMeetingCalendarByShareCode(shareCode, currentYear.value, currentMonth.value)
     // unavailableDates.value = data.unavailableDates
 
     // 임시 데이터
@@ -53,7 +58,7 @@ const loadCalendarData = async () => {
 const loadRecommendedDates = async () => {
   try {
     // API 호출 (실제 백엔드 연동 시 주석 해제)
-    // const data = await meetingAPI.getRecommendedDates(meetingId)
+    // const data = await meetingAPI.getRecommendedDatesByShareCode(shareCode)
     // recommendedDates.value = data.dates
 
     // 임시 데이터
@@ -75,27 +80,26 @@ const handleMonthChange = async () => {
 
 const handleShareClick = async () => {
   try {
-    // 실제로는 백엔드에서 공유 링크 생성
-    const shareUrl = `${window.location.origin}/meeting/${meetingId}`;
+    // 1. 공유 링크 생성
+    shareUrl.value = `${window.location.origin}/invite/${shareCode}`;
 
-    if (navigator.share) {
-      await navigator.share({
-        title: meeting.value.name,
-        text: `"${meeting.value.name}" 모임에 참여해주세요!`,
-        url: shareUrl,
-      });
-    } else {
-      // 모바일 공유가 지원되지 않으면 클립보드에 복사
-      await navigator.clipboard.writeText(shareUrl);
-      alert("링크가 클립보드에 복사되었습니다!");
-    }
+    // 2. 즉시 클립보드에 복사
+    await navigator.clipboard.writeText(shareUrl.value);
+    
+    // 3. 모달 열기
+    isShareModalOpen.value = true;
   } catch (error) {
     console.error("공유 실패:", error);
+    alert("공유 링크 생성에 실패했습니다.");
   }
 };
 
+const closeShareModal = () => {
+  isShareModalOpen.value = false;
+};
+
 const handleScheduleInput = () => {
-  router.push(`/meeting/${meetingId}/schedule`);
+  router.push(`/meeting/${shareCode}/schedule`);
 };
 
 const formatDate = (dateString) => {
@@ -203,5 +207,13 @@ const getRankEmoji = (rank) => {
     </div>
 
     <div v-else class="text-center py-10 text-gray-600">로딩 중...</div>
+
+    <!-- 공유 모달 -->
+    <ShareModal
+      :isOpen="isShareModalOpen"
+      :shareUrl="shareUrl"
+      :meetingName="meeting?.name || '모임'"
+      @close="closeShareModal"
+    />
   </div>
 </template>

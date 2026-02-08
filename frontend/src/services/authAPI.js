@@ -8,7 +8,6 @@ export const authAPI = {
   /**
    * 토큰 재발급
    * refreshToken은 쿠키로 자동 전송됨
-   * @returns {Promise} axios response 객체 전체 (헤더 포함)
    */
   reissueToken: async () => {
     const response = await apiClient.post('/api/auth/reissue')

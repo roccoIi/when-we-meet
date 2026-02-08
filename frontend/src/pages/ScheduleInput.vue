@@ -8,7 +8,7 @@ import { scheduleAPI } from "../services";
 const route = useRoute();
 const router = useRouter();
 
-const meetingId = route.params.id;
+const shareCode = route.params.shareCode;
 const currentYear = ref(new Date().getFullYear());
 const currentMonth = ref(new Date().getMonth() + 1);
 const selectedDates = ref([]);
@@ -50,6 +50,72 @@ const handleTimeClick = (timeString) => {
   }
 };
 
+/**
+ * ISO 8601 형식을 LocalDateTime 형식으로 변환
+ * @param {string} isoString - '2026-01-15T14:00'
+ * @param {boolean} isEndTime - 종료 시간인 경우 1시간 추가
+ * @returns {string} - '2026-01-15T14:00:00'
+ */
+const convertToLocalDateTime = (isoString, isEndTime = false) => {
+  const date = new Date(isoString);
+  if (isEndTime) {
+    date.setHours(date.getHours() + 1);
+  }
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = '00';
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
+/**
+ * 선택된 시간들을 연속된 시간 범위로 그룹핑
+ * @param {Array<string>} selectedTimes - ['2026-01-15T14:00', '2026-01-15T15:00', ...]
+ * @returns {Array<Object>} - [{ startTime: '2026-01-15T14:00:00', endTime: '2026-01-15T16:00:00' }, ...]
+ */
+const convertToTimeRanges = (selectedTimes) => {
+  if (!selectedTimes || selectedTimes.length === 0) return [];
+  
+  // 시간순으로 정렬
+  const sortedTimes = [...selectedTimes].sort();
+  const ranges = [];
+  let rangeStart = sortedTimes[0];
+  let rangeEnd = sortedTimes[0];
+  
+  for (let i = 1; i < sortedTimes.length; i++) {
+    const currentTime = new Date(sortedTimes[i]);
+    const previousTime = new Date(sortedTimes[i - 1]);
+    
+    // 이전 시간과 1시간 차이면 같은 범위로 간주
+    const timeDiff = (currentTime - previousTime) / (1000 * 60 * 60);
+    
+    if (timeDiff === 1) {
+      // 연속된 시간이면 범위 확장
+      rangeEnd = sortedTimes[i];
+    } else {
+      // 연속되지 않으면 이전 범위 저장하고 새 범위 시작
+      ranges.push({
+        startTime: convertToLocalDateTime(rangeStart),
+        endTime: convertToLocalDateTime(rangeEnd, true) // 종료 시간은 +1시간
+      });
+      rangeStart = sortedTimes[i];
+      rangeEnd = sortedTimes[i];
+    }
+  }
+  
+  // 마지막 범위 추가
+  ranges.push({
+    startTime: convertToLocalDateTime(rangeStart),
+    endTime: convertToLocalDateTime(rangeEnd, true)
+  });
+  
+  return ranges;
+};
+
 const toggleViewMode = () => {
   viewMode.value = viewMode.value === "date" ? "time" : "date";
 };
@@ -77,6 +143,14 @@ const handleSave = async () => {
 
   isSaving.value = true;
   try {
+    // 시간 범위로 변환
+    const scheduleRanges = convertToTimeRanges(selectedTimes.value);
+    
+    console.log("전송할 데이터:", scheduleRanges);
+    
+    // 백엔드로 전송
+    await scheduleAPI.saveScheduleByShareCode(shareCode, scheduleRanges);
+    
     alert("일정이 저장되었습니다!");
     router.back();
   } catch (error) {
@@ -169,7 +243,7 @@ const formatTime = (timeString) => {
 
         <div v-if="viewMode === 'date'" class="flex flex-wrap gap-2">
           <div
-            v-for="date in selectedDates.sort()"
+            v-for="date in [...selectedDates].sort()"
             :key="date"
             class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-primary rounded-full text-sm text-gray-800"
           >
@@ -185,7 +259,7 @@ const formatTime = (timeString) => {
 
         <div v-else class="flex flex-wrap gap-2">
           <div
-            v-for="time in selectedTimes.sort()"
+            v-for="time in [...selectedTimes].sort()"
             :key="time"
             class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-primary rounded-full text-sm text-gray-800"
           >
