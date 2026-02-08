@@ -60,7 +60,7 @@ public class MeetingController {
     @DeleteMapping("/{roomId}")
     public ResponseEntity<CommonResponse<?>> deleteMeeting(
             @AuthenticationPrincipal CustomOAuth2User user,
-            @PathVariable Long roomId)
+            @PathVariable("roomId") Long roomId)
     {
         log.info("[미팅 삭제] SoftDelete 진행");
         meetingService.deleteMeeting(user.getUserId(), roomId);
@@ -69,7 +69,7 @@ public class MeetingController {
 
     @GetMapping("/share/{shareCode}")
     public ResponseEntity<CommonResponse<?>> shareMeeting(
-            @PathVariable String shareCode
+            @PathVariable("shareCode") String shareCode
     ){
         log.info("[공유링크 접속 후 미팅룸 요약정보 반환]");
         EnterShareLinkResponse response = meetingService.getMeetingRoomSummary(shareCode);

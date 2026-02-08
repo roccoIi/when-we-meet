@@ -17,34 +17,35 @@ export const scheduleAPI = {
   },
 
   /**
-   * 내 일정 등록/수정
+   * 내 일정 등록/수정 (ID 기반 - 내부용)
    * userId는 accessToken에서 백엔드가 추출
    * 
    * @param {number} meetingId - 모임 ID
-   * @param {Object} scheduleData - 일정 데이터
-   * @param {Array<string>} scheduleData.availableDates - 가능한 날짜 배열 (날짜만 선택한 경우)
-   * @param {Array<Object>} scheduleData.availableTimes - 가능한 시간 배열 (시간까지 선택한 경우)
-   * @param {string} scheduleData.availableTimes[].date - 날짜 (ISO 8601 형식: YYYY-MM-DD)
-   * @param {number} scheduleData.availableTimes[].hour - 시간 (0-23)
+   * @param {Array<Object>} scheduleRanges - 일정 범위 배열
+   * @param {string} scheduleRanges[].startTime - 시작 시간 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss)
+   * @param {string} scheduleRanges[].endTime - 종료 시간 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss)
    * 
    * @example
-   * // 날짜만 선택한 경우
-   * saveSchedule(123, {
-   *   availableDates: ['2024-12-25', '2024-12-26', '2024-12-27']
-   * })
-   * 
-   * @example
-   * // 시간까지 선택한 경우
-   * saveSchedule(123, {
-   *   availableTimes: [
-   *     { date: '2024-12-25', hour: 14 },  // 12월 25일 14시
-   *     { date: '2024-12-25', hour: 15 },  // 12월 25일 15시
-   *     { date: '2024-12-26', hour: 18 },  // 12월 26일 18시
-   *   ]
-   * })
+   * // 여러 시간 범위를 선택한 경우
+   * saveSchedule(123, [
+   *   { startTime: '2026-01-15T14:00:00', endTime: '2026-01-15T16:00:00' },
+   *   { startTime: '2026-01-15T19:00:00', endTime: '2026-01-15T20:00:00' },
+   *   { startTime: '2026-01-16T12:00:00', endTime: '2026-01-16T17:00:00' }
+   * ])
    */
-  saveSchedule: async (meetingId, scheduleData) => {
-    const response = await apiClient.post(`/api/meetings/${meetingId}/schedule`, scheduleData)
+  saveSchedule: async (meetingId, scheduleRanges) => {
+    const response = await apiClient.post(`/api/meetings/${meetingId}/schedule`, scheduleRanges)
+    return response.data
+  },
+
+  /**
+   * 내 일정 등록/수정 (ShareCode 기반 - 권장)
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @param {Array<Object>} scheduleRanges - 일정 범위 배열
+   */
+  saveScheduleByShareCode: async (shareCode, scheduleRanges) => {
+    const response = await apiClient.post(`/api/meetings/code/${shareCode}/schedule`, scheduleRanges)
     return response.data
   },
 

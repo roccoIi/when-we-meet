@@ -12,13 +12,38 @@ export const meetingAPI = {
    * @param {Object} params - 쿼리 파라미터
    * @param {number} params.page - 페이지 번호 (default: 1)
    * @param {number} params.limit - 페이지당 항목 수 (default: 10)
-   * @param {string} params.sortBy - 정렬 기준: 'name' | 'dday' | 'participants' (optional)
+   * @param {string} params.type - 정렬 기준: 'NAME' | 'JOIN_DATE' | 'MEETING_DATE' (default: 'JOIN_DATE')
+   * @param {string} params.sort - 정렬 방법: 'ASC' | 'DESC' (default: 'DESC')
+   * 
+   * @returns {Promise<{data: Array, pagination: Object}>}
+   * @example
+   * // 응답 형식
+   * {
+   *   "code": "200",
+   *   "message": "SUCCESS",
+   *   "data": [
+   *     {
+   *       "shareCode": "8f66fdb722264",
+   *       "name": "테스트미팅",
+   *       "memberNumber": 2,
+   *       "meetingDate": null,
+   *       "role": "MEMBER"
+   *     }
+   *   ],
+   *   "pagination": {
+   *     "currentPage": 1,
+   *     "totalPages": 2,
+   *     "totalItems": 20,
+   *     "hasMore": true
+   *   }
+   * }
    */
-  getMeetings: async ({ page = 1, limit = 10, sortBy } = {}) => {
-    let url = `/api/meetings?page=${page}&limit=${limit}`
-    if (sortBy) url += `&sortBy=${sortBy}`
+  getMeetings: async ({ page = 1, limit = 10, type = 'JOIN_DATE', sort = 'DESC' } = {}) => {
+    const url = `/api/meetings?page=${page}&limit=${limit}&type=${type}&sort=${sort}`
     
     const response = await apiClient.get(url)
+    // response.data는 백엔드의 CommonResponse 전체
+    // { code, message, data: [...], pagination: {...} }
     return response.data
   },
 
@@ -44,12 +69,22 @@ export const meetingAPI = {
   },
 
   /**
-   * 모임 상세 조회
+   * 모임 상세 조회 (ID 기반 - 내부용)
    * 
    * @param {number} meetingId - 모임 ID
    */
   getMeetingDetail: async (meetingId) => {
     const response = await apiClient.get(`/api/meetings/${meetingId}`)
+    return response.data
+  },
+
+  /**
+   * 모임 상세 조회 (ShareCode 기반 - 권장)
+   * 
+   * @param {string} shareCode - 공유 코드
+   */
+  getMeetingDetailByShareCode: async (shareCode) => {
+    const response = await apiClient.get(`/api/meetings/code/${shareCode}`)
     return response.data
   },
 
@@ -82,15 +117,37 @@ export const meetingAPI = {
    * 모임 공유 링크 생성/조회
    * 
    * @param {number} meetingId - 모임 ID
-   * @returns {Promise<{shareUrl: string, expiresAt: string}>}
+   * @returns {Promise<{shareCode: string, shareUrl: string, expiresAt: string}>}
    */
   getShareLink: async (meetingId) => {
-    const response = await apiClient.get(`/api/meetings/${meetingId}/share`)
+    const response = await apiClient.post(`/api/meetings/share/${meetingId}`)
     return response.data
   },
 
   /**
-   * 모임 달력 데이터 조회
+   * 공유 코드로 모임 정보 조회
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @returns {Promise<{name: string, participantCount: number}>}
+   */
+  getMeetingByShareCode: async (shareCode) => {
+    const response = await apiClient.get(`/api/meetings/share/${shareCode}`)
+    return response.data
+  },
+
+  /**
+   * 공유 코드로 모임 참여
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @returns {Promise<{meetingId: number, message: string}>}
+   */
+  joinMeetingByShareCode: async (shareCode) => {
+    const response = await apiClient.post(`/api/meetings/enter/${shareCode}`)
+    return response.data
+  },
+
+  /**
+   * 모임 달력 데이터 조회 (ID 기반 - 내부용)
    * 모든 참여자의 일정을 취합하여 불가능한 날짜 포함
    * 
    * @param {number} meetingId - 모임 ID
@@ -105,7 +162,21 @@ export const meetingAPI = {
   },
 
   /**
-   * 추천 모임 날짜 조회 (1~5위)
+   * 모임 달력 데이터 조회 (ShareCode 기반 - 권장)
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @param {number} year - 년도 (예: 2024)
+   * @param {number} month - 월 (1-12)
+   */
+  getMeetingCalendarByShareCode: async (shareCode, year, month) => {
+    const response = await apiClient.get(
+      `/api/meetings/code/${shareCode}/calendar?year=${year}&month=${month}`
+    )
+    return response.data
+  },
+
+  /**
+   * 추천 모임 날짜 조회 (1~5위) - ID 기반
    * 가장 많은 사람이 참여 가능한 날짜 순으로 정렬
    * 
    * @param {number} meetingId - 모임 ID
@@ -114,6 +185,19 @@ export const meetingAPI = {
   getRecommendedDates: async (meetingId, limit = 5) => {
     const response = await apiClient.get(
       `/api/meetings/${meetingId}/recommend?limit=${limit}`
+    )
+    return response.data
+  },
+
+  /**
+   * 추천 모임 날짜 조회 (ShareCode 기반 - 권장)
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @param {number} limit - 추천 개수 (default: 5)
+   */
+  getRecommendedDatesByShareCode: async (shareCode, limit = 5) => {
+    const response = await apiClient.get(
+      `/api/meetings/code/${shareCode}/recommend?limit=${limit}`
     )
     return response.data
   },

@@ -24,11 +24,11 @@ public class MeetingRoom extends BaseEntity {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "meeting_room_name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
     @Builder.Default
-    @Column(name = "member_nember")
+    @Column(name = "member_number")
     private Long memberNumber = 1L;
 
     @Column(name = "start_date")
