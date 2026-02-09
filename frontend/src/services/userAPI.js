@@ -9,7 +9,7 @@ export const userAPI = {
    * 사용자 정보 조회
    * userId는 accessToken에서 백엔드가 추출
    * 
-   * @returns {Promise<{nickname: string, profileImgUrl: string}>}
+   * @returns {Promise<{nickname: string, profileImgUrl: string, provider: string}>}
    */
   getUserInfo: async () => {
     const response = await apiClient.get('/api/user/info')

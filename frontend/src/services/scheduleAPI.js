@@ -39,13 +39,26 @@ export const scheduleAPI = {
   },
 
   /**
+   * 내 일정 조회 (ShareCode 기반)
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @returns {Promise<Array<Object>>} - [{ startDateTime: '...', endDateTime: '...' }, ...]
+   */
+  getMyScheduleByShareCode: async (shareCode) => {
+    const response = await apiClient.get(`/api/schedule/my/${shareCode}`)
+    return response.data
+  },
+
+  /**
    * 내 일정 등록/수정 (ShareCode 기반 - 권장)
    * 
    * @param {string} shareCode - 공유 코드
    * @param {Array<Object>} scheduleRanges - 일정 범위 배열
+   * @param {string} scheduleRanges[].startDateTime - 시작 시간 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss)
+   * @param {string} scheduleRanges[].endDateTime - 종료 시간 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss)
    */
   saveScheduleByShareCode: async (shareCode, scheduleRanges) => {
-    const response = await apiClient.post(`/api/meetings/code/${shareCode}/schedule`, scheduleRanges)
+    const response = await apiClient.post(`/api/schedule/${shareCode}`, scheduleRanges)
     return response.data
   },
 

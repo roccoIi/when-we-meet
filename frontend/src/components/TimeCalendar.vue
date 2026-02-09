@@ -17,7 +17,16 @@ const emit = defineEmits(["timeClick"]);
 const startDate = ref(new Date());
 startDate.value.setHours(0, 0, 0, 0);
 
-const hours = Array.from({ length: 16 }, (_, i) => i + 9);
+// 30분 단위 시간 슬롯 생성 (9:00 ~ 23:30)
+// { hour: 9, minute: 0 }, { hour: 9, minute: 30 }, { hour: 10, minute: 0 }, ...
+const timeSlots = computed(() => {
+  const slots = [];
+  for (let hour = 9; hour <= 23; hour++) {
+    slots.push({ hour, minute: 0 });
+    slots.push({ hour, minute: 30 });
+  }
+  return slots;
+});
 
 const dates = computed(() => {
   const result = [];
@@ -37,27 +46,28 @@ const formatDate = (date) => {
   return `${month}/${day} (${weekday})`;
 };
 
-const formatHour = (hour) => {
-  return `${String(hour).padStart(2, "0")}:00`;
+const formatTime = (hour, minute) => {
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 };
 
-const getTimeString = (date, hour) => {
+const getTimeString = (date, hour, minute) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   const hourStr = String(hour).padStart(2, "0");
-  return `${year}-${month}-${day}T${hourStr}:00`;
+  const minuteStr = String(minute).padStart(2, "0");
+  return `${year}-${month}-${day}T${hourStr}:${minuteStr}`;
 };
 
-const isSelected = (date, hour) => {
-  const timeString = getTimeString(date, hour);
+const isSelected = (date, hour, minute) => {
+  const timeString = getTimeString(date, hour, minute);
   return props.selectedTimes.includes(timeString);
 };
 
-const isPast = (date, hour) => {
+const isPast = (date, hour, minute) => {
   const now = new Date();
   const checkTime = new Date(date);
-  checkTime.setHours(hour, 0, 0, 0);
+  checkTime.setHours(hour, minute, 0, 0);
   return checkTime < now;
 };
 
@@ -70,9 +80,9 @@ const isToday = (date) => {
   );
 };
 
-const handleTimeClick = (date, hour) => {
-  if (isPast(date, hour)) return;
-  const timeString = getTimeString(date, hour);
+const handleTimeClick = (date, hour, minute) => {
+  if (isPast(date, hour, minute)) return;
+  const timeString = getTimeString(date, hour, minute);
   emit("timeClick", timeString);
 };
 
@@ -138,30 +148,31 @@ const getDayClass = (date) => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="hour in hours" :key="hour">
+            <tr v-for="slot in timeSlots" :key="`${slot.hour}-${slot.minute}`">
               <td
-                class="sticky left-0 bg-white z-[5] px-2 py-2 font-medium text-gray-600 border-r border-gray-300 text-center"
+                class="sticky left-0 bg-white z-[5] px-2 py-0 font-medium text-gray-600 border-r border-gray-300 text-center align-top"
               >
-                {{ formatHour(hour) }}
+                {{ formatTime(slot.hour, slot.minute) }}
               </td>
               <td
                 v-for="date in dates"
-                :key="`${date.toISOString()}-${hour}`"
+                :key="`${date.toISOString()}-${slot.hour}-${slot.minute}`"
                 class="p-1 border border-gray-300 cursor-pointer transition-all text-center"
                 :class="{
                   'bg-gray-100 cursor-not-allowed opacity-50': isPast(
                     date,
-                    hour
+                    slot.hour,
+                    slot.minute
                   ),
-                  'hover:bg-blue-50': !isPast(date, hour),
+                  'hover:bg-blue-50': !isPast(date, slot.hour, slot.minute),
                 }"
-                @click="handleTimeClick(date, hour)"
+                @click="handleTimeClick(date, slot.hour, slot.minute)"
               >
                 <div
                   class="w-full h-8 rounded transition-all"
                   :class="{
-                    'bg-primary': isSelected(date, hour),
-                    'bg-gray-300': isPast(date, hour),
+                    'bg-primary': isSelected(date, slot.hour, slot.minute),
+                    'bg-gray-300': isPast(date, slot.hour, slot.minute),
                   }"
                 ></div>
               </td>

@@ -54,12 +54,13 @@ onMounted(async () => {
       
       console.log('📦 [MeetingDetail] 받은 사용자 정보:', userInfo)
       
-      if (userInfo && (userInfo.nickname || userInfo.profileImgUrl)) {
+      if (userInfo && (userInfo.nickname || userInfo.profileImgUrl || userInfo.provider)) {
         userStore.login({
           nickname: userInfo.nickname || '',
-          profileImgUrl: userInfo.profileImgUrl || ''
+          profileImgUrl: userInfo.profileImgUrl || '',
+          provider: userInfo.provider || ''
         })
-        console.log('✅ [MeetingDetail] 사용자 정보 로드 완료:', userInfo.nickname)
+        console.log('✅ [MeetingDetail] 사용자 정보 로드 완료:', userInfo.nickname, '(', userInfo.provider, ')')
       } else {
         console.log('⚠️ [MeetingDetail] 사용자 정보 없음')
       }
@@ -187,18 +188,31 @@ const getRankEmoji = (rank) => {
 
 <template>
   <div class="min-h-[calc(100vh-60px)] bg-gray-100 p-5 pb-10">
-    <div v-if="meeting" class="w-full">
-      <!-- 모임 헤더 -->
-      <div class="flex justify-between items-center mb-3">
-        <h2 class="text-2xl font-bold text-gray-800">{{ meeting.name }}</h2>
-        <button
-          class="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-primary cursor-pointer transition-all hover:bg-blue-50 hover:border-primary"
-          @click="handleShareClick"
-        >
-          <span>📤</span>
-          <span>공유</span>
-        </button>
-      </div>
+        <div v-if="meeting" class="w-full">
+          <!-- 모임 헤더 -->
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-2xl font-bold text-gray-800">{{ meeting.name }}</h2>
+            
+            <div class="flex items-center gap-2">
+              <!-- 닉네임 변경 버튼 -->
+              <button
+                class="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-400"
+                @click="showNicknameModal = true"
+              >
+                <span>✏️</span>
+                <span>닉네임 변경</span>
+              </button>
+              
+              <!-- 공유 버튼 -->
+              <button
+                class="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-primary cursor-pointer transition-all hover:bg-blue-50 hover:border-primary"
+                @click="handleShareClick"
+              >
+                <span>📤</span>
+                <span>공유</span>
+              </button>
+            </div>
+          </div>
 
       <!-- 참여 현황 -->
       <div class="bg-white rounded-xl p-4 mb-5 shadow-sm">

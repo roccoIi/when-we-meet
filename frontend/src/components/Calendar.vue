@@ -14,6 +14,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  selectedDates: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["update:year", "update:month", "dateClick"]);
@@ -86,6 +90,14 @@ const isUnavailable = (date) => {
     currentMonth.value
   ).padStart(2, "0")}-${String(date).padStart(2, "0")}`;
   return props.unavailableDates.includes(dateString);
+};
+
+const isSelected = (date) => {
+  if (!date) return false;
+  const dateString = `${currentYear.value}-${String(
+    currentMonth.value
+  ).padStart(2, "0")}-${String(date).padStart(2, "0")}`;
+  return props.selectedDates.includes(dateString);
 };
 
 const isToday = (date) => {
@@ -168,8 +180,9 @@ const getDayClass = (index, date) => {
             'cursor-default': !date,
             'opacity-30 cursor-not-allowed': date && isPast(date),
             'bg-gray-300': date && isUnavailable(date),
-            'border-2 border-primary': date && isToday(date),
-            'hover:bg-gray-100': date && !isPast(date),
+            'bg-primary text-white font-bold shadow-md': date && isSelected(date),
+            'border-2 border-primary': date && isToday(date) && !isSelected(date),
+            'hover:bg-gray-100': date && !isPast(date) && !isSelected(date),
           }"
           @click="handleDateClick(date)"
         >
@@ -177,10 +190,11 @@ const getDayClass = (index, date) => {
             v-if="date"
             class="text-sm font-medium"
             :class="{
-              'text-sunday': getDayClass(index, date) === 'sunday',
-              'text-saturday': getDayClass(index, date) === 'saturday',
-              'text-gray-800': getDayClass(index, date) === '',
-              'text-gray-400': isPast(date),
+              'text-white': isSelected(date),
+              'text-sunday': !isSelected(date) && getDayClass(index, date) === 'sunday',
+              'text-saturday': !isSelected(date) && getDayClass(index, date) === 'saturday',
+              'text-gray-800': !isSelected(date) && getDayClass(index, date) === '',
+              'text-gray-400': !isSelected(date) && isPast(date),
             }"
           >
             {{ date }}

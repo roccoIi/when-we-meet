@@ -25,13 +25,15 @@ onMounted(async () => {
       console.log('📦 [OAuth] 추출된 사용자 정보:', userInfo)
       console.log('  - nickname:', userInfo.nickname)
       console.log('  - profileImgUrl:', userInfo.profileImgUrl)
+      console.log('  - provider:', userInfo.provider)
       
       userStore.login({
         nickname: userInfo.nickname,
-        profileImgUrl: userInfo.profileImgUrl
+        profileImgUrl: userInfo.profileImgUrl,
+        provider: userInfo.provider
       })
       
-      console.log('✅ [OAuth] 로그인 완료:', userInfo.nickname)
+      console.log('✅ [OAuth] 로그인 완료:', userInfo.nickname, '(', userInfo.provider, ')')
     } catch (error) {
       console.error('⚠️ [OAuth] 사용자 정보 로드 실패:', error)
     }

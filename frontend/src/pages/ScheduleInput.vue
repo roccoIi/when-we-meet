@@ -5,7 +5,7 @@ import { useUserStore } from "../stores/user";
 import Calendar from "../components/Calendar.vue";
 import TimeCalendar from "../components/TimeCalendar.vue";
 import NicknameModal from "../components/NicknameModal.vue";
-import { scheduleAPI } from "../services";
+import { scheduleAPI, userAPI } from "../services";
 
 const route = useRoute();
 const router = useRouter();
@@ -24,7 +24,7 @@ const viewMode = ref("date");
 const showNicknameModal = ref(false);
 
 onMounted(async () => {
-  // App.vue의 초기화가 완료될 때까지 대기
+  // 1️⃣ App.vue의 초기화가 완료될 때까지 대기
   if (!userStore.isInitialized) {
     console.log('⏳ [ScheduleInput] 초기화 대기 중...')
     let attempts = 0
@@ -42,7 +42,32 @@ onMounted(async () => {
     }
   }
 
-  // 초기화 완료 후 닉네임 체크
+  // 2️⃣ 사용자 정보가 없으면 로드
+  if (!userStore.isLoggedIn || !userStore.nickname) {
+    console.log('🔄 [ScheduleInput] 사용자 정보 로드 시도...')
+    try {
+      const userInfoResponse = await userAPI.getUserInfo()
+      const userInfo = userInfoResponse.data || userInfoResponse
+      
+      console.log('📦 [ScheduleInput] 받은 사용자 정보:', userInfo)
+      
+      if (userInfo && (userInfo.nickname || userInfo.profileImgUrl || userInfo.provider)) {
+        userStore.login({
+          nickname: userInfo.nickname || '',
+          profileImgUrl: userInfo.profileImgUrl || '',
+          provider: userInfo.provider || ''
+        })
+        console.log('✅ [ScheduleInput] 사용자 정보 로드 완료:', userInfo.nickname, '(', userInfo.provider, ')')
+      } else {
+        console.log('⚠️ [ScheduleInput] 사용자 정보 없음')
+      }
+    } catch (error) {
+      console.error('⚠️ [ScheduleInput] 사용자 정보 로드 실패:', error)
+      // 로그인 실패 시 아무것도 하지 않음 (로그인 안 한 상태 유지)
+    }
+  }
+
+  // 3️⃣ 닉네임 체크 (사용자 정보 로드 후)
   if (!userStore.nickname) {
     console.log('⚠️ [ScheduleInput] 닉네임 없음 - 모달 표시');
     showNicknameModal.value = true;
@@ -50,15 +75,114 @@ onMounted(async () => {
     console.log('✅ [ScheduleInput] 닉네임 존재:', userStore.nickname);
   }
 
+  // 4️⃣ 사용자 일정 로드
   await loadUserSchedule();
 });
+
+/**
+ * 백엔드에서 받은 일정 데이터를 날짜/시간 선택으로 변환
+ * @param {Array<Object>} schedules - [{ startDateTime, endDateTime }, ...]
+ */
+const convertSchedulesToSelections = (schedules) => {
+  const dates = [];
+  const times = [];
+
+  console.log('🔄 [convertSchedulesToSelections] 변환 시작, 개수:', schedules.length);
+
+  schedules.forEach((schedule, index) => {
+    console.log(`🔄 [Schedule ${index}] startDateTime:`, schedule.startDateTime);
+    console.log(`🔄 [Schedule ${index}] endDateTime:`, schedule.endDateTime);
+
+    const start = new Date(schedule.startDateTime);
+    const end = new Date(schedule.endDateTime);
+
+    console.log(`🔄 [Schedule ${index}] start Date 객체:`, start);
+    console.log(`🔄 [Schedule ${index}] end Date 객체:`, end);
+    console.log(`🔄 [Schedule ${index}] start 시간: ${start.getHours()}:${start.getMinutes()}:${start.getSeconds()}`);
+    console.log(`🔄 [Schedule ${index}] end 시간: ${end.getHours()}:${end.getMinutes()}:${end.getSeconds()}`);
+
+    // 날짜 달력용: 09:00:00 ~ 23:59:59인 경우 날짜로 추가
+    if (
+      start.getHours() === 9 && start.getMinutes() === 0 && start.getSeconds() === 0 &&
+      end.getHours() === 23 && end.getMinutes() === 59 && end.getSeconds() === 59
+    ) {
+      const dateString = schedule.startDateTime.split('T')[0];
+      console.log(`📅 [Schedule ${index}] 날짜로 추가:`, dateString);
+      dates.push(dateString);
+    }
+    
+    // 시간 달력용: 30분 단위로 시간 추가 (09:00:00 ~ 23:59:59도 포함)
+    const current = new Date(start);
+    console.log(`⏰ [Schedule ${index}] 시간으로 처리 시작`);
+    
+    let count = 0;
+    while (current < end) {
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, '0');
+      const day = String(current.getDate()).padStart(2, '0');
+      const hour = String(current.getHours()).padStart(2, '0');
+      const minute = String(current.getMinutes()).padStart(2, '0');
+      const timeString = `${year}-${month}-${day}T${hour}:${minute}`;
+      
+      console.log(`⏰ [Schedule ${index}] 시간 추가:`, timeString);
+      times.push(timeString);
+      count++;
+      
+      // 30분 증가
+      current.setMinutes(current.getMinutes() + 30);
+    }
+    console.log(`⏰ [Schedule ${index}] 총 ${count}개 시간 추가됨`);
+  });
+
+  console.log('✅ [convertSchedulesToSelections] 최종 dates:', dates);
+  console.log('✅ [convertSchedulesToSelections] 최종 times:', times);
+
+  return { dates, times };
+};
 
 const loadUserSchedule = async () => {
   isLoading.value = true;
   try {
+    // 기존 선택 초기화
     selectedDates.value = [];
+    selectedTimes.value = [];
+
+    // 백엔드에서 내 일정 조회
+    const response = await scheduleAPI.getMyScheduleByShareCode(shareCode);
+    
+    console.log('📥 [ScheduleInput] API 응답 전체:', response);
+    console.log('📥 [ScheduleInput] 응답 타입:', typeof response);
+    console.log('📥 [ScheduleInput] 배열인가?:', Array.isArray(response));
+
+    // 응답 데이터 추출 (response.data 또는 response 자체가 배열일 수 있음)
+    let schedules = response;
+    if (response && response.data && Array.isArray(response.data)) {
+      schedules = response.data;
+    } else if (!Array.isArray(response)) {
+      schedules = [];
+    }
+
+    console.log('📥 [ScheduleInput] 처리할 일정 배열:', schedules);
+
+    // 응답 데이터가 있으면 변환
+    if (schedules && schedules.length > 0) {
+      const { dates, times } = convertSchedulesToSelections(schedules);
+      selectedDates.value = [...dates];
+      selectedTimes.value = [...times];
+      
+      console.log('✅ [ScheduleInput] 변환된 날짜:', selectedDates.value);
+      console.log('✅ [ScheduleInput] 변환된 시간:', selectedTimes.value);
+      console.log('✅ [ScheduleInput] selectedDates.value.length:', selectedDates.value.length);
+      console.log('✅ [ScheduleInput] selectedTimes.value.length:', selectedTimes.value.length);
+    } else {
+      console.log('ℹ️ [ScheduleInput] 저장된 일정이 없습니다.');
+    }
   } catch (error) {
-    console.error("일정 조회 실패:", error);
+    console.error("❌ [ScheduleInput] 일정 조회 실패:", error);
+    console.error("❌ [ScheduleInput] 에러 상세:", error.response || error.message);
+    // 에러가 발생해도 빈 배열로 계속 진행 (처음 입력하는 경우일 수 있음)
+    selectedDates.value = [];
+    selectedTimes.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -85,13 +209,22 @@ const handleTimeClick = (timeString) => {
 /**
  * ISO 8601 형식을 LocalDateTime 형식으로 변환
  * @param {string} isoString - '2026-01-15T14:00'
- * @param {boolean} isEndTime - 종료 시간인 경우 1시간 추가
+ * @param {boolean} isEndTime - 종료 시간인 경우 30분 추가
  * @returns {string} - '2026-01-15T14:00:00'
  */
 const convertToLocalDateTime = (isoString, isEndTime = false) => {
   const date = new Date(isoString);
+  
+  // 시작 시간이 23:30이고 종료 시간인 경우 23:59:59로 설정
+  if (isEndTime && date.getHours() === 23 && date.getMinutes() === 30) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}T23:59:59`;
+  }
+  
   if (isEndTime) {
-    date.setHours(date.getHours() + 1);
+    date.setMinutes(date.getMinutes() + 30);
   }
   
   const year = date.getFullYear();
@@ -105,11 +238,32 @@ const convertToLocalDateTime = (isoString, isEndTime = false) => {
 };
 
 /**
+ * 날짜를 하루 전체 범위로 변환
+ * @param {Array<string>} selectedDates - ['2026-02-25', '2026-02-26', ...]
+ * @returns {Array<Object>} - [{ startDateTime: '2026-02-25T00:00:00', endDateTime: '2026-02-25T23:59:59' }, ...]
+ */
+const convertDatesToRanges = (selectedDates) => {
+  if (!selectedDates || selectedDates.length === 0) return [];
+  
+  return selectedDates.map(dateString => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return {
+      startDateTime: `${year}-${month}-${day}T09:00:00`,
+      endDateTime: `${year}-${month}-${day}T23:59:59`
+    };
+  });
+};
+
+/**
  * 선택된 시간들을 연속된 시간 범위로 그룹핑
  * @param {Array<string>} selectedTimes - ['2026-01-15T14:00', '2026-01-15T15:00', ...]
- * @returns {Array<Object>} - [{ startTime: '2026-01-15T14:00:00', endTime: '2026-01-15T16:00:00' }, ...]
+ * @returns {Array<Object>} - [{ startDateTime: '2026-01-15T14:00:00', endDateTime: '2026-01-15T16:00:00' }, ...]
  */
-const convertToTimeRanges = (selectedTimes) => {
+const convertTimesToRanges = (selectedTimes) => {
   if (!selectedTimes || selectedTimes.length === 0) return [];
   
   // 시간순으로 정렬
@@ -122,17 +276,17 @@ const convertToTimeRanges = (selectedTimes) => {
     const currentTime = new Date(sortedTimes[i]);
     const previousTime = new Date(sortedTimes[i - 1]);
     
-    // 이전 시간과 1시간 차이면 같은 범위로 간주
-    const timeDiff = (currentTime - previousTime) / (1000 * 60 * 60);
+    // 이전 시간과 정확히 30분 차이만 연속으로 간주
+    const timeDiff = (currentTime - previousTime) / (1000 * 60); // 분 단위
     
-    if (timeDiff === 1) {
+    if (timeDiff === 30) {
       // 연속된 시간이면 범위 확장
       rangeEnd = sortedTimes[i];
     } else {
       // 연속되지 않으면 이전 범위 저장하고 새 범위 시작
       ranges.push({
-        startTime: convertToLocalDateTime(rangeStart),
-        endTime: convertToLocalDateTime(rangeEnd, true) // 종료 시간은 +1시간
+        startDateTime: convertToLocalDateTime(rangeStart),
+        endDateTime: convertToLocalDateTime(rangeEnd, true) // 종료 시간은 +30분
       });
       rangeStart = sortedTimes[i];
       rangeEnd = sortedTimes[i];
@@ -141,8 +295,8 @@ const convertToTimeRanges = (selectedTimes) => {
   
   // 마지막 범위 추가
   ranges.push({
-    startTime: convertToLocalDateTime(rangeStart),
-    endTime: convertToLocalDateTime(rangeEnd, true)
+    startDateTime: convertToLocalDateTime(rangeStart),
+    endDateTime: convertToLocalDateTime(rangeEnd, true)
   });
   
   return ranges;
@@ -156,6 +310,54 @@ const selectedCount = computed(() => {
   return viewMode.value === "date"
     ? selectedDates.value.length
     : selectedTimes.value.length;
+});
+
+/**
+ * 선택된 시간들을 연속된 그룹으로 변환 (화면 표시용)
+ * @returns {Array<Object>} - [{ start: '2026-01-15T14:00', end: '2026-01-15T16:00', times: [...] }, ...]
+ */
+const groupedTimeRanges = computed(() => {
+  if (selectedTimes.value.length === 0) return [];
+  
+  // 시간순으로 정렬
+  const sortedTimes = [...selectedTimes.value].sort();
+  const groups = [];
+  let groupStart = sortedTimes[0];
+  let groupEnd = sortedTimes[0];
+  let groupTimes = [sortedTimes[0]];
+  
+  for (let i = 1; i < sortedTimes.length; i++) {
+    const currentTime = new Date(sortedTimes[i]);
+    const previousTime = new Date(sortedTimes[i - 1]);
+    
+    // 이전 시간과 정확히 30분 차이만 연속으로 간주
+    const timeDiff = (currentTime - previousTime) / (1000 * 60); // 분 단위
+    
+    if (timeDiff === 30) {
+      // 연속된 시간이면 그룹 확장
+      groupEnd = sortedTimes[i];
+      groupTimes.push(sortedTimes[i]);
+    } else {
+      // 연속되지 않으면 이전 그룹 저장하고 새 그룹 시작
+      groups.push({
+        start: groupStart,
+        end: groupEnd,
+        times: [...groupTimes]
+      });
+      groupStart = sortedTimes[i];
+      groupEnd = sortedTimes[i];
+      groupTimes = [sortedTimes[i]];
+    }
+  }
+  
+  // 마지막 그룹 추가
+  groups.push({
+    start: groupStart,
+    end: groupEnd,
+    times: [...groupTimes]
+  });
+  
+  return groups;
 });
 
 const handleSave = async () => {
@@ -175,8 +377,13 @@ const handleSave = async () => {
 
   isSaving.value = true;
   try {
-    // 시간 범위로 변환
-    const scheduleRanges = convertToTimeRanges(selectedTimes.value);
+    // viewMode에 따라 날짜 또는 시간 범위로 변환
+    let scheduleRanges;
+    if (viewMode.value === "date") {
+      scheduleRanges = convertDatesToRanges(selectedDates.value);
+    } else {
+      scheduleRanges = convertTimesToRanges(selectedTimes.value);
+    }
     
     console.log("전송할 데이터:", scheduleRanges);
     
@@ -213,6 +420,43 @@ const formatTime = (timeString) => {
   return `${day}일 ${hour}시`;
 };
 
+/**
+ * 시간 범위를 "11일 20:00 ~ 21:30" 형식으로 포맷
+ * @param {string} startTime - 시작 시간
+ * @param {string} endTime - 종료 시간
+ * @returns {string}
+ */
+const formatTimeRange = (startTime, endTime) => {
+  const startDate = new Date(startTime);
+  const endDate = new Date(endTime);
+  
+  const day = startDate.getDate();
+  const startHour = String(startDate.getHours()).padStart(2, '0');
+  const startMinute = String(startDate.getMinutes()).padStart(2, '0');
+  
+  // 종료 시간이 23:30인 경우 23:59로 표시
+  if (endDate.getHours() === 23 && endDate.getMinutes() === 30) {
+    return `${day}일 ${startHour}:${startMinute} ~ 23:59`;
+  }
+  
+  // 종료 시간에 30분 추가 (실제 종료 시간 표시)
+  endDate.setMinutes(endDate.getMinutes() + 30);
+  
+  const endHour = String(endDate.getHours()).padStart(2, '0');
+  const endMinute = String(endDate.getMinutes()).padStart(2, '0');
+  
+  return `${day}일 ${startHour}:${startMinute} ~ ${endHour}:${endMinute}`;
+};
+
+/**
+ * 시간 범위 그룹 전체를 제거
+ * @param {Array<string>} times - 제거할 시간들의 배열
+ */
+const handleTimeRangeRemove = (times) => {
+  // times 배열에 포함된 모든 시간을 selectedTimes에서 제거
+  selectedTimes.value = selectedTimes.value.filter(time => !times.includes(time));
+};
+
 const closeNicknameModal = () => {
   // 닉네임이 설정되었는지 확인
   if (userStore.nickname) {
@@ -232,12 +476,12 @@ const closeNicknameModal = () => {
       <div class="mb-5 flex justify-between items-start gap-4">
         <div class="flex-1">
           <h2 class="text-2xl font-bold text-gray-800 mb-2">
-            내 일정 추가하기
+            내 일정 제외하기
           </h2>
           <p class="text-sm text-gray-600">
             모임이
             <strong class="text-primary font-semibold">{{
-              viewMode === "date" ? "가능한 날짜" : "가능한 시간"
+              viewMode === "date" ? "불가능한 날짜" : "불가능한 시간"
             }}</strong
             >을 선택해주세요
           </p>
@@ -256,6 +500,7 @@ const closeNicknameModal = () => {
           :year="currentYear"
           :month="currentMonth"
           :unavailableDates="[]"
+          :selectedDates="selectedDates"
           @update:year="(val) => (currentYear = val)"
           @update:month="(val) => (currentMonth = val)"
           @dateClick="handleDateClick"
@@ -303,14 +548,14 @@ const closeNicknameModal = () => {
 
         <div v-else class="flex flex-wrap gap-2">
           <div
-            v-for="time in [...selectedTimes].sort()"
-            :key="time"
+            v-for="(range, index) in groupedTimeRanges"
+            :key="`range-${index}`"
             class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-primary rounded-full text-sm text-gray-800"
           >
-            <span>{{ formatTime(time) }}</span>
+            <span>{{ formatTimeRange(range.start, range.end) }}</span>
             <button
               class="bg-none border-none text-gray-400 text-base cursor-pointer p-0 w-5 h-5 flex items-center justify-center transition-colors hover:text-red-500"
-              @click="handleTimeClick(time)"
+              @click="handleTimeRangeRemove(range.times)"
             >
               ✕
             </button>

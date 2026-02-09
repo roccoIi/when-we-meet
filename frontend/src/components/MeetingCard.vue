@@ -74,9 +74,9 @@ const formatDate = (dateString) => {
     <div class="flex gap-4">
       <div class="flex items-center gap-1.5">
         <span class="text-base">👥</span>
-        <span class="text-sm text-gray-600"
-          >{{ meeting.participantCount }}명</span
-        >
+        <span class="text-sm text-gray-600">
+          {{ meeting.memberNumber || 0 }}명 참여중
+        </span>
       </div>
 
       <div v-if="meeting.meetingDate" class="flex items-center gap-1.5">

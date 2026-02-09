@@ -14,7 +14,7 @@ const userStore = useUserStore();
 const showHeader = computed(() => route.name !== "Login");
 
 // 인증이 필요 없는 페이지 목록
-const noAuthPages = ["Login", "MeetingInvite", "OAuthCallback"];
+const noAuthPages = ["Login","OAuthCallback"];
 
 // 앱 초기화: 새로고침 시 토큰 자동 재발급 및 사용자 정보 로드
 onMounted(async () => {
@@ -52,15 +52,15 @@ const loadUserInfo = async () => {
     console.log('🔄 [App] 사용자 정보 조회 중...')
     const response = await userAPI.getUserInfo()
     
-    console.log('📦 [App] 받은 사용자 정보:', response)
-
-    if(response.data != null) {
-      userStore.login({
-      nickname: response.data.nickname,
-      profileImgUrl: response.data.profileImgUrl
+    console.log('📦 [App] 받은 사용자 정보:', userInfo)
+    
+    userStore.login({
+      nickname: userInfo.nickname,
+      profileImgUrl: userInfo.profileImgUrl,
+      provider: userInfo.provider
     })
-  }
-    console.log('✅ [App] 사용자 정보 로드 완료:', userInfo.nickname)
+    
+    console.log('✅ [App] 사용자 정보 로드 완료:', userInfo.nickname, '(', userInfo.provider, ')')
   } catch (error) {
     console.error('⚠️ [App] 사용자 정보 로드 실패:', error)
   }

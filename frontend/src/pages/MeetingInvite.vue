@@ -1,10 +1,12 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { meetingAPI } from "../services";
+import { useUserStore } from "../stores/user";
+import { meetingAPI, userAPI } from "../services";
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 
 const shareCode = route.params.shareCode;
 const meetingInfo = ref(null);
@@ -13,6 +15,50 @@ const isJoining = ref(false);
 const errorMessage = ref("");
 
 onMounted(async () => {
+  // 1️⃣ App.vue의 초기화가 완료될 때까지 대기
+  if (!userStore.isInitialized) {
+    console.log('⏳ [Invite] 초기화 대기 중...')
+    let attempts = 0
+    const maxAttempts = 50 // 5초 (100ms * 50)
+    
+    while (!userStore.isInitialized && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      attempts++
+    }
+    
+    if (userStore.isInitialized) {
+      console.log('✅ [Invite] 초기화 완료')
+    } else {
+      console.log('⚠️ [Invite] 초기화 타임아웃')
+    }
+  }
+
+  // 2️⃣ 사용자 정보가 없으면 로드
+  if (!userStore.isLoggedIn || !userStore.nickname) {
+    console.log('🔄 [Invite] 사용자 정보 로드 시도...')
+    try {
+      const userInfoResponse = await userAPI.getUserInfo()
+      const userInfo = userInfoResponse.data || userInfoResponse
+      
+      console.log('📦 [Invite] 받은 사용자 정보:', userInfo)
+      
+      if (userInfo && (userInfo.nickname || userInfo.profileImgUrl || userInfo.provider)) {
+        userStore.login({
+          nickname: userInfo.nickname || '',
+          profileImgUrl: userInfo.profileImgUrl || '',
+          provider: userInfo.provider || ''
+        })
+        console.log('✅ [Invite] 사용자 정보 로드 완료:', userInfo.nickname, '(', userInfo.provider, ')')
+      } else {
+        console.log('⚠️ [Invite] 사용자 정보 없음')
+      }
+    } catch (error) {
+      console.error('⚠️ [Invite] 사용자 정보 로드 실패:', error)
+      // 로그인 실패 시 아무것도 하지 않음 (로그인 안 한 상태로도 초대 페이지는 볼 수 있어야 함)
+    }
+  }
+
+  // 3️⃣ 모임 정보 로드
   await loadMeetingInfo();
 });
 
