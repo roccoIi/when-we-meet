@@ -18,8 +18,9 @@ public class UserCustomRepositoryImpl implements UserCustomRepository{
     @Override
     public Optional<UserInfoResponse> findInfoByUserId(Long userId) {
         return Optional.ofNullable(factory
-                .select(Projections.fields(UserInfoResponse.class
+                .select(Projections.constructor(UserInfoResponse.class
                     ,user.nickname
+                    ,user.provider
                     ,user.profileImgUrl))
                 .from(user)
                 .where(user.id.eq(userId))

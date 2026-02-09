@@ -18,6 +18,7 @@ public class UserMeetingRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role;
 
@@ -29,4 +30,9 @@ public class UserMeetingRoom {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private MeetingRoom meetingRoom;
+
+
+    public void changeUser(User user) {
+        this.user = user;
+    }
 }

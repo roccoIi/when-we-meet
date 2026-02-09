@@ -15,9 +15,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.whenwemeet.backend.global.exception.ErrorCode.C001;
 
@@ -36,70 +39,100 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Value("${spring.jwt.name.guest-token}")
     private String GUEST_TOKEN_NAME;
 
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    // JWT 필터를 건너뛸 URL 목록
+    private static final List<String> EXCLUDE_URLS = Arrays.asList(
+            "/swagger-ui/**",
+            "/swagger-resources/**",
+            "/v3/api-docs/**",
+            "/login"
+    );
+
+    // Guest 유저 생성 없이 접근 가능한 읽기 전용 URL 목록 (봇/크롤러 대응)
+    private static final List<String> READ_ONLY_URLS = Arrays.asList(
+            "/api/meetings",                   // GET: 미팅룸 리스트 조회
+            "/api/meetings/*",                 // GET: 미팅룸 정보 조회 (/api/meetings/{shareCode})
+            "/api/meetings/share/**",          // GET: 공유링크를 통한 미팅룸 정보 조회
+            "/api/schedules/unavailable/**",   // GET: 불가능한 시간 리스트
+            "/api/schedules/recommend/**",     // GET: 추천 시간 조회
+            "/api/user/info"
+    );
+
+    /**
+     * 특정 경로에서 JWT 필터를 건너뛰도록 설정
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return EXCLUDE_URLS.stream()
+                .anyMatch(pattern -> pathMatcher.match(pattern, path));
+    }
+
+    /**
+     * 읽기 전용 경로인지 확인 (Guest 유저 생성이 필요 없는 경로)
+     */
+    private boolean isReadOnlyPath(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+        
+        // GET 요청이면서 READ_ONLY_URLS에 매칭되는 경로인 경우
+        if ("GET".equals(method)) {
+            return READ_ONLY_URLS.stream()
+                    .anyMatch(pattern -> pathMatcher.match(pattern, path));
+        }
+        return false;
+    }
+
     /**
      * 모든 API 요청에 대해서 AccessToken 검증을 진행합니다.
      * 1) 토큰이 존재하고 유효할경우 -> 현재 토큰을 기준으로 Authentication 객체를 만들어 저장합니다.
      * 2) 토큰이 존재하지만 만료됐을 경우 -> 토큰이 만료됐으니 401에러를 반환하고, 프론트에서 401에러를 인터셉트해서 재발급 API 를 호출합니다.
-     * 3) 토큰이 없을경우 -> 비로그인 사용자로 가정하고, 발행된 임시토큰을 기준으로 사용자를 식별합니다.
+     * 3) 토큰이 없을경우:
+     *    - 읽기 전용 경로: Guest 유저 생성 없이 통과 (봇/크롤러 대응)
+     *    - 일반 경로: 비로그인 사용자로 가정하고, 발행된 임시토큰을 기준으로 사용자를 식별합니다.
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try{
+            log.info("헤더의 AccessToken 확인");
             String token = getTokenFromRequest(request);
 
-            // 1) AccessToken 토큰이 없는 경우
-            if(token == null){
-                log.info("AccessToken 없음");
-                String refreshToken = jwtUtil.tokenByCookie(request, REFRESH_TOKEN_NAME);
+            // --- 1) AccessToken이 없는 경우
+            // |   2) RefreshToken이 있는지 Cookie에서 확인
+            // |      ㄴ i)  RefreshToken이 있는 경우
+            // |             ㄴ RefreshToken을 사용해 user를 가져오고, 해당 User로 AccessToken생성, RefreshToken 재발급
+            // |      ㄴ ii) RefreshToken이 없는 경우
+            // |             ㄴ 아무런 존재가 아닌 게스트사용자 이므로 다음 필터로 넘깁니다.
+            // --- 1) AccessToken이 있는 경우
+            //        ㄴ i) 해당 토큰을 활용해서 Authentication 생성
 
-                // i ) refreshToken은 있는 경우
-                if(refreshToken != null){
-                    log.info("AccessToken은 없지만 RefreshToken은 있으므로 재발급 진행");
+
+            if(token == null || !jwtUtil.validateToken(token)) {
+                if(token == null) log.info("AccessToken이 없습니다");
+                else if(!jwtUtil.validateToken(token)) log.info("AccessToken이 만료되었습니다.");
+
+                log.info("AccessToken에 이상이 있으므로 RefreshToken을 확인합니다.");
+                token = jwtUtil.tokenByCookie(request, REFRESH_TOKEN_NAME);
+
+                if(token != null && jwtUtil.verifyRefreshToken(token)) {
+                    log.info("RefreshToken이 존재합니다. AccessToken 및 RefreshToken을 재발급합니다.");
+
+                    // 1) accessToken 발급 후 헤더에 저장
+                    Long userId = jwtUtil.getUserId(token);
+                    token = jwtUtil.generateAccessToken(userId);
+
+                    // 2) refreshToken 재발급 후 쿠키 갱신 및 redis 갱신
+                    jwtUtil.generateRefreshToken(userId, response);
+                }
+                else {
+                    log.info("RefreshToken이 존재하지 않습니다. 게스트로 인식하고 filter를 종료합니다.");
                     filterChain.doFilter(request, response);
                     return;
                 }
-
-                // ii) refreshToken도 없는 경우
-                //     guestToken을 발급하고 Authentication 객체를 만들어 다음 필터로 넘겨야한다.
-                else {
-                    // 여기에 봇, 크롤러를 방지할 수 있는 공통점을 찾아야한다. 단순조회에서 User를 생성하면 DB과부화 위험
-//                    if("GET".equals(request.getMethod())){
-//                        filterChain.doFilter(request, response);
-//                        return;
-//                    }
-
-                    token = jwtUtil.tokenByCookie(request, GUEST_TOKEN_NAME);
-
-                    // guestToken도 없는 경우 -> User 객체 생성해서 토큰생성
-                    User user;
-                    if(token == null){
-                        log.info("guestToken도 없으므로 User객체 생성");
-                        user = User.createGuest();
-                        userRepository.save(user);
-                    }
-
-                    // guestToken이 있는 경우 -> 기존토큰으로 userID 찾아서 새로운 토큰 생성
-                    else {
-                        log.info("보유한 guestToken으로 User식별 후 해당 유저 반환");
-                       Long userId = jwtUtil.getUserId(token);
-                       user = userRepository.findById(userId)
-                               .orElseThrow(() -> new NotFoundException(C001));
-                    }
-
-                    log.info("guestToken 재발급 진행");
-                    token = jwtUtil.generateGuestToken(user.getId(), response);
-                }
-            } else {
-                // 2) 토큰은 있지만 만료된경우
-                if(!jwtUtil.validateToken(token)){
-                    log.info("AccessToken은 존재하지만 만료됐으므로 재발급 필요");
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "유효하지 않거나 만료된 토큰입니다");
-                    return;
-                }
             }
+            log.info("AccessToken이 존재합니다. Authentication 객체 생성 후 필터를 넘깁니다.");
 
-            log.info("토큰 정상확인. Authentication 객체 생성");
-            // 3) 토큰도 있고 유효할경우: SecurityContextHolder 에 사용자정보 저장
             Authentication authentication = authenticationFactory.createAuthentication(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -114,6 +147,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private String getTokenFromRequest(HttpServletRequest request) {
         String token = request.getHeader("Authorization");
         if (token == null || !token.startsWith("Bearer ")) {
+            log.info("Authorization 헤더가 없거나 Bearer로 시작하지 않음");
             return null;
         }
         return token.substring(7);

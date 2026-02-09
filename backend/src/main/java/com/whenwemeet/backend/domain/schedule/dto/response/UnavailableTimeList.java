@@ -1,11 +1,8 @@
-package com.whenwemeet.backend.domain.meetingRoom.dto.response;
-
-import com.whenwemeet.backend.domain.user.entity.User;
-import lombok.*;
+package com.whenwemeet.backend.domain.schedule.dto.response;
 
 import java.time.LocalDateTime;
 
 public interface UnavailableTimeList {
-    LocalDateTime getStartTime();
-    LocalDateTime getEndTime();
+    LocalDateTime getStartDateTime();
+    LocalDateTime getEndDateTime();
 }

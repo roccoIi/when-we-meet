@@ -8,5 +8,9 @@ import java.util.List;
 
 public interface UserMeetingRoomCustomRepository {
 
-    List<MeetingListResponse> findAllByUserId(Long id, SortType type, SortDirection direction);
+    List<MeetingListResponse> findAllByUserId(Long id, Long offset, Long limit, SortType type, SortDirection direction);
+    
+    Long countByUserId(Long userId);
+
+//    List<String> findNicknamesByShareCode(String shareCode);
 }

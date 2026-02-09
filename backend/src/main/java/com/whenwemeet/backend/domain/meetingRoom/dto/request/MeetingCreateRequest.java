@@ -9,8 +9,6 @@ import java.time.LocalTime;
 public class MeetingCreateRequest {
 
     private String meetingName;
-
     private LocalTime startTime;
-
     private LocalDate startDate;
 }

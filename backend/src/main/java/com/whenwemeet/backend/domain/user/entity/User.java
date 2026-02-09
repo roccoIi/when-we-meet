@@ -1,6 +1,7 @@
 package com.whenwemeet.backend.domain.user.entity;
 
 import com.whenwemeet.backend.global.entity.BaseEntity;
+import com.whenwemeet.backend.global.util.RandomNickname;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -45,11 +46,20 @@ public class User extends BaseEntity {
 
     public static User createGuest(){
         return User.builder()
+                .nickname(new RandomNickname().generateNickname())
                 .role(UserType.GUEST)
                 .build();
     }
 
     public void changeNickName(String nickname){
         this.nickname = nickname;
+    }
+
+    public void updateNewUser(User user){
+        this.provider = user.provider;
+        this.providerID = user.providerID;
+        this.nickname = user.nickname;
+        this.role = user.role;
+        this.profileImgUrl = user.profileImgUrl;
     }
 }

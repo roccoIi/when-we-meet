@@ -1,11 +1,12 @@
 package com.whenwemeet.backend.domain.user.dto.response;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Getter
-@ToString
-@NoArgsConstructor
-public class UserInfoResponse {
-    private String nickname;
-    private String profileImgUrl;
-}
+
+public record UserInfoResponse(
+        String nickname,
+        String provider,
+        String profileImgUrl
+) {}

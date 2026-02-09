@@ -1,5 +1,6 @@
-package com.whenwemeet.backend.domain.meetingRoom.entity;
+package com.whenwemeet.backend.domain.schedule.entity;
 
+import com.whenwemeet.backend.domain.meetingRoom.entity.MeetingRoom;
 import com.whenwemeet.backend.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UnavailableTime {
 
@@ -31,4 +32,8 @@ public class UnavailableTime {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private MeetingRoom meetingRoom;
 
+
+    public void changeUser(User user) {
+        this.user = user;
+    }
 }

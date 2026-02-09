@@ -37,6 +37,10 @@ public class MeetingRoom extends BaseEntity {
     @Column(name = "start_time")
     private LocalTime startTime;
 
+    @Builder.Default
+    @Column(name = "end_time")
+    private LocalTime endTime = LocalTime.of(23, 59, 59);
+
     @Column(name = "meeting_date")
     private LocalDate meetingDate;
 

@@ -11,4 +11,6 @@ public interface UserRepository extends JpaRepository<User, Long>, UserCustomRep
     Optional<User> findUserByProviderAndProviderID(String provider, Long providerId);
 
     Optional<User> findUserById(Long userId);
+
+    boolean existsByProviderAndProviderID(String provider, Long providerId);
 }

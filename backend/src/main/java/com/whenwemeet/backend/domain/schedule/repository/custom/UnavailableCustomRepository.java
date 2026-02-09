@@ -1,6 +1,6 @@
-package com.whenwemeet.backend.domain.meetingRoom.repository.custom;
+package com.whenwemeet.backend.domain.schedule.repository.custom;
 
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.UnavailableTimeList;
+import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 
 import java.util.List;
 
