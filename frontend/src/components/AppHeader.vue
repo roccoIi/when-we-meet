@@ -6,11 +6,17 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const handleLoginClick = () => {
-  if (userStore.isLoggedIn) {
-    // 로그인 되어있으면 닉네임 클릭 시 모달 열기
+  console.log('🔘 [Header] 버튼 클릭');
+  console.log('  - isLoggedIn:', userStore.isLoggedIn);
+  console.log('  - nickname:', userStore.nickname);
+  
+  if (userStore.isLoggedIn && userStore.nickname) {
+    // 로그인 상태 + 닉네임 있음: 닉네임 모달 열기 (닉네임 변경)
+    console.log('  → 닉네임 모달 열기');
     userStore.openNicknameModal();
   } else {
-    // 로그인 안되어있으면 로그인 페이지로 이동
+    // 로그아웃 상태 또는 닉네임 없음: 로그인 페이지로 이동
+    console.log('  → 로그인 페이지로 이동');
     router.push("/login");
   }
 };
@@ -31,14 +37,35 @@ const handleLoginClick = () => {
         언제볼래
       </h1>
 
+      <!-- 로그인 전: 로그인 버튼 -->
       <button
+        v-if="!userStore.isLoggedIn || !userStore.nickname"
         class="px-4 py-2 bg-primary text-white border-none rounded-full text-sm font-medium cursor-pointer transition-all hover:bg-primary-dark active:scale-95"
         @click="handleLoginClick"
       >
-        <span v-if="userStore.isLoggedIn">
-          {{ userStore.nickname }}
-        </span>
-        <span v-else>로그인</span>
+        로그인
+      </button>
+
+      <!-- 로그인 후: 프로필 이미지 -->
+      <button
+        v-else
+        class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary cursor-pointer transition-all hover:scale-110 active:scale-95"
+        @click="handleLoginClick"
+        :title="userStore.nickname"
+      >
+        <img 
+          v-if="userStore.profileImgUrl"
+          :src="userStore.profileImgUrl" 
+          :alt="userStore.nickname"
+          class="w-full h-full object-cover"
+        />
+        <!-- 프로필 이미지가 없으면 닉네임 첫 글자 -->
+        <div 
+          v-else
+          class="w-full h-full bg-primary text-white flex items-center justify-center text-sm font-bold"
+        >
+          {{ userStore.nickname?.charAt(0) || '?' }}
+        </div>
       </button>
     </div>
   </header>

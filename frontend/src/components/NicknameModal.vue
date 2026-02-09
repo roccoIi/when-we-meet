@@ -25,15 +25,19 @@ const handleSubmit = async () => {
   error.value = "";
 
   try {
-    // API 호출 (실제 백엔드 연동 시 주석 해제)
-    // await userAPI.setNickname(nickname.value)
+    console.log('🔄 [Nickname] 닉네임 설정 중...', nickname.value);
+    
+    // API 호출
+    const response = await userAPI.setNickname(nickname.value);
+    console.log('✅ [Nickname] 닉네임 설정 성공:', response);
 
-    // 임시: 상태만 업데이트
+    // store 업데이트
     userStore.setNickname(nickname.value);
+    
     emit("close");
   } catch (err) {
+    console.error('❌ [Nickname] 닉네임 설정 실패:', err);
     error.value = "닉네임 설정에 실패했습니다";
-    console.error(err);
   } finally {
     isLoading.value = false;
   }

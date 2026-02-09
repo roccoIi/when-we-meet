@@ -47,10 +47,30 @@ const toggleSortOrder = () => {
 };
 
 onMounted(async () => {
-  // 임시 로그인 상태 (실제로는 토큰 체크 등으로 확인)
-  if (!userStore.isLoggedIn) {
-    userStore.login({ id: 1, nickname: "" }); // 닉네임 없으면 모달 자동 표시
+  // App.vue의 초기화가 완료될 때까지 대기
+  if (!userStore.isInitialized) {
+    console.log('⏳ [MeetingList] 초기화 대기 중...')
+    // 초기화 완료를 기다림 (최대 5초)
+    let attempts = 0
+    const maxAttempts = 50 // 5초 (100ms * 50)
+    
+    while (!userStore.isInitialized && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      attempts++
+    }
+    
+    if (userStore.isInitialized) {
+      console.log('✅ [MeetingList] 초기화 완료, 모임 로드 시작')
+    } else {
+      console.log('⚠️ [MeetingList] 초기화 타임아웃')
+    }
   }
+
+  // 디버깅: 사용자 정보 확인
+  console.log('👤 [MeetingList] 현재 사용자 정보:');
+  console.log('  - isLoggedIn:', userStore.isLoggedIn);
+  console.log('  - nickname:', userStore.nickname);
+  console.log('  - profileImgUrl:', userStore.profileImgUrl);
 
   await loadMeetings();
   setupInfiniteScroll();
@@ -213,8 +233,12 @@ const sortedMeetings = computed(() => meetingsStore.meetings);
 
         <!-- 제목 (우측) -->
         <h2 class="text-lg font-semibold text-gray-800 whitespace-nowrap">
-          <span class="text-primary">{{ userStore.nickname }}</span> 님의 모임
-          목록
+          <span v-if="userStore.nickname">
+            <span class="text-primary">{{ userStore.nickname }}</span> 님의 모임 목록
+          </span>
+          <span v-else>
+            모임 목록
+          </span>
         </h2>
       </div>
     </div>
@@ -260,18 +284,6 @@ const sortedMeetings = computed(() => meetingsStore.meetings);
         </div>
       </div>
     </div>
-
-    <!-- ========== 테스트용 버튼 (나중에 삭제) ========== -->
-    <div class="p-4">
-      <button
-        @click="testAPI"
-        class="w-full py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
-      >
-        🧪 API 테스트 (401 인터셉터 확인)
-      </button>
-    </div>
-    <!-- ========== 테스트용 버튼 끝 ========== -->
-
     <!-- 새 모임 버튼 (하단 고정) -->
     <div
       class="fixed bottom-0 left-0 right-0 max-w-app mx-auto px-5 py-4 bg-white border-t border-gray-300"

@@ -17,21 +17,6 @@ const apiClient = axios.create({
   withCredentials: true, // 쿠키를 포함하여 요청 (refreshToken용)
 })
 
-// 토큰 재발급 진행 중 여부
-let isRefreshing = false
-// 재발급 대기 중인 요청들
-let refreshSubscribers = []
-
-// 재발급 완료 후 대기 중인 요청 재실행
-const onRefreshed = (accessToken) => {
-  refreshSubscribers.forEach((callback) => callback(accessToken))
-  refreshSubscribers = []
-}
-
-// 재발급 실패 시 대기 중인 요청 모두 실패 처리
-const onRefreshFailed = () => {
-  refreshSubscribers = []
-}
 
 // Request Interceptor: 모든 요청에 accessToken 추가
 apiClient.interceptors.request.use(
@@ -51,34 +36,42 @@ apiClient.interceptors.request.use(
   }
 )
 
-// Response Interceptor: 401 에러 시 자동으로 토큰 재발급
+// Response Interceptor: 응답 헤더에서 토큰 자동 추출 및 401 에러 처리
 apiClient.interceptors.response.use(
   (response) => {
-    // 정상 응답 처리
+    // 정상 응답 처리: Authorization 헤더에 토큰이 있으면 자동 저장
+    const authorization = response.headers['authorization']
+    if (authorization) {
+      const accessToken = authorization.replace('Bearer ', '')
+      const userStore = useUserStore()
+      userStore.setAccessToken(accessToken)
+      console.log('🔄 [Interceptor] 새 토큰 자동 저장:', accessToken.substring(0, 20) + '...')
+    }
+    
     return response
   },
   async (error) => {
     const originalRequest = error.config
 
-    // 401 에러이고, 재발급 요청이 아니며, 재시도하지 않은 요청인 경우
+    // 공개 API 목록 (토큰 없이 접근 가능)
+    const publicAPIs = [
+      '/api/meetings/share/',  // 공유 코드로 모임 정보 조회
+    ]
+
+    // 공개 API는 401 처리 안 함
+    const isPublicAPI = publicAPIs.some(api => originalRequest.url?.includes(api))
+
+    // 401 에러 발생 시 토큰 재발급 시도
     if (
-      error.response?.status === 401 &&
+      error.response?.status === 401 && 
+      !isPublicAPI && 
       originalRequest.url !== REISSUE_TOKEN_URL &&
       !originalRequest._retry
     ) {
-      if (isRefreshing) {
-        // 이미 재발급 진행 중이면 대기열에 추가
-        return new Promise((resolve, reject) => {
-          refreshSubscribers.push((accessToken) => {
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`
-            resolve(apiClient(originalRequest))
-          })
-        })
-      }
-
       originalRequest._retry = true
-      isRefreshing = true
-
+      
+      console.log('🔄 [Interceptor] 401 에러 - 토큰 재발급 시도...')
+      
       try {
         // 토큰 재발급 요청 (refreshToken은 쿠키로 자동 전송됨)
         const response = await apiClient.post(REISSUE_TOKEN_URL)
@@ -90,21 +83,18 @@ apiClient.interceptors.response.use(
           // store에 새 토큰 저장
           const userStore = useUserStore()
           userStore.setAccessToken(newAccessToken)
+          console.log('✅ [Interceptor] 토큰 재발급 성공')
 
-          // 대기 중인 요청들에 새 토큰 전달
-          onRefreshed(newAccessToken)
-
-          // 원래 요청 재시도
+          // 원래 요청에 새 토큰 추가하고 재시도
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
           return apiClient(originalRequest)
         } else {
           throw new Error('No access token in response')
         }
       } catch (refreshError) {
-        // 재발급 실패 시
-        console.error('Token refresh failed:', refreshError)
-        onRefreshFailed()
-
+        // 재발급 실패 시 로그인 페이지로 이동
+        console.error('❌ [Interceptor] 토큰 재발급 실패 - 로그인 필요')
+        
         // 로그아웃 처리
         const userStore = useUserStore()
         userStore.logout()
@@ -113,8 +103,6 @@ apiClient.interceptors.response.use(
         router.push('/login')
 
         return Promise.reject(refreshError)
-      } finally {
-        isRefreshing = false
       }
     }
 

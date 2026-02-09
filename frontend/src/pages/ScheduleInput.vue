@@ -1,12 +1,15 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useUserStore } from "../stores/user";
 import Calendar from "../components/Calendar.vue";
 import TimeCalendar from "../components/TimeCalendar.vue";
+import NicknameModal from "../components/NicknameModal.vue";
 import { scheduleAPI } from "../services";
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 
 const shareCode = route.params.shareCode;
 const currentYear = ref(new Date().getFullYear());
@@ -17,7 +20,36 @@ const isLoading = ref(false);
 const isSaving = ref(false);
 const viewMode = ref("date");
 
+// 닉네임 모달 상태
+const showNicknameModal = ref(false);
+
 onMounted(async () => {
+  // App.vue의 초기화가 완료될 때까지 대기
+  if (!userStore.isInitialized) {
+    console.log('⏳ [ScheduleInput] 초기화 대기 중...')
+    let attempts = 0
+    const maxAttempts = 50 // 5초 (100ms * 50)
+    
+    while (!userStore.isInitialized && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      attempts++
+    }
+    
+    if (userStore.isInitialized) {
+      console.log('✅ [ScheduleInput] 초기화 완료')
+    } else {
+      console.log('⚠️ [ScheduleInput] 초기화 타임아웃')
+    }
+  }
+
+  // 초기화 완료 후 닉네임 체크
+  if (!userStore.nickname) {
+    console.log('⚠️ [ScheduleInput] 닉네임 없음 - 모달 표시');
+    showNicknameModal.value = true;
+  } else {
+    console.log('✅ [ScheduleInput] 닉네임 존재:', userStore.nickname);
+  }
+
   await loadUserSchedule();
 });
 
@@ -180,6 +212,18 @@ const formatTime = (timeString) => {
   const hour = date.getHours();
   return `${day}일 ${hour}시`;
 };
+
+const closeNicknameModal = () => {
+  // 닉네임이 설정되었는지 확인
+  if (userStore.nickname) {
+    showNicknameModal.value = false;
+    console.log('✅ [ScheduleInput] 닉네임 설정 완료:', userStore.nickname);
+  } else {
+    // 닉네임이 없으면 모달을 닫지 않고 미팅 상세로 돌아감
+    alert('닉네임을 설정해야 일정을 추가할 수 있습니다.');
+    router.back();
+  }
+};
 </script>
 
 <template>
@@ -298,5 +342,11 @@ const formatTime = (timeString) => {
         </button>
       </div>
     </div>
+
+    <!-- 닉네임 모달 -->
+    <NicknameModal
+      v-if="showNicknameModal"
+      @close="closeNicknameModal"
+    />
   </div>
 </template>

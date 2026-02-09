@@ -82,9 +82,10 @@ export const meetingAPI = {
    * 모임 상세 조회 (ShareCode 기반 - 권장)
    * 
    * @param {string} shareCode - 공유 코드
+   * @returns {Promise<{name: string, memberNumber: number, info: Array<{nickname: string, profileImgUrl: string}>}>}
    */
   getMeetingDetailByShareCode: async (shareCode) => {
-    const response = await apiClient.get(`/api/meetings/code/${shareCode}`)
+    const response = await apiClient.get(`/api/meetings/${shareCode}`)
     return response.data
   },
 

@@ -2,33 +2,53 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
-import { authAPI } from '@/services'
+import { userAPI } from '@/services'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-  onMounted(async () => {
+onMounted(async () => {
+  try {
+    console.log('🔄 [OAuth] 로그인 처리 시작...')
+    
+    // 사용자 정보 가져오기 (백엔드가 자동으로 토큰 발급)
     try {
-      const response = await authAPI.reissueToken()
-      const authorization = response.headers['authorization']
-      console.log(response.headers)
-      console.log(authorization)
+      console.log('🔄 [OAuth] 사용자 정보 조회 중...')
+      const userInfoResponse = await userAPI.getUserInfo()
       
-      if(!authorization){
-        alert('로그인에 실패했습니다')
-        router.push('/login')
-        return
-      }
-
-      const accessToken = authorization.replace('Bearer ', '')
-      userStore.setAccessToken(accessToken)
-      router.push('/')
-
+      // 🔍 응답 구조 상세 로그
+      console.log('📦 [OAuth] 전체 응답:', userInfoResponse)
+      console.log('📦 [OAuth] response.data:', userInfoResponse.data)
+      
+      const userInfo = userInfoResponse.data || userInfoResponse
+      
+      console.log('📦 [OAuth] 추출된 사용자 정보:', userInfo)
+      console.log('  - nickname:', userInfo.nickname)
+      console.log('  - profileImgUrl:', userInfo.profileImgUrl)
+      
+      userStore.login({
+        nickname: userInfo.nickname,
+        profileImgUrl: userInfo.profileImgUrl
+      })
+      
+      console.log('✅ [OAuth] 로그인 완료:', userInfo.nickname)
     } catch (error) {
-      alert('로그인 처리 중 오류가 발생했습니다')
-      router.push('/login')
+      console.error('⚠️ [OAuth] 사용자 정보 로드 실패:', error)
     }
-  })
+
+    // 초기화 완료 표시
+    userStore.setInitialized(true)
+    console.log('✅ [OAuth] 초기화 완료')
+
+    // 메인 페이지로 이동
+    router.push('/')
+
+  } catch (error) {
+    console.error('❌ [OAuth] 로그인 처리 실패:', error)
+    alert('로그인 처리 중 오류가 발생했습니다')
+    router.push('/login')
+  }
+})
 </script>
 
 <template>
