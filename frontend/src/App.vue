@@ -51,18 +51,29 @@ const loadUserInfo = async () => {
   try {
     console.log('🔄 [App] 사용자 정보 조회 중...')
     const response = await userAPI.getUserInfo()
+    console.log('📦 [App] API 전체 응답:', response)
+    
+    // 백엔드 CommonResponse 구조: { code, data, message, pagination }
+    // 실제 사용자 정보는 data 필드에 있음
+    const userInfo = response.data
     
     console.log('📦 [App] 받은 사용자 정보:', userInfo)
     
+    // userInfo가 null이면 에러
+    if (!userInfo) {
+      throw new Error('사용자 정보가 없습니다')
+    }
+    
     userStore.login({
-      nickname: userInfo.nickname,
-      profileImgUrl: userInfo.profileImgUrl,
-      provider: userInfo.provider
+      nickname: userInfo.nickname || '',
+      profileImgUrl: userInfo.profileImgUrl || '',
+      provider: userInfo.provider || ''
     })
     
     console.log('✅ [App] 사용자 정보 로드 완료:', userInfo.nickname, '(', userInfo.provider, ')')
   } catch (error) {
     console.error('⚠️ [App] 사용자 정보 로드 실패:', error)
+    throw error
   }
 }
 </script>

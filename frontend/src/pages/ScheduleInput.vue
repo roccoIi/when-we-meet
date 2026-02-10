@@ -81,7 +81,7 @@ onMounted(async () => {
 
 /**
  * 백엔드에서 받은 일정 데이터를 날짜/시간 선택으로 변환
- * @param {Array<Object>} schedules - [{ startDateTime, endDateTime }, ...]
+ * @param {Array<Object>} schedules - [{ unavailableDate, unavailableStartTime, unavailableEndTime }, ...]
  */
 const convertSchedulesToSelections = (schedules) => {
   const dates = [];
@@ -90,11 +90,16 @@ const convertSchedulesToSelections = (schedules) => {
   console.log('🔄 [convertSchedulesToSelections] 변환 시작, 개수:', schedules.length);
 
   schedules.forEach((schedule, index) => {
-    console.log(`🔄 [Schedule ${index}] startDateTime:`, schedule.startDateTime);
-    console.log(`🔄 [Schedule ${index}] endDateTime:`, schedule.endDateTime);
+    console.log(`🔄 [Schedule ${index}] unavailableDate:`, schedule.unavailableDate);
+    console.log(`🔄 [Schedule ${index}] unavailableStartTime:`, schedule.unavailableStartTime);
+    console.log(`🔄 [Schedule ${index}] unavailableEndTime:`, schedule.unavailableEndTime);
 
-    const start = new Date(schedule.startDateTime);
-    const end = new Date(schedule.endDateTime);
+    // LocalDate와 LocalTime을 결합하여 Date 객체 생성
+    const startDateTime = `${schedule.unavailableDate}T${schedule.unavailableStartTime}`;
+    const endDateTime = `${schedule.unavailableDate}T${schedule.unavailableEndTime}`;
+    
+    const start = new Date(startDateTime);
+    const end = new Date(endDateTime);
 
     console.log(`🔄 [Schedule ${index}] start Date 객체:`, start);
     console.log(`🔄 [Schedule ${index}] end Date 객체:`, end);
@@ -106,9 +111,8 @@ const convertSchedulesToSelections = (schedules) => {
       start.getHours() === 9 && start.getMinutes() === 0 && start.getSeconds() === 0 &&
       end.getHours() === 23 && end.getMinutes() === 59 && end.getSeconds() === 59
     ) {
-      const dateString = schedule.startDateTime.split('T')[0];
-      console.log(`📅 [Schedule ${index}] 날짜로 추가:`, dateString);
-      dates.push(dateString);
+      console.log(`📅 [Schedule ${index}] 날짜로 추가:`, schedule.unavailableDate);
+      dates.push(schedule.unavailableDate);
     }
     
     // 시간 달력용: 30분 단위로 시간 추가 (09:00:00 ~ 23:59:59도 포함)
@@ -207,40 +211,9 @@ const handleTimeClick = (timeString) => {
 };
 
 /**
- * ISO 8601 형식을 LocalDateTime 형식으로 변환
- * @param {string} isoString - '2026-01-15T14:00'
- * @param {boolean} isEndTime - 종료 시간인 경우 30분 추가
- * @returns {string} - '2026-01-15T14:00:00'
- */
-const convertToLocalDateTime = (isoString, isEndTime = false) => {
-  const date = new Date(isoString);
-  
-  // 시작 시간이 23:30이고 종료 시간인 경우 23:59:59로 설정
-  if (isEndTime && date.getHours() === 23 && date.getMinutes() === 30) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}T23:59:59`;
-  }
-  
-  if (isEndTime) {
-    date.setMinutes(date.getMinutes() + 30);
-  }
-  
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = '00';
-  
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-};
-
-/**
  * 날짜를 하루 전체 범위로 변환
  * @param {Array<string>} selectedDates - ['2026-02-25', '2026-02-26', ...]
- * @returns {Array<Object>} - [{ startDateTime: '2026-02-25T00:00:00', endDateTime: '2026-02-25T23:59:59' }, ...]
+ * @returns {Array<Object>} - [{ unavailableDate: '2026-02-25', unavailableStartTime: '09:00:00', unavailableEndTime: '23:59:59' }, ...]
  */
 const convertDatesToRanges = (selectedDates) => {
   if (!selectedDates || selectedDates.length === 0) return [];
@@ -252,8 +225,9 @@ const convertDatesToRanges = (selectedDates) => {
     const day = String(date.getDate()).padStart(2, '0');
     
     return {
-      startDateTime: `${year}-${month}-${day}T09:00:00`,
-      endDateTime: `${year}-${month}-${day}T23:59:59`
+      unavailableDate: `${year}-${month}-${day}`,
+      unavailableStartTime: '09:00:00',
+      unavailableEndTime: '23:59:59'
     };
   });
 };
@@ -261,7 +235,7 @@ const convertDatesToRanges = (selectedDates) => {
 /**
  * 선택된 시간들을 연속된 시간 범위로 그룹핑
  * @param {Array<string>} selectedTimes - ['2026-01-15T14:00', '2026-01-15T15:00', ...]
- * @returns {Array<Object>} - [{ startDateTime: '2026-01-15T14:00:00', endDateTime: '2026-01-15T16:00:00' }, ...]
+ * @returns {Array<Object>} - [{ unavailableDate: '2026-01-15', unavailableStartTime: '14:00:00', unavailableEndTime: '16:00:00' }, ...]
  */
 const convertTimesToRanges = (selectedTimes) => {
   if (!selectedTimes || selectedTimes.length === 0) return [];
@@ -284,22 +258,60 @@ const convertTimesToRanges = (selectedTimes) => {
       rangeEnd = sortedTimes[i];
     } else {
       // 연속되지 않으면 이전 범위 저장하고 새 범위 시작
-      ranges.push({
-        startDateTime: convertToLocalDateTime(rangeStart),
-        endDateTime: convertToLocalDateTime(rangeEnd, true) // 종료 시간은 +30분
-      });
+      ranges.push(convertToScheduleRequest(rangeStart, rangeEnd, true));
       rangeStart = sortedTimes[i];
       rangeEnd = sortedTimes[i];
     }
   }
   
   // 마지막 범위 추가
-  ranges.push({
-    startDateTime: convertToLocalDateTime(rangeStart),
-    endDateTime: convertToLocalDateTime(rangeEnd, true)
-  });
+  ranges.push(convertToScheduleRequest(rangeStart, rangeEnd, true));
   
   return ranges;
+};
+
+/**
+ * ISO 8601 형식을 ScheduleRequest 형식으로 변환
+ * @param {string} startTimeString - '2026-01-15T14:00'
+ * @param {string} endTimeString - '2026-01-15T15:00'
+ * @param {boolean} addEndTime - 종료 시간에 30분 추가 여부
+ * @returns {Object} - { unavailableDate: '2026-01-15', unavailableStartTime: '14:00:00', unavailableEndTime: '15:30:00' }
+ */
+const convertToScheduleRequest = (startTimeString, endTimeString, addEndTime = false) => {
+  const startDate = new Date(startTimeString);
+  const endDate = new Date(endTimeString);
+  
+  const year = startDate.getFullYear();
+  const month = String(startDate.getMonth() + 1).padStart(2, '0');
+  const day = String(startDate.getDate()).padStart(2, '0');
+  
+  const startHour = String(startDate.getHours()).padStart(2, '0');
+  const startMinute = String(startDate.getMinutes()).padStart(2, '0');
+  
+  // 종료 시간 처리
+  let endHour, endMinute, endSecond;
+  
+  // 23:30인 경우 23:59:59로 처리
+  if (endDate.getHours() === 23 && endDate.getMinutes() === 30 && addEndTime) {
+    endHour = '23';
+    endMinute = '59';
+    endSecond = '59';
+  } else {
+    // 종료 시간에 30분 추가
+    if (addEndTime) {
+      endDate.setMinutes(endDate.getMinutes() + 30);
+    }
+    
+    endHour = String(endDate.getHours()).padStart(2, '0');
+    endMinute = String(endDate.getMinutes()).padStart(2, '0');
+    endSecond = '00';
+  }
+  
+  return {
+    unavailableDate: `${year}-${month}-${day}`,
+    unavailableStartTime: `${startHour}:${startMinute}:00`,
+    unavailableEndTime: `${endHour}:${endMinute}:${endSecond}`
+  };
 };
 
 const toggleViewMode = () => {
@@ -388,7 +400,7 @@ const handleSave = async () => {
     console.log("전송할 데이터:", scheduleRanges);
     
     // 백엔드로 전송
-    await scheduleAPI.saveScheduleByShareCode(shareCode, scheduleRanges);
+    await scheduleAPI.saveSchedule(shareCode, scheduleRanges);
     
     alert("일정이 저장되었습니다!");
     router.back();

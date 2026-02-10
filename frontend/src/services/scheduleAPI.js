@@ -34,7 +34,7 @@ export const scheduleAPI = {
    * ])
    */
   saveSchedule: async (meetingId, scheduleRanges) => {
-    const response = await apiClient.post(`/api/meetings/${meetingId}/schedule`, scheduleRanges)
+    const response = await apiClient.post(`/api/schedule/${meetingId}`, scheduleRanges)
     return response.data
   },
 
@@ -54,8 +54,15 @@ export const scheduleAPI = {
    * 
    * @param {string} shareCode - 공유 코드
    * @param {Array<Object>} scheduleRanges - 일정 범위 배열
-   * @param {string} scheduleRanges[].startDateTime - 시작 시간 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss)
-   * @param {string} scheduleRanges[].endDateTime - 종료 시간 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss)
+   * @param {string} scheduleRanges[].unavailableDate - 해당 날짜 (LocalDate 형식: YYYY-MM-DD)
+   * @param {string} scheduleRanges[].unavailableStartTime - 시작 시간 (LocalTime 형식: HH:mm:ss)
+   * @param {string} scheduleRanges[].unavailableEndTime - 종료 시간 (LocalTime 형식: HH:mm:ss)
+   * 
+   * @example
+   * saveScheduleByShareCode('abc123', [
+   *   { unavailableDate: '2026-02-15', unavailableStartTime: '14:00:00', unavailableEndTime: '16:00:00' },
+   *   { unavailableDate: '2026-02-16', unavailableStartTime: '09:00:00', unavailableEndTime: '23:59:59' }
+   * ])
    */
   saveScheduleByShareCode: async (shareCode, scheduleRanges) => {
     const response = await apiClient.post(`/api/schedule/${shareCode}`, scheduleRanges)
@@ -83,6 +90,48 @@ export const scheduleAPI = {
     const response = await apiClient.get(
       `/api/meetings/${meetingId}/participants/${participantId}/schedule`
     )
+    return response.data
+  },
+
+  /**
+   * 추천 스케줄 조회 (ShareCode 기반)
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @param {string} type - 'ALL' | 'WEEKDAY' | 'WEEKEND' (기본값: 'ALL')
+   * @returns {Promise<Array<Object>>} - [{ day: '2026-02-15', startTime: '14:00', endTime: '16:00' }, ...]
+   * 
+   * @example
+   * // 전체 추천
+   * getRecommendSchedule('abc123', 'ALL')
+   * 
+   * // 주중 추천
+   * getRecommendSchedule('abc123', 'WEEKDAY')
+   * 
+   * // 주말 추천
+   * getRecommendSchedule('abc123', 'WEEKEND')
+   */
+  getRecommendSchedule: async (shareCode, type = 'ALL') => {
+    const response = await apiClient.get(`/api/schedule/recommend/${shareCode}/${type}`)
+    return response.data
+  },
+
+  /**
+   * 미팅 일정 확정/초기화 (ShareCode 기반)
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @param {Object} updateData - 업데이트 데이터
+   * @param {string|null} updateData.name - 미팅룸 이름 (선택사항, null 가능)
+   * @param {string|null} updateData.meetingDate - 확정 일정 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss, null이면 초기화)
+   * 
+   * @example
+   * // 일정 확정
+   * updateMeetingSchedule('abc123', { name: null, meetingDate: '2026-02-15T14:00:00' })
+   * 
+   * // 일정 초기화
+   * updateMeetingSchedule('abc123', { name: null, meetingDate: null })
+   */
+  updateMeetingSchedule: async (shareCode, updateData) => {
+    const response = await apiClient.put(`/api/meetings/${shareCode}`, updateData)
     return response.data
   },
 }
