@@ -2,8 +2,8 @@ package com.whenwemeet.backend.domain.schedule.dto.response;
 
 import java.util.List;
 
-public record AvailableMemberListResponse(
+public record MembersScheduleListResponse(
         Integer totalMembers,
-        List<AvailableDate> AvailableDateList
+        List<DaysDetail> MembersScheduleByDate
 ) {
 }

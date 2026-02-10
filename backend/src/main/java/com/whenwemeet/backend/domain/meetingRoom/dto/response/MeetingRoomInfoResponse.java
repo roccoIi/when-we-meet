@@ -16,7 +16,7 @@ import java.util.List;
 public class MeetingRoomInfoResponse {
 
     private String name;
-    private Long memberNumber;
+    private Integer memberNumber;
     private LocalDateTime meetingDate;
     private List<UserInfoResponse> info;
 

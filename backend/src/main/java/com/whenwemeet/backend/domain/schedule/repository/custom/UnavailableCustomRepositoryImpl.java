@@ -26,14 +26,16 @@ public class UnavailableCustomRepositoryImpl implements UnavailableCustomReposit
     @Override
     public List<UnavailableTime> findAllIncludeInStandardTime(
             MeetingRoom meetingRoom, LocalDate startOfMonth, LocalDate endOfMonth) {
-        
+
         return factory
                 .select(unavailableTime)
                 .from(unavailableTime)
                 .join(unavailableTime.user, user).fetchJoin()
                 .where(
                         unavailableTime.meetingRoom.eq(meetingRoom),
-                        unavailableTime.unavailableDate.between(startOfMonth, endOfMonth)
+                        unavailableTime.unavailableDate.between(startOfMonth, endOfMonth),
+                        unavailableTime.unavailableStartTime.lt(meetingRoom.getEndTime()),
+                        unavailableTime.unavailableEndTime.goe(meetingRoom.getStartTime())
                 )
                 .fetch();
     }

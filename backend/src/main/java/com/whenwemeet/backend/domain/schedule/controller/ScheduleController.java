@@ -1,7 +1,7 @@
 package com.whenwemeet.backend.domain.schedule.controller;
 
 import com.whenwemeet.backend.domain.schedule.dto.request.ScheduleRequest;
-import com.whenwemeet.backend.domain.schedule.dto.response.AvailableMemberListResponse;
+import com.whenwemeet.backend.domain.schedule.dto.response.MembersScheduleListResponse;
 import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.entity.DayType;
@@ -31,8 +31,8 @@ public class ScheduleController {
             @RequestParam("month") int month
     ){
         log.info("[월별 멤버 가용성 조회] shareCode: {}, year: {}, month: {}", shareCode, year, month);
-//        AvailableMemberListResponse response = scheduleService.getAllUnavailableTimeList(shareCode, year, month);
-        return ResponseEntity.ok(CommonResponse.success());
+        MembersScheduleListResponse response = scheduleService.getMonthlyAvailableMemberList(shareCode, year, month);
+        return ResponseEntity.ok(CommonResponse.success(response));
     }
 
     @GetMapping("/my/{shareCode}")

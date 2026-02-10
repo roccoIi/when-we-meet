@@ -5,10 +5,7 @@ import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.repository.MeetingRoomRepository;
 import com.whenwemeet.backend.domain.meetingRoom.repository.UserMeetingRoomRepository;
 import com.whenwemeet.backend.domain.schedule.dto.request.ScheduleRequest;
-import com.whenwemeet.backend.domain.schedule.dto.response.AvailableMemberListResponse;
-import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
-import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
-import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeListImpl;
+import com.whenwemeet.backend.domain.schedule.dto.response.*;
 import com.whenwemeet.backend.domain.schedule.entity.DayType;
 import com.whenwemeet.backend.domain.schedule.entity.UnavailableTime;
 import com.whenwemeet.backend.domain.schedule.repository.ScheduleRepository;
@@ -24,11 +21,10 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
-import static com.whenwemeet.backend.global.exception.ErrorCode.*;
+import static com.whenwemeet.backend.global.exception.ErrorCode.M002;
+import static com.whenwemeet.backend.global.exception.ErrorCode.M003;
 
 @Slf4j
 @Service
@@ -44,36 +40,61 @@ public class ScheduleServiceImpl implements ScheduleService{
     private final int MAX_RECOMMEND_COUNT = 5; // 추천 시간대 개수 (추후 10개로 확장 가능)
 
     @Override
-    public AvailableMemberListResponse getMonthlyAvailableMemberList(String shareCode, int year, int month) {
+    public MembersScheduleListResponse getMonthlyAvailableMemberList(String shareCode, int year, int month) {
         // 1) 미팅룸 조회
-        MeetingRoom room = meetingRoomRepository.findAllByShareCode(shareCode)
+        MeetingRoom mr = meetingRoomRepository.findAllByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException(M003));
+        // 2) 현재 미팅룸에 참여중인 인원수 조회
+        int allMembersNum = userMeetingRoomRepository.countByMeetingRoom(mr);
 
-        // 2) 미팅룸에 속한 전체 맴버 조회
-        List<UserMeetingRoom> allMembers = userMeetingRoomRepository.findAllByMeetingRoom(room);
-        List<String> allMembersNickname = allMembers.stream()
-                .map((umr) -> umr.getUser().getNickname())
-                .toList();
+//        // 2) 미팅룸에 속한 전체 맴버 조회
+//        List<UserMeetingRoom> allMembers = userMeetingRoomRepository.findAllByMeetingRoom(mr);
+//        List<String> allMembersNickname = allMembers.stream()
+//                .map((umr) -> umr.getUser().getNickname())
+//                .sorted()
+//                .toList();
 
         // 3) 월별 시작 및 종료 날짜 정의
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
 
-        // 3-1) startofMonth가 해당 미팅룸의 모임 시작날짜보다 빠르다면 미팅룸의 시작날짜로 변경
-        startOfMonth = startOfMonth.isBefore(room.getStartDate()) ? room.getStartDate() : startOfMonth;
-
-        // 3-2) 시작날짜와 종료날짜에 각 시간을 더합니다. (02/12~02/28 -> 02/12 18:00 ~ 02/28 24:00)
-
-        log.info("모임 탐색은 {} 부터 {}까지 진행됩니다.", startOfMonth, endOfMonth);
+        // 3-1) startofMonth가 해당 미팅룸의 모임 시작날짜보다 이른 날짜라면 미팅룸의 시작날짜로 변경
+        startOfMonth = startOfMonth.isBefore(mr.getStartDate()) ? mr.getStartDate() : startOfMonth;
 
         // 4) 해당 기간동안 불가능한 사용자를 조회합니다.
-        // TODO: QueryDSL Q클래스 생성 후 구현 예정
-        
+        List<UnavailableTime> unavailableTimes = unavailableRepository
+                .findAllIncludeInStandardTime(mr, startOfMonth, endOfMonth);
+
+        // 5) 이제 날짜별로 해당 사람들을 분리해야 합니다. (하나의 날짜에 사람 이름이 중복되지 않도록)
+        Map<LocalDate, Set<String>> members = new HashMap<>();
+        for(UnavailableTime ut : unavailableTimes){
+            members.computeIfAbsent(
+                    ut.getUnavailableDate(),
+                    date -> new HashSet<>()).add(ut.getUser().getNickname());
+        }
+
+        // 6) map에 등록된 키를 하나씩 꺼내보면서 저장해야한다. 그럼 현재 일부터 월말까지 순회해야한다.
+        List<DaysDetail> MembersScheduleByDate = new ArrayList<>();
+
+        for(LocalDate date = startOfMonth; !date.isAfter(endOfMonth); date = date.plusDays(1)){
+            // 불가능하다고 표시된 닉네임들 (해당 날짜에 없으면 넘김)
+            Set<String> unAvailableNicknames = members.get(date);
+            if(unAvailableNicknames == null) continue;
+
+            List<String> UnAvailableMemberList = new ArrayList<>(unAvailableNicknames);
+
+            DaysDetail daysDetail = new DaysDetail(
+                    date,
+                    allMembersNum - UnAvailableMemberList.size(),
+                    UnAvailableMemberList);
+
+            MembersScheduleByDate.add(daysDetail);
+        }
+
+
+
         // 임시 반환값
-        return new AvailableMemberListResponse(
-                allMembers.size(),
-                List.of()
-        );
+        return new MembersScheduleListResponse(allMembersNum, MembersScheduleByDate);
     }
 
     @Override
@@ -93,9 +114,9 @@ public class ScheduleServiceImpl implements ScheduleService{
         log.info("// 3) 새로 들어온 스케줄을 모두 입력");
         List<UnavailableTime> responseList = scheduleRequest.stream()
                 .map(sr -> UnavailableTime.builder()
-                        .unavailableDate(sr.getUnavailableDate())
-                        .unavailableStartTime(sr.getUnavailableStartTime())
-                        .unavailableEndTime(sr.getUnavailableEndTime())
+                        .unavailableDate(sr.unavailableDate())
+                        .unavailableStartTime(sr.unavailableStartTime())
+                        .unavailableEndTime(sr.unavailableEndTime())
                         .user(umr.getUser())
                         .meetingRoom(umr.getMeetingRoom())
                         .build())

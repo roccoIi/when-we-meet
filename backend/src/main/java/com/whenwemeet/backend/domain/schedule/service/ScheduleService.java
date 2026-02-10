@@ -1,8 +1,8 @@
 package com.whenwemeet.backend.domain.schedule.service;
 
 import com.whenwemeet.backend.domain.schedule.dto.request.ScheduleRequest;
-import com.whenwemeet.backend.domain.schedule.dto.response.AvailableMemberListResponse;
 import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
+import com.whenwemeet.backend.domain.schedule.dto.response.MembersScheduleListResponse;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.entity.DayType;
 
@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface ScheduleService {
 
-    AvailableMemberListResponse getMonthlyAvailableMemberList(String shareCode, int year, int month);
+    MembersScheduleListResponse getMonthlyAvailableMemberList(String shareCode, int year, int month);
 
     void addIndividualSchedule(Long userId, String shareCode, List<ScheduleRequest> scheduleRequest);
 

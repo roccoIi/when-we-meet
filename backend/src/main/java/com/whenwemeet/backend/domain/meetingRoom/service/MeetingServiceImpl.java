@@ -186,7 +186,7 @@ public class MeetingServiceImpl implements MeetingService{
         // 3) 응답 DTO 생성
         return MeetingRoomInfoResponse.builder()
                 .name(meetingRoom.getName())
-                .memberNumber(meetingRoom.getMemberNumber())
+                .memberNumber(infos.size())
                 .meetingDate(meetingRoom.getMeetingDate())
                 .info(infos)
                 .build();

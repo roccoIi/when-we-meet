@@ -3,10 +3,9 @@ package com.whenwemeet.backend.domain.schedule.dto.response;
 import java.time.LocalDate;
 import java.util.List;
 
-public record AvailableDate(
+public record DaysDetail(
         LocalDate date,
-        Long availableCount,
-        List<String> availableMembers,
+        Integer availableCount,
         List<String> unAvailableMembers
 ) {
 }
