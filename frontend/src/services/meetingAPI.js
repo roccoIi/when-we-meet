@@ -212,4 +212,24 @@ export const meetingAPI = {
     const response = await apiClient.get(`/api/meetings/${meetingId}/participants`)
     return response.data
   },
+
+  /**
+   * 미팅 일정 확정/초기화 (ShareCode 기반)
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @param {Object} updateData - 업데이트 데이터
+   * @param {string|null} updateData.name - 미팅룸 이름 (선택사항, null 가능)
+   * @param {string|null} updateData.meetingDate - 확정 일정 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss, null이면 초기화)
+   * 
+   * @example
+   * // 일정 확정
+   * updateMeetingSchedule('abc123', { name: null, meetingDate: '2026-02-15T14:00:00' })
+   * 
+   * // 일정 초기화
+   * updateMeetingSchedule('abc123', { name: null, meetingDate: null })
+   */
+  updateMeetingSchedule: async (shareCode, updateData) => {
+    const response = await apiClient.put(`/api/meetings/${shareCode}`, updateData)
+    return response.data
+  },
 }

@@ -94,6 +94,24 @@ export const scheduleAPI = {
   },
 
   /**
+   * 월별 멤버 가용성 조회 (ShareCode 기반)
+   * 
+   * @param {string} shareCode - 공유 코드
+   * @param {number} year - 연도 (예: 2026)
+   * @param {number} month - 월 (1-12)
+   * @returns {Promise<Object>} - { totalMembers: 5, MembersScheduleByDate: [...] }
+   * 
+   * @example
+   * getMonthlyAvailability('abc123', 2026, 2)
+   */
+  getMonthlyAvailability: async (shareCode, year, month) => {
+    const response = await apiClient.get(`/api/schedule/available/${shareCode}`, {
+      params: { year, month }
+    })
+    return response.data
+  },
+
+  /**
    * 추천 스케줄 조회 (ShareCode 기반)
    * 
    * @param {string} shareCode - 공유 코드
@@ -115,23 +133,4 @@ export const scheduleAPI = {
     return response.data
   },
 
-  /**
-   * 미팅 일정 확정/초기화 (ShareCode 기반)
-   * 
-   * @param {string} shareCode - 공유 코드
-   * @param {Object} updateData - 업데이트 데이터
-   * @param {string|null} updateData.name - 미팅룸 이름 (선택사항, null 가능)
-   * @param {string|null} updateData.meetingDate - 확정 일정 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss, null이면 초기화)
-   * 
-   * @example
-   * // 일정 확정
-   * updateMeetingSchedule('abc123', { name: null, meetingDate: '2026-02-15T14:00:00' })
-   * 
-   * // 일정 초기화
-   * updateMeetingSchedule('abc123', { name: null, meetingDate: null })
-   */
-  updateMeetingSchedule: async (shareCode, updateData) => {
-    const response = await apiClient.put(`/api/meetings/${shareCode}`, updateData)
-    return response.data
-  },
 }

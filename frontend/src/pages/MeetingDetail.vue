@@ -21,6 +21,7 @@ const isLoading = ref(false);
 const recommendType = ref('ALL'); // 'ALL', 'WEEKDAY', 'WEEKEND'
 const confirmedSchedule = ref(null); // 확정된 일정 { day, startTime }
 const isUpdatingSchedule = ref(false); // 일정 업데이트 중
+const monthlyAvailability = ref(null); // 월별 가용성 데이터 { totalMembers, dateAvailability: Map }
 
 // 공유 모달 상태
 const isShareModalOpen = ref(false);
@@ -138,14 +139,38 @@ const loadMeetingDetail = async () => {
 
 const loadCalendarData = async () => {
   try {
-    // API 호출 (실제 백엔드 연동 시 주석 해제)
-    // const data = await meetingAPI.getMeetingCalendarByShareCode(shareCode, currentYear.value, currentMonth.value)
-    // unavailableDates.value = data.unavailableDates
-
-    // 임시 데이터
-    unavailableDates.value = ["2026-01-26", "2026-01-27", "2026-01-30"];
+    console.log(`🔄 [MeetingDetail] 월별 가용성 조회 중... (${currentYear.value}년 ${currentMonth.value}월)`);
+    
+    const response = await scheduleAPI.getMonthlyAvailability(shareCode, currentYear.value, currentMonth.value);
+    console.log('📦 [MeetingDetail] 월별 가용성 응답:', response);
+    
+    const data = response.data || response;
+    
+    if (data && data.MembersScheduleByDate) {
+      // Map으로 변환하여 빠른 검색 가능하도록
+      const dateMap = new Map();
+      
+      data.MembersScheduleByDate.forEach(item => {
+        dateMap.set(item.date, {
+          availableCount: item.availableCount,
+          unAvailableMembers: item.unAvailableMembers || []
+        });
+      });
+      
+      monthlyAvailability.value = {
+        totalMembers: data.totalMembers,
+        dateAvailability: dateMap
+      };
+      
+      console.log('✅ [MeetingDetail] 월별 가용성 로드 완료');
+      console.log('   - 전체 참여자:', data.totalMembers);
+      console.log('   - 데이터 개수:', dateMap.size);
+    } else {
+      monthlyAvailability.value = null;
+    }
   } catch (error) {
-    console.error("달력 데이터 조회 실패:", error);
+    console.error("❌ [MeetingDetail] 달력 데이터 조회 실패:", error);
+    monthlyAvailability.value = null;
   }
 };
 
@@ -284,7 +309,7 @@ const handleConfirmSchedule = async (schedule) => {
     
     console.log('🔄 [MeetingDetail] 일정 확정 요청:', { meetingDate });
     
-    await scheduleAPI.updateMeetingSchedule(shareCode, {
+    await meetingAPI.updateMeetingSchedule(shareCode, {
       name: null,
       meetingDate: meetingDate
     });
@@ -300,8 +325,9 @@ const handleConfirmSchedule = async (schedule) => {
     console.log('✅ [MeetingDetail] 일정 확정 완료');
     alert('모임 일정이 확정되었습니다! 🎉');
     
-    // 모임 정보 다시 로드
+    // 모임 정보 및 달력 데이터 다시 로드
     await loadMeetingDetail();
+    await loadCalendarData();
   } catch (error) {
     console.error('❌ [MeetingDetail] 일정 확정 실패:', error);
     alert('일정 확정에 실패했습니다. 다시 시도해주세요.');
@@ -323,7 +349,7 @@ const handleResetSchedule = async () => {
   try {
     console.log('🔄 [MeetingDetail] 일정 초기화 요청');
     
-    await scheduleAPI.updateMeetingSchedule(shareCode, {
+    await meetingAPI.updateMeetingSchedule(shareCode, {
       name: null,
       meetingDate: null
     });
@@ -334,8 +360,9 @@ const handleResetSchedule = async () => {
     console.log('✅ [MeetingDetail] 일정 초기화 완료');
     alert('모임 일정이 초기화되었습니다.');
     
-    // 모임 정보 다시 로드
+    // 모임 정보 및 달력 데이터 다시 로드
     await loadMeetingDetail();
+    await loadCalendarData();
   } catch (error) {
     console.error('❌ [MeetingDetail] 일정 초기화 실패:', error);
     alert('일정 초기화에 실패했습니다. 다시 시도해주세요.');
@@ -421,6 +448,8 @@ const handleResetSchedule = async () => {
           :year="currentYear"
           :month="currentMonth"
           :unavailableDates="unavailableDates"
+          :monthlyAvailability="monthlyAvailability"
+          :confirmedDate="confirmedSchedule?.day || null"
           @update:year="
             (val) => {
               currentYear = val;
@@ -435,10 +464,22 @@ const handleResetSchedule = async () => {
           "
         />
 
-        <div class="flex justify-center mt-3">
-          <div class="flex items-center gap-2 text-sm text-gray-600">
-            <div class="w-5 h-5 bg-gray-300 rounded"></div>
-            <span>불가능한 날짜</span>
+        <div class="flex justify-center mt-3 gap-4 flex-wrap">
+          <div class="flex items-center gap-1.5 text-xs text-gray-600">
+            <div class="w-5 h-5 bg-green-100 rounded border border-green-300"></div>
+            <span>많은 인원 가능</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-gray-600">
+            <div class="w-5 h-5 bg-yellow-100 rounded border border-yellow-300"></div>
+            <span>보통</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-gray-600">
+            <div class="w-5 h-5 bg-red-100 rounded border border-red-300"></div>
+            <span>적은 인원 가능</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-gray-600">
+            <div class="w-5 h-5 bg-white rounded border-4 border-yellow-400"></div>
+            <span>확정된 날짜</span>
           </div>
         </div>
       </div>

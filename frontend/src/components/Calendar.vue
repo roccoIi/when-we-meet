@@ -18,6 +18,14 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  monthlyAvailability: {
+    type: Object,
+    default: null,
+  },
+  confirmedDate: {
+    type: String,
+    default: null,
+  },
 });
 
 const emit = defineEmits(["update:year", "update:month", "dateClick"]);
@@ -133,6 +141,80 @@ const getDayClass = (index, date) => {
   if (dayOfWeek === 6) return "saturday";
   return "";
 };
+
+/**
+ * 날짜가 확정된 날짜인지 확인
+ */
+const isConfirmedDate = (date) => {
+  if (!date || !props.confirmedDate) return false;
+  const dateString = `${currentYear.value}-${String(
+    currentMonth.value
+  ).padStart(2, "0")}-${String(date).padStart(2, "0")}`;
+  return dateString === props.confirmedDate;
+};
+
+/**
+ * 날짜의 가용성 정보 가져오기
+ */
+const getAvailability = (date) => {
+  if (!date || !props.monthlyAvailability) return null;
+  
+  const dateString = `${currentYear.value}-${String(
+    currentMonth.value
+  ).padStart(2, "0")}-${String(date).padStart(2, "0")}`;
+  
+  const availability = props.monthlyAvailability.dateAvailability.get(dateString);
+  
+  // 데이터에 없으면 모두 가능
+  if (!availability) {
+    return {
+      availableCount: props.monthlyAvailability.totalMembers,
+      percentage: 100
+    };
+  }
+  
+  const percentage = (availability.availableCount / props.monthlyAvailability.totalMembers) * 100;
+  return {
+    availableCount: availability.availableCount,
+    percentage: percentage
+  };
+};
+
+/**
+ * 가용성에 따른 배경 색상 클래스 반환
+ */
+const getAvailabilityClass = (date) => {
+  const availability = getAvailability(date);
+  if (!availability) return '';
+  
+  if (availability.percentage >= 70) {
+    return 'bg-green-100 text-green-800';
+  } else if (availability.percentage >= 40) {
+    return 'bg-yellow-100 text-yellow-800';
+  } else {
+    return 'bg-red-100 text-red-800';
+  }
+};
+
+/**
+ * 날짜의 불가능한 멤버 리스트 가져오기
+ */
+const getUnavailableMembers = (date) => {
+  if (!date || !props.monthlyAvailability) return [];
+  
+  const dateString = `${currentYear.value}-${String(
+    currentMonth.value
+  ).padStart(2, "0")}-${String(date).padStart(2, "0")}`;
+  
+  const availability = props.monthlyAvailability.dateAvailability.get(dateString);
+  
+  // 데이터에 없으면 = 모두 가능 (불가능한 멤버 없음)
+  if (!availability) {
+    return [];
+  }
+  
+  return availability.unAvailableMembers || [];
+};
 </script>
 
 <template>
@@ -175,17 +257,27 @@ const getDayClass = (index, date) => {
         <div
           v-for="(date, index) in calendarDates"
           :key="index"
-          class="aspect-square flex justify-center items-start p-1 rounded-lg cursor-pointer transition-all relative"
-          :class="{
-            'cursor-default': !date,
-            'opacity-30 cursor-not-allowed': date && isPast(date),
-            'bg-gray-300': date && isUnavailable(date),
-            'bg-primary text-white font-bold shadow-md': date && isSelected(date),
-            'border-2 border-primary': date && isToday(date) && !isSelected(date),
-            'hover:bg-gray-100': date && !isPast(date) && !isSelected(date),
-          }"
+          class="aspect-square flex flex-col justify-start items-center p-1 rounded-lg cursor-pointer transition-all relative group"
+          :class="[
+            {
+              'cursor-default': !date,
+              'opacity-30 cursor-not-allowed': date && isPast(date),
+              'bg-gray-300': date && isUnavailable(date),
+              'bg-primary text-white font-bold shadow-md': date && isSelected(date),
+              'border-2 border-primary': date && isToday(date) && !isSelected(date) && !isConfirmedDate(date),
+              'border-4 border-yellow-400 shadow-lg': date && isConfirmedDate(date),
+              'hover:bg-gray-100': date && !isPast(date) && !isSelected(date),
+            },
+            date && !isSelected(date) && !isUnavailable(date) ? getAvailabilityClass(date) : ''
+          ]"
           @click="handleDateClick(date)"
         >
+          <!-- 확정 날짜 뱃지 -->
+          <div v-if="date && isConfirmedDate(date)" class="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold shadow z-10">
+            확정
+          </div>
+          
+          <!-- 날짜 숫자 -->
           <span
             v-if="date"
             class="text-sm font-medium"
@@ -193,12 +285,37 @@ const getDayClass = (index, date) => {
               'text-white': isSelected(date),
               'text-sunday': !isSelected(date) && getDayClass(index, date) === 'sunday',
               'text-saturday': !isSelected(date) && getDayClass(index, date) === 'saturday',
-              'text-gray-800': !isSelected(date) && getDayClass(index, date) === '',
               'text-gray-400': !isSelected(date) && isPast(date),
             }"
           >
             {{ date }}
           </span>
+          
+          <!-- 가용 인원 표시 -->
+          <span
+            v-if="date && monthlyAvailability && !isSelected(date) && !isPast(date)"
+            class="text-xs font-semibold mt-0.5"
+          >
+            {{ getAvailability(date)?.availableCount }}/{{ monthlyAvailability.totalMembers }}
+          </span>
+          
+          <!-- 불가능한 멤버 툴팁 -->
+          <div 
+            v-if="date && monthlyAvailability && getUnavailableMembers(date).length > 0"
+            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 shadow-lg"
+          >
+            <div class="font-semibold mb-1">불가능한 멤버</div>
+            <div class="flex flex-col gap-0.5">
+              <span v-for="member in getUnavailableMembers(date)" :key="member">
+                • {{ member }}
+              </span>
+            </div>
+            <!-- 화살표 -->
+            <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-0.5">
+              <div class="border-4 border-transparent border-t-gray-800"></div>
+            </div>
+          </div>
+          
           <div
             v-if="date && isUnavailable(date)"
             class="absolute inset-0 bg-gray-400/20 rounded-lg"
