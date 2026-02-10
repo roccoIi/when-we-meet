@@ -8,15 +8,18 @@ import com.whenwemeet.backend.domain.schedule.dto.request.ScheduleRequest;
 import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeListImpl;
+import com.whenwemeet.backend.domain.schedule.entity.DayType;
 import com.whenwemeet.backend.domain.schedule.entity.UnavailableTime;
 import com.whenwemeet.backend.domain.schedule.repository.ScheduleRepository;
 import com.whenwemeet.backend.domain.schedule.repository.UnavailableRepository;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,7 +37,9 @@ public class ScheduleServiceImpl implements ScheduleService{
     private final UnavailableRepository unavailableRepository;
     private final ScheduleRepository scheduleRepository;
     private final UserMeetingRoomRepository userMeetingRoomRepository;
+    private final EntityManager entityManager;
     private final int PLUSDAYS = 90;
+    private final int MAX_RECOMMEND_COUNT = 5; // 추천 시간대 개수 (추후 10개로 확장 가능)
 
     @Override
     public List<UnavailableTimeList> getAllUnavailableTimeList(String shareCode) {
@@ -53,10 +58,18 @@ public class ScheduleServiceImpl implements ScheduleService{
     @Override
     @Transactional
     public void addIndividualSchedule(Long userId, String shareCode, List<ScheduleRequest> scheduleRequest) {
+
+        // 1) 사용자가 해당 미팅룸에 속해있는지 확인 및 User, MeetingRoom 객체 반환
+        log.info("1) 사용자가 해당 미팅룸에 속해있는지 확인 및 User, MeetingRoom 객체 반환");
         UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomShareCode(userId, shareCode)
                 .orElseThrow(() -> new NotFoundException(M002));
 
+        // 2) 기존의 스케줄은 모두 삭제
+        log.info("// 2) 기존의 스케줄은 모두 삭제");
+        unavailableRepository.clearAllScheduleByUser(umr.getUser().getId(), umr.getMeetingRoom().getId());
 
+        // 3) 새로 들어온 스케줄을 모두 입력
+        log.info("// 3) 새로 들어온 스케줄을 모두 입력");
         List<UnavailableTime> responseList = scheduleRequest.stream()
                 .map(sr -> UnavailableTime.builder()
                         .startDateTime(sr.getStartDateTime())
@@ -65,12 +78,13 @@ public class ScheduleServiceImpl implements ScheduleService{
                         .meetingRoom(umr.getMeetingRoom())
                         .build())
                 .toList();
+
         unavailableRepository.saveAll(responseList);
     }
 
     @Override
-    public List<RecommendList> getRecommendSchedule(String shareCode) {
-        // 1) UserMeetingRoom 검증 (권한 확인)
+    public List<RecommendList> getRecommendSchedule(String shareCode, DayType type) {
+        // 1) MeetingRoom 조회
         MeetingRoom meetingRoom = meetingRoomRepository.findAllByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException(M003));
 
@@ -79,31 +93,77 @@ public class ScheduleServiceImpl implements ScheduleService{
                 .findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(meetingRoom, LocalDateTime.now());
         List<UnavailableTimeList> mergedUnavailableTimes = mergeOverlappingTimeIntervals(unavailableTimes);
 
-        // 3) 가능한 시간대 계산
-        List<RecommendList> availableTimeSlots = new ArrayList<>();
+        // 3) 최적의 시간대 찾기 (MAX_RECOMMEND_COUNT개만)
+        List<RecommendList> recommendedSlots = new ArrayList<>();
         
-        // startDate부터 90일 동안 검색
-        LocalDate currentDate = LocalDate.now().isAfter(meetingRoom.getStartDate()) ? LocalDate.now() : meetingRoom.getStartDate();
+        // MeetingRoom의 startDate부터 90일 동안 검색
+        LocalDate currentDate = LocalDate.now().isAfter(meetingRoom.getStartDate()) 
+                ? LocalDate.now() 
+                : meetingRoom.getStartDate();
         LocalDate endDate = currentDate.plusDays(PLUSDAYS);
         
-        while (!currentDate.isAfter(endDate)) {
-            // 각 날짜의 startTime ~ endTime 범위 생성
+        while (!currentDate.isAfter(endDate) && recommendedSlots.size() < MAX_RECOMMEND_COUNT) {
+            // DayType에 따른 필터링
+            if (!isValidDayType(currentDate, type)) {
+                currentDate = currentDate.plusDays(1);
+                continue;
+            }
+            
+            // MeetingRoom의 startTime ~ endTime 범위 생성
             LocalDateTime dayStart = LocalDateTime.of(currentDate, meetingRoom.getStartTime());
             LocalDateTime dayEnd = LocalDateTime.of(currentDate, meetingRoom.getEndTime());
             
             // 해당 날짜 범위에서 가능한 시간대 계산
             List<RecommendList> dailyAvailableSlots = calculateAvailableSlots(
-                dayStart, dayEnd, mergedUnavailableTimes
+                currentDate, dayStart, dayEnd, mergedUnavailableTimes
             );
             
-            availableTimeSlots.addAll(dailyAvailableSlots);
+            // 해당 날짜의 최적 시간대 선택 (가장 긴 시간대)
+            if (!dailyAvailableSlots.isEmpty()) {
+                RecommendList longestSlot = findLongestTimeSlot(dailyAvailableSlots);
+                recommendedSlots.add(longestSlot);
+            }
+            
             currentDate = currentDate.plusDays(1);
         }
 
-        // 4) 시작 시간 기준 오름차순 정렬
-        availableTimeSlots.sort(Comparator.comparing(RecommendList::getStartDateTime));
+        // 4) 날짜 및 시작 시간 기준 오름차순 정렬
+        recommendedSlots.sort(Comparator
+                .comparing(RecommendList::day)
+                .thenComparing(RecommendList::startTime));
 
-        return availableTimeSlots;
+        log.info("최종 추천 시간대 {}개 반환", recommendedSlots.size());
+        return recommendedSlots;
+    }
+    
+    /**
+     * 시간대 리스트 중 가장 긴 시간대를 찾습니다.
+     * @param timeSlots 시간대 리스트
+     * @return 가장 긴 시간대
+     */
+    private RecommendList findLongestTimeSlot(List<RecommendList> timeSlots) {
+        return timeSlots.stream()
+                .max(Comparator.comparingLong(slot -> 
+                    java.time.Duration.between(slot.startTime(), slot.endTime()).toMinutes()
+                ))
+                .orElse(timeSlots.get(0));
+    }
+    
+    /**
+     * DayType에 따라 해당 날짜가 유효한지 확인합니다.
+     * @param date 확인할 날짜
+     * @param type DayType (ALL, WEEKDAY, WEEKEND)
+     * @return 유효한 날짜면 true, 아니면 false
+     */
+    private boolean isValidDayType(LocalDate date, DayType type) {
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        boolean isWeekend = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
+        
+        return switch (type) {
+            case ALL -> true;
+            case WEEKDAY -> !isWeekend;
+            case WEEKEND -> isWeekend;
+        };
     }
 
     @Override
@@ -119,12 +179,14 @@ public class ScheduleServiceImpl implements ScheduleService{
 
     /**
      * 특정 날짜 범위에서 불가능한 시간대를 제외한 가능한 시간대를 계산합니다.
+     * @param date 계산할 날짜
      * @param dayStart 날짜 범위 시작 시간
      * @param dayEnd 날짜 범위 종료 시간
      * @param unavailableTimes 불가능한 시간대 리스트
      * @return 가능한 시간대 리스트
      */
     private List<RecommendList> calculateAvailableSlots(
+            LocalDate date,
             LocalDateTime dayStart,
             LocalDateTime dayEnd,
             List<UnavailableTimeList> unavailableTimes) {
@@ -143,10 +205,11 @@ public class ScheduleServiceImpl implements ScheduleService{
         
         // 불가능한 시간대가 없으면 전체 범위를 가능한 시간으로 반환
         if (overlappingUnavailable.isEmpty()) {
-            availableSlots.add(RecommendList.builder()
-                    .startDateTime(dayStart)
-                    .endDateTime(dayEnd)
-                    .build());
+            availableSlots.add(new RecommendList(
+                    date,
+                    dayStart.toLocalTime(),
+                    dayEnd.toLocalTime()
+            ));
             return availableSlots;
         }
         
@@ -169,10 +232,11 @@ public class ScheduleServiceImpl implements ScheduleService{
             
             // currentStart부터 불가능한 시간 시작까지가 가능한 시간
             if (currentStart.isBefore(unavailableStart)) {
-                availableSlots.add(RecommendList.builder()
-                        .startDateTime(currentStart)
-                        .endDateTime(unavailableStart)
-                        .build());
+                availableSlots.add(new RecommendList(
+                        date,
+                        currentStart.toLocalTime(),
+                        unavailableStart.toLocalTime()
+                ));
             }
             
             // 다음 가능한 시간 시작점 업데이트
@@ -183,10 +247,11 @@ public class ScheduleServiceImpl implements ScheduleService{
         
         // 마지막 불가능한 시간 이후부터 dayEnd까지가 가능한 시간
         if (currentStart.isBefore(dayEnd)) {
-            availableSlots.add(RecommendList.builder()
-                    .startDateTime(currentStart)
-                    .endDateTime(dayEnd)
-                    .build());
+            availableSlots.add(new RecommendList(
+                    date,
+                    currentStart.toLocalTime(),
+                    dayEnd.toLocalTime()
+            ));
         }
         
         return availableSlots;

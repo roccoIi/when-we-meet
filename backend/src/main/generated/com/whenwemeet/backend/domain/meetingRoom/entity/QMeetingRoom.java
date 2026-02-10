@@ -34,7 +34,7 @@ public class QMeetingRoom extends EntityPathBase<MeetingRoom> {
     //inherited
     public final BooleanPath isDeleted = _super.isDeleted;
 
-    public final DatePath<java.time.LocalDate> meetingDate = createDate("meetingDate", java.time.LocalDate.class);
+    public final DateTimePath<java.time.LocalDateTime> meetingDate = createDateTime("meetingDate", java.time.LocalDateTime.class);
 
     public final NumberPath<Long> memberNumber = createNumber("memberNumber", Long.class);
 

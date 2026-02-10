@@ -3,6 +3,7 @@ package com.whenwemeet.backend.domain.schedule.controller;
 import com.whenwemeet.backend.domain.schedule.dto.request.ScheduleRequest;
 import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
+import com.whenwemeet.backend.domain.schedule.entity.DayType;
 import com.whenwemeet.backend.domain.schedule.service.ScheduleService;
 import com.whenwemeet.backend.global.response.CommonResponse;
 import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
@@ -52,12 +53,13 @@ public class ScheduleController {
         return ResponseEntity.ok(CommonResponse.success());
     }
 
-    @GetMapping("/recommend/{shareCode}")
+    @GetMapping("/recommend/{shareCode}/{type}")
     public ResponseEntity<CommonResponse<?>> getRecommendMeetingSchedule(
-            @PathVariable("shareCode") String shareCode
+            @PathVariable("shareCode") String shareCode,
+            @PathVariable("type") DayType type
     ){
         log.info("[가장 추천되는 날짜 및 시간 반환]");
-        List<RecommendList> response = scheduleService.getRecommendSchedule(shareCode);
+        List<RecommendList> response = scheduleService.getRecommendSchedule(shareCode, type);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
 }

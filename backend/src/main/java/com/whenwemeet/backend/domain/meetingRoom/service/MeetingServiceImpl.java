@@ -111,17 +111,17 @@ public class MeetingServiceImpl implements MeetingService{
 
     @Override
     @Transactional
-    public void updateMeeting(Long userId, MeetingUpdateRequest request) {
+    public void updateMeeting(CustomOAuth2User user, String shareCode, MeetingUpdateRequest request) {
 
         // 1) 요청이 들어온 방이 존재하는지 확인
-        MeetingRoom meetingRoom = meetingRoomRepository.findById(request.getId())
-                .orElseThrow(() -> new NotFoundException(M003));
+        UserMeetingRoom umr = userMeetingRoomRepository.findByUserAndMeetingRoomShareCode(user.getUser(), shareCode)
+                .orElseThrow(() -> new NotFoundException(M002));
 
         // 2) 현재 사용자가 해당 미팅룸의 호스트인지 확인
-        if(hostCheck(userId, meetingRoom.getId())) throw new NotFoundException(M001);
+        if(hostCheck(user.getId(), umr.getMeetingRoom().getId())) throw new NotFoundException(M001);
 
         // 3) 설정 변경 진행
-        meetingRoom.changeSetting(request.getName(), request.getMeetingDate());
+        umr.getMeetingRoom().changeSetting(request.getName(), request.getMeetingDate());
     }
 
     @Override

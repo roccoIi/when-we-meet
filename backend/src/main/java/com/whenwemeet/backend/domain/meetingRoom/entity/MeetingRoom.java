@@ -42,14 +42,14 @@ public class MeetingRoom extends BaseEntity {
     private LocalTime endTime = LocalTime.of(23, 59, 59);
 
     @Column(name = "meeting_date")
-    private LocalDate meetingDate;
+    private LocalDateTime meetingDate;
 
     @Column(name = "share_code")
     private String shareCode;
 
-    public void changeSetting(String name, LocalDate meetingDate){
+    public void changeSetting(String name, LocalDateTime meetingDate){
         if(name != null) this.name = name;
-        if(meetingDate != null) this.meetingDate = meetingDate;
+        this.meetingDate = meetingDate;
     }
 
     public void addMember(){

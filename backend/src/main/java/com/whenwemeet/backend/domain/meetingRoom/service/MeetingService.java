@@ -22,7 +22,7 @@ public interface MeetingService {
 
     CreateMeetingResponse addMeeting(CustomOAuth2User user, MeetingCreateRequest request, HttpServletResponse response);
 
-    void updateMeeting(Long userId, MeetingUpdateRequest request);
+    void updateMeeting(CustomOAuth2User user, String shareCode, MeetingUpdateRequest request);
 
     void deleteMeeting(Long userId, Long roomId);
 

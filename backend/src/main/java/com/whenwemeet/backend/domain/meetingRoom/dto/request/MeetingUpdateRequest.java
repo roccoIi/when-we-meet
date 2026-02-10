@@ -1,14 +1,15 @@
 package com.whenwemeet.backend.domain.meetingRoom.dto.request;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
-public class MeetingUpdateRequest {
-
-    private Long id;
-    private String name;
-    private LocalDate meetingDate;
+@AllArgsConstructor
+public class MeetingUpdateRequest{
+    private final String name;
+    private final LocalDateTime meetingDate;
 
 }
+

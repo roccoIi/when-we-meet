@@ -18,6 +18,8 @@ public interface UserMeetingRoomRepository extends JpaRepository<UserMeetingRoom
 
     Optional<UserMeetingRoom> findByUserIdAndMeetingRoomShareCode(Long userId, String shareCode);
 
+    Optional<UserMeetingRoom> findByUserAndMeetingRoomShareCode(User user, String shareCode);
+
     List<UserMeetingRoom> findAllByUser(User user);
 
     // from절 서브쿼리가 더 성능이 좋을 것으로 생각되어 우선 sql문으로 작성

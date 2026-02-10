@@ -52,13 +52,14 @@ public class MeetingController {
         return ResponseEntity.ok(CommonResponse.success(response));
     }
 
-    @PutMapping()
+    @PutMapping("{shareCode}")
     public ResponseEntity<CommonResponse<?>> updateMeeting(
             @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable("shareCode") String shareCode,
             @RequestBody MeetingUpdateRequest meetingUpdateRequest)
     {
         log.info("[미팅 수정]");
-        meetingService.updateMeeting(user.getId(), meetingUpdateRequest);
+        meetingService.updateMeeting(user, shareCode, meetingUpdateRequest);
         return ResponseEntity.ok(CommonResponse.success());
     }
 
