@@ -3,11 +3,12 @@ package com.whenwemeet.backend.domain.user.repository.custom;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.whenwemeet.backend.domain.user.dto.response.UserInfoResponse;
-import static com.whenwemeet.backend.domain.user.entity.QUser.user;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+
+import static com.whenwemeet.backend.domain.user.entity.QUser.user;
 
 @Repository
 @AllArgsConstructor
@@ -18,10 +19,12 @@ public class UserCustomRepositoryImpl implements UserCustomRepository{
     @Override
     public Optional<UserInfoResponse> findInfoByUserId(Long userId) {
         return Optional.ofNullable(factory
-                .select(Projections.constructor(UserInfoResponse.class
-                    ,user.nickname
-                    ,user.provider
-                    ,user.profileImgUrl))
+                .select(Projections.constructor(
+                    UserInfoResponse.class,
+                    user.nickname,
+                    user.provider,
+                    user.profileImgUrl
+                ))
                 .from(user)
                 .where(user.id.eq(userId))
                 .fetchOne());

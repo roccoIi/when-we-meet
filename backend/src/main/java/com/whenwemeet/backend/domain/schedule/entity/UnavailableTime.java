@@ -5,7 +5,8 @@ import com.whenwemeet.backend.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @Getter
@@ -21,10 +22,13 @@ public class UnavailableTime {
     private String detail;
 
     @Column(nullable = false)
-    private LocalDateTime startDateTime;
+    private LocalDate unavailableDate;
 
     @Column(nullable = false)
-    private LocalDateTime endDateTime;
+    private LocalTime unavailableStartTime;
+
+    @Column(nullable = false)
+    private LocalTime unavailableEndTime;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private User user;

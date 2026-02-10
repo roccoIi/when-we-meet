@@ -2,10 +2,12 @@ package com.whenwemeet.backend.domain.schedule.dto.request;
 
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
-public class ScheduleRequest {
-    private LocalDateTime startDateTime;
-    private LocalDateTime endDateTime;
-}
+public record ScheduleRequest(
+        LocalDate unavailableDate,
+        LocalTime unavailableStartTime,
+        LocalTime unavailableEndTime
+) {}

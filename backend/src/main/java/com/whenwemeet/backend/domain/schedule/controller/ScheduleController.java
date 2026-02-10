@@ -1,6 +1,7 @@
 package com.whenwemeet.backend.domain.schedule.controller;
 
 import com.whenwemeet.backend.domain.schedule.dto.request.ScheduleRequest;
+import com.whenwemeet.backend.domain.schedule.dto.response.AvailableMemberListResponse;
 import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.entity.DayType;
@@ -23,13 +24,15 @@ public class ScheduleController {
 
     private final ScheduleService scheduleService;
 
-    @GetMapping("/unavailable/{shareCode}")
+    @GetMapping("/available/{shareCode}")
     public ResponseEntity<CommonResponse<?>> getMeetingSchedule(
-            @PathVariable("shareCode") String shareCode
+            @PathVariable("shareCode") String shareCode,
+            @RequestParam("year") int year,
+            @RequestParam("month") int month
     ){
-        log.info("[현재 미팅룸에 저장된 불가능한 시간 리스트 반환]");
-        List<UnavailableTimeList> response = scheduleService.getAllUnavailableTimeList(shareCode);
-        return ResponseEntity.ok(CommonResponse.success(response));
+        log.info("[월별 멤버 가용성 조회] shareCode: {}, year: {}, month: {}", shareCode, year, month);
+//        AvailableMemberListResponse response = scheduleService.getAllUnavailableTimeList(shareCode, year, month);
+        return ResponseEntity.ok(CommonResponse.success());
     }
 
     @GetMapping("/my/{shareCode}")
@@ -62,4 +65,6 @@ public class ScheduleController {
         List<RecommendList> response = scheduleService.getRecommendSchedule(shareCode, type);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
+
+
 }

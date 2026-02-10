@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -16,7 +17,9 @@ public class MeetingRoomInfoResponse {
 
     private String name;
     private Long memberNumber;
+    private LocalDateTime meetingDate;
     private List<UserInfoResponse> info;
+
 }
 
 

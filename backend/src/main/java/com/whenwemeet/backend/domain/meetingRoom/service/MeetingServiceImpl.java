@@ -121,7 +121,7 @@ public class MeetingServiceImpl implements MeetingService{
         if(hostCheck(user.getId(), umr.getMeetingRoom().getId())) throw new NotFoundException(M001);
 
         // 3) 설정 변경 진행
-        umr.getMeetingRoom().changeSetting(request.getName(), request.getMeetingDate());
+        umr.getMeetingRoom().changeSetting(request.name(), request.meetingDate());
     }
 
     @Override
@@ -187,6 +187,7 @@ public class MeetingServiceImpl implements MeetingService{
         return MeetingRoomInfoResponse.builder()
                 .name(meetingRoom.getName())
                 .memberNumber(meetingRoom.getMemberNumber())
+                .meetingDate(meetingRoom.getMeetingDate())
                 .info(infos)
                 .build();
     }

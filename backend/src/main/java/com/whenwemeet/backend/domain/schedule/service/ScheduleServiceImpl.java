@@ -5,6 +5,7 @@ import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.repository.MeetingRoomRepository;
 import com.whenwemeet.backend.domain.meetingRoom.repository.UserMeetingRoomRepository;
 import com.whenwemeet.backend.domain.schedule.dto.request.ScheduleRequest;
+import com.whenwemeet.backend.domain.schedule.dto.response.AvailableMemberListResponse;
 import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeListImpl;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -42,17 +44,36 @@ public class ScheduleServiceImpl implements ScheduleService{
     private final int MAX_RECOMMEND_COUNT = 5; // 추천 시간대 개수 (추후 10개로 확장 가능)
 
     @Override
-    public List<UnavailableTimeList> getAllUnavailableTimeList(String shareCode) {
+    public AvailableMemberListResponse getMonthlyAvailableMemberList(String shareCode, int year, int month) {
         // 1) 미팅룸 조회
         MeetingRoom room = meetingRoomRepository.findAllByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException(M003));
 
-        // 2) 오늘 날짜 이후의 모든 불가능한 시간대 조회
-        List<UnavailableTimeList> times = unavailableRepository
-                .findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(room, LocalDateTime.now());
+        // 2) 미팅룸에 속한 전체 맴버 조회
+        List<UserMeetingRoom> allMembers = userMeetingRoomRepository.findAllByMeetingRoom(room);
+        List<String> allMembersNickname = allMembers.stream()
+                .map((umr) -> umr.getUser().getNickname())
+                .toList();
 
-        // 3) Sweepline 알고리즘을 사용하여 중복되는 시간대 병합
-        return mergeOverlappingTimeIntervals(times);
+        // 3) 월별 시작 및 종료 날짜 정의
+        LocalDate startOfMonth = LocalDate.of(year, month, 1);
+        LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+
+        // 3-1) startofMonth가 해당 미팅룸의 모임 시작날짜보다 빠르다면 미팅룸의 시작날짜로 변경
+        startOfMonth = startOfMonth.isBefore(room.getStartDate()) ? room.getStartDate() : startOfMonth;
+
+        // 3-2) 시작날짜와 종료날짜에 각 시간을 더합니다. (02/12~02/28 -> 02/12 18:00 ~ 02/28 24:00)
+
+        log.info("모임 탐색은 {} 부터 {}까지 진행됩니다.", startOfMonth, endOfMonth);
+
+        // 4) 해당 기간동안 불가능한 사용자를 조회합니다.
+        // TODO: QueryDSL Q클래스 생성 후 구현 예정
+        
+        // 임시 반환값
+        return new AvailableMemberListResponse(
+                allMembers.size(),
+                List.of()
+        );
     }
 
     @Override
@@ -72,8 +93,9 @@ public class ScheduleServiceImpl implements ScheduleService{
         log.info("// 3) 새로 들어온 스케줄을 모두 입력");
         List<UnavailableTime> responseList = scheduleRequest.stream()
                 .map(sr -> UnavailableTime.builder()
-                        .startDateTime(sr.getStartDateTime())
-                        .endDateTime(sr.getEndDateTime())
+                        .unavailableDate(sr.getUnavailableDate())
+                        .unavailableStartTime(sr.getUnavailableStartTime())
+                        .unavailableEndTime(sr.getUnavailableEndTime())
                         .user(umr.getUser())
                         .meetingRoom(umr.getMeetingRoom())
                         .build())
@@ -89,16 +111,18 @@ public class ScheduleServiceImpl implements ScheduleService{
                 .orElseThrow(() -> new NotFoundException(M003));
 
         // 2) 불가능한 시간대 병합
+        LocalDate today = LocalDate.now();
+        LocalTime currentTime = LocalTime.now();
         List<UnavailableTimeList> unavailableTimes = unavailableRepository
-                .findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(meetingRoom, LocalDateTime.now());
+                .findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(meetingRoom, today, currentTime);
         List<UnavailableTimeList> mergedUnavailableTimes = mergeOverlappingTimeIntervals(unavailableTimes);
 
         // 3) 최적의 시간대 찾기 (MAX_RECOMMEND_COUNT개만)
         List<RecommendList> recommendedSlots = new ArrayList<>();
         
         // MeetingRoom의 startDate부터 90일 동안 검색
-        LocalDate currentDate = LocalDate.now().isAfter(meetingRoom.getStartDate()) 
-                ? LocalDate.now() 
+        LocalDate currentDate = today.isAfter(meetingRoom.getStartDate()) 
+                ? today 
                 : meetingRoom.getStartDate();
         LocalDate endDate = currentDate.plusDays(PLUSDAYS);
         

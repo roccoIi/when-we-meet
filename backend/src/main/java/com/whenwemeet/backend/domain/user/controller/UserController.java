@@ -31,6 +31,7 @@ public class UserController {
             @AuthenticationPrincipal CustomOAuth2User user) {
         log.info("[GET] api/user/info");
         if(user == null) return ResponseEntity.ok(CommonResponse.success());
+        log.info("[GET] api/user/info -> 사용자 정보 반환시작");
         UserInfoResponse response = userService.getUserInfo(user.getId());
         return ResponseEntity.ok(CommonResponse.success(response));
     }
