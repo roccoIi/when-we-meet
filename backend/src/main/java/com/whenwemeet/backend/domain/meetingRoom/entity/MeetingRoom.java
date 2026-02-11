@@ -46,10 +46,13 @@ public class MeetingRoom extends BaseEntity {
 
     @Column(name = "share_code")
     private String shareCode;
-
-    public void changeSetting(String name, LocalDateTime meetingDate){
+    
+    public void changeSetting(String name, LocalDateTime meetingDate, LocalDate startDate, LocalTime startTime, LocalTime endTime){
         if(name != null) this.name = name;
         this.meetingDate = meetingDate;
+        if(startDate != null) this.startDate = startDate;
+        if(startTime != null) this.startTime = startTime;
+        if(endTime != null) this.endTime = endTime;
     }
 
     public void addMember(){

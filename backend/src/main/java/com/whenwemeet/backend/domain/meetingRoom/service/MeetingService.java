@@ -30,6 +30,6 @@ public interface MeetingService {
 
     void enterMeetingRoom(Long userId, String shareCode);
 
-    MeetingRoomInfoResponse getMeetingRoomInfoByShareCode(String shareCode);
+    MeetingRoomInfoResponse getMeetingRoomInfoByShareCode(CustomOAuth2User user, String shareCode);
 
 }

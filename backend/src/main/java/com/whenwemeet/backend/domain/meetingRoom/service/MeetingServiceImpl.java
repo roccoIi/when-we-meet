@@ -120,8 +120,14 @@ public class MeetingServiceImpl implements MeetingService{
         // 2) 현재 사용자가 해당 미팅룸의 호스트인지 확인
         if(hostCheck(user.getId(), umr.getMeetingRoom().getId())) throw new NotFoundException(M001);
 
-        // 3) 설정 변경 진행
-        umr.getMeetingRoom().changeSetting(request.name(), request.meetingDate());
+        // 3) 설정 변경 진행 (모든 필드 지원)
+        umr.getMeetingRoom().changeSetting(
+                request.name(),
+                request.meetingDate(),
+                request.startDate(),
+                request.startTime(),
+                request.endTime()
+        );
     }
 
     @Override
@@ -137,8 +143,8 @@ public class MeetingServiceImpl implements MeetingService{
 
     @Override
     public EnterShareLinkResponse getMeetingRoomSummary(String code) {
-        return meetingRoomRepository.findByShareCode(code)
-                .orElseThrow(() -> new NotFoundException(M003));
+        return meetingRoomRepository.findNameAndMemberNumberByShareCode(code)
+                .orElseThrow(() -> new NotFoundException(M005));
     }
 
     @Override
@@ -174,22 +180,37 @@ public class MeetingServiceImpl implements MeetingService{
     }
 
     @Override
-    public MeetingRoomInfoResponse getMeetingRoomInfoByShareCode(String shareCode) {
+    public MeetingRoomInfoResponse getMeetingRoomInfoByShareCode(CustomOAuth2User user, String shareCode) {
         
         // 1) shareCode로 MeetingRoom 조회
-        MeetingRoom meetingRoom = meetingRoomRepository.findAllByShareCode(shareCode)
+        MeetingRoom mr = meetingRoomRepository.findAllByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException(M003));
         
         // 2) 해당 미팅룸에 속한 모든 User의 nickname 조회
         List<UserInfoResponse> infos = userMeetingRoomRepository.findNicknamesByShareCode(shareCode);
+
+        // 3) 현재 사용자의 권한 파싱
+        Role umr = Role.MEMBER;
+        if(user != null) {
+            UserMeetingRoom userMeetingRoom = userMeetingRoomRepository
+                    .findByUserIdAndMeetingRoomShareCode(user.getId(), shareCode)
+                    .orElse(null);
+            if(userMeetingRoom != null) {
+                umr = userMeetingRoom.getRole();
+            }
+        }
         
         // 3) 응답 DTO 생성
-        return MeetingRoomInfoResponse.builder()
-                .name(meetingRoom.getName())
-                .memberNumber(infos.size())
-                .meetingDate(meetingRoom.getMeetingDate())
-                .info(infos)
-                .build();
+        return new MeetingRoomInfoResponse(
+                mr.getName(),
+                umr,
+                infos.size(),
+                mr.getMeetingDate(),
+                infos,
+                mr.getStartDate(),
+                mr.getStartTime(),
+                mr.getEndTime()
+        );
     }
 
 

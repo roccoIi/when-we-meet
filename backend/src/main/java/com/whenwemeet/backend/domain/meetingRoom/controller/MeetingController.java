@@ -65,10 +65,11 @@ public class MeetingController {
 
     @GetMapping("{shareCode}")
     public ResponseEntity<CommonResponse<?>> getMeetingRoomInfoByShareCode(
+            @AuthenticationPrincipal CustomOAuth2User user,
             @PathVariable("shareCode") String shareCode
     ){
         log.info("[미팅룸 정보 반환] shareCode={}", shareCode);
-        MeetingRoomInfoResponse response = meetingService.getMeetingRoomInfoByShareCode(shareCode);
+        MeetingRoomInfoResponse response = meetingService.getMeetingRoomInfoByShareCode(user, shareCode);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
 
