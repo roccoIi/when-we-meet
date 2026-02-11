@@ -1,6 +1,7 @@
-package com.whenwemeet.backend.domain.user.entity;
+package com.whenwemeet.backend.domain.schedule.entity;
 
 import com.whenwemeet.backend.domain.meetingRoom.entity.enumType.DayType;
+import com.whenwemeet.backend.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -3,7 +3,6 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/user";
 import { useMeetingsStore } from "../stores/meetings";
-import MeetingCard from "../components/MeetingCard.vue";
 import { meetingAPI } from "../services";
 
 const router = useRouter();
@@ -11,46 +10,106 @@ const userStore = useUserStore();
 const meetingsStore = useMeetingsStore();
 
 const isLoading = ref(false);
-const isLoadingMore = ref(false); // 추가 로딩 상태
-const showSortTypeMenu = ref(false);
+const isLoadingMore = ref(false);
+const searchQuery = ref("");
 
 // 정렬 기준 (type)
-const sortType = ref("JOIN_DATE"); // 기본값: 참여날짜
+const sortType = ref("JOIN_DATE"); // 기본값: Join At
 const sortOrder = ref("DESC"); // 기본값: 내림차순
 
 // 페이지네이션
 const currentPage = ref(1);
 const pageLimit = ref(10);
-const hasMore = ref(true); // 더 불러올 데이터가 있는지
+const hasMore = ref(true);
 
 // 무한 스크롤을 위한 감지 요소
 const loadMoreTrigger = ref(null);
 
-// 정렬 기준 옵션
-const sortTypeOptions = [
-  { value: "NAME", label: "이름" },
-  { value: "JOIN_DATE", label: "참여날짜" },
-  { value: "MEETING_DATE", label: "D-day" },
-];
-
-const currentSortTypeLabel = computed(() => {
-  return (
-    sortTypeOptions.find((opt) => opt.value === sortType.value)?.label ||
-    "참여날짜"
-  );
-});
+// 정렬 기준 매핑
+const sortTypeMapping = {
+  "JOIN_DATE": "joinAt",
+  "NAME": "name", 
+  "MEETING_DATE": "dday"
+};
 
 // 정렬 순서 토글
 const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === "ASC" ? "DESC" : "ASC";
-  loadMeetings(true); // 정렬 변경 시 첫 페이지부터 다시 로드
+  loadMeetings(true);
+};
+
+// D-day 계산
+const calculateDday = (meetingDate) => {
+  if (!meetingDate) return null;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const meeting = new Date(meetingDate);
+  meeting.setHours(0, 0, 0, 0);
+  
+  const diffTime = meeting - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return "D-Day";
+  if (diffDays > 0) return `D-${diffDays}`;
+  return `D+${Math.abs(diffDays)}`;
+};
+
+// D-day 색상
+const getDdayColor = (meetingDate) => {
+  if (!meetingDate) return 'peach-accent/20';
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const meeting = new Date(meetingDate);
+  meeting.setHours(0, 0, 0, 0);
+  
+  const diffTime = meeting - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= 0) return 'soft-pink/20';
+  if (diffDays <= 3) return 'mint-primary/80';
+  if (diffDays <= 7) return 'mint-light/60';
+  return 'mint-light/60';
+};
+
+// 날짜 포맷
+const formatDate = (dateString) => {
+  if (!dateString) return 'TBD';
+  
+  const date = new Date(dateString);
+  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  const day = date.getDate();
+  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  
+  return `${month} ${day}, ${time}`;
 };
 
 onMounted(async () => {
-  // 임시 로그인 상태 (실제로는 토큰 체크 등으로 확인)
-  if (!userStore.isLoggedIn) {
-    userStore.login({ id: 1, nickname: "" }); // 닉네임 없으면 모달 자동 표시
+  // App.vue의 초기화가 완료될 때까지 대기
+  if (!userStore.isInitialized) {
+    console.log('⏳ [MeetingList] 초기화 대기 중...')
+    // 초기화 완료를 기다림 (최대 5초)
+    let attempts = 0
+    const maxAttempts = 50 // 5초 (100ms * 50)
+    
+    while (!userStore.isInitialized && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      attempts++
+    }
+    
+    if (userStore.isInitialized) {
+      console.log('✅ [MeetingList] 초기화 완료, 모임 로드 시작')
+    } else {
+      console.log('⚠️ [MeetingList] 초기화 타임아웃')
+    }
   }
+
+  // 디버깅: 사용자 정보 확인
+  console.log('👤 [MeetingList] 현재 사용자 정보:');
+  console.log('  - isLoggedIn:', userStore.isLoggedIn);
+  console.log('  - nickname:', userStore.nickname);
+  console.log('  - profileImgUrl:', userStore.profileImgUrl);
 
   await loadMeetings();
   setupInfiniteScroll();
@@ -159,130 +218,224 @@ const handleSortTypeChange = (typeValue) => {
   loadMeetings(true); // 정렬 변경 시 첫 페이지부터 다시 로드
 };
 
-// Store의 정렬 기능 대신 API 정렬 사용
-const sortedMeetings = computed(() => meetingsStore.meetings);
+// 검색 필터링된 모임 목록
+const filteredMeetings = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return meetingsStore.meetings;
+  }
+  
+  const query = searchQuery.value.toLowerCase();
+  return meetingsStore.meetings.filter(meeting => 
+    meeting.name.toLowerCase().includes(query)
+  );
+});
+
+// 현재 시간 (상태바용)
+const currentTime = ref(new Date().toLocaleTimeString('en-US', { 
+  hour: '2-digit', 
+  minute: '2-digit',
+  hour12: false 
+}));
+
+// 1분마다 시간 업데이트
+setInterval(() => {
+  currentTime.value = new Date().toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false 
+  });
+}, 60000);
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 pb-20">
-    <!-- 헤더: 정렬 옵션 + 제목 -->
-    <div class="bg-gray-100 px-6 pt-6 pb-4 border-b border-gray-200">
-      <div class="flex justify-between items-center gap-4">
-        <!-- 정렬 옵션 (좌측) -->
-        <div class="flex items-center gap-2">
-          <!-- 정렬 기준 선택 -->
-          <div class="relative">
-            <button
-              class="px-3 py-2 bg-white border border-gray-300 rounded-lg flex items-center gap-2 cursor-pointer text-sm text-gray-700 transition-all hover:border-primary hover:text-primary"
-              @click="showSortTypeMenu = !showSortTypeMenu"
-            >
-              <span>{{ currentSortTypeLabel }}</span>
-              <span class="text-xs">▼</span>
-            </button>
-
-            <!-- 정렬 기준 드롭다운 -->
-            <div
-              v-if="showSortTypeMenu"
-              class="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden min-w-[120px] z-10"
-            >
-              <button
-                v-for="option in sortTypeOptions"
-                :key="option.value"
-                class="block w-full px-4 py-3 border-none bg-white text-left cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-100"
-                :class="{
-                  'text-primary font-semibold bg-blue-50':
-                    sortType === option.value,
-                }"
-                @click="handleSortTypeChange(option.value)"
-              >
-                {{ option.label }}
-              </button>
-            </div>
-          </div>
-
-          <!-- 정렬 순서 토글 버튼 -->
-          <button
-            class="w-10 h-10 bg-white border border-gray-300 rounded-lg flex items-center justify-center cursor-pointer transition-all hover:border-primary hover:bg-blue-50"
-            @click="toggleSortOrder"
-            :title="sortOrder === 'ASC' ? '오름차순' : '내림차순'"
+  <div class="bg-background-light font-display text-gray-800 min-h-screen flex flex-col overflow-hidden relative">
+    <!-- Search and Sort Section (sticky) -->
+    <div class="sticky top-0 z-30 px-6 pb-1 pt-6 bg-background-light/95 backdrop-blur-sm transition-all duration-300">
+      <!-- Title and Profile -->
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight text-slate-700">My Schedules</h1>
+          <p class="text-sm text-text-sub font-medium">Coordinate your sweet meetups</p>
+        </div>
+        
+        <!-- Login Button or Profile Picture -->
+        <div v-if="!userStore.provider" class="flex-shrink-0">
+          <button 
+            @click="$router.push('/login')"
+            class="px-4 py-2 bg-primary hover:bg-primary-dark text-gray-800 font-bold text-sm rounded-xl shadow-soft transition-all flex items-center gap-2"
           >
-            <span v-if="sortOrder === 'ASC'" class="text-lg">↑</span>
-            <span v-else class="text-lg">↓</span>
+            <span class="material-icons text-lg">login</span>
+            <span>로그인</span>
           </button>
         </div>
+        
+        <button v-else @click="userStore.openNicknameModal()" class="relative group flex-shrink-0">
+          <div class="absolute inset-0 bg-primary rounded-full blur opacity-40 group-hover:opacity-60 transition-opacity"></div>
+          <img 
+            v-if="userStore.profileImgUrl"
+            :src="userStore.profileImgUrl" 
+            :alt="userStore.nickname || 'User'"
+            class="relative w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm"
+          />
+          <div v-else class="relative w-11 h-11 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
+            <span class="material-icons text-gray-800">person</span>
+          </div>
+        </button>
+      </div>
 
-        <!-- 제목 (우측) -->
-        <h2 class="text-lg font-semibold text-gray-800 whitespace-nowrap">
-          <span class="text-primary">{{ userStore.nickname }}</span> 님의 모임
-          목록
-        </h2>
+      <!-- Search Bar -->
+      <div class="relative mb-3 group">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <span class="material-icons text-mint-dark/80">search</span>
+        </div>
+        <input 
+          v-model="searchQuery"
+          class="block w-full pl-11 pr-4 py-3.5 border-none rounded-2xl leading-5 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-soft transition-all" 
+          placeholder="모임 이름 검색..." 
+          type="text"
+        />
+      </div>
+
+      <!-- Sort Controls -->
+      <div class="flex items-center justify-between pb-2 px-1">
+        <div class="flex items-center gap-2">
+          <div class="relative group">
+            <select 
+              v-model="sortType"
+              @change="loadMeetings(true)"
+              class="appearance-none bg-white text-slate-600 font-bold text-sm py-2.5 pl-4 pr-10 rounded-xl shadow-sm border border-transparent focus:ring-2 focus:ring-primary/30 focus:outline-none cursor-pointer hover:bg-gray-50 transition-colors w-32"
+            >
+              <option value="JOIN_DATE">Join At</option>
+              <option value="NAME">Name</option>
+              <option value="MEETING_DATE">D-Day</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-mint-dark">
+              <span class="material-icons text-sm">expand_more</span>
+            </div>
+          </div>
+          <button 
+            @click="toggleSortOrder"
+            class="flex items-center justify-center w-10 h-10 bg-white text-primary-dark rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all group border border-transparent hover:border-primary/20"
+          >
+            <span class="material-icons text-xl group-hover:scale-110 transition-transform" :class="sortOrder === 'ASC' ? '' : 'transform rotate-180'">sort</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="px-5 py-4">
-      <div v-if="isLoading" class="text-center py-10 text-gray-600">
-        로딩 중...
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto px-6 pt-2 pb-28 no-scrollbar space-y-5">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="text-center py-10">
+        <div class="w-12 h-12 border-4 border-mint-primary/20 border-t-mint-primary rounded-full animate-spin mx-auto"></div>
+        <p class="mt-4 text-text-sub">로딩 중...</p>
       </div>
 
-      <div
-        v-else-if="sortedMeetings.length === 0"
-        class="text-center py-15 text-gray-400"
-      >
-        <p>아직 참여한 모임이 없습니다</p>
-        <p class="mt-2 text-sm">새로운 모임을 만들어보세요!</p>
+      <!-- Empty State -->
+      <div v-else-if="filteredMeetings.length === 0" class="text-center py-20 text-text-sub">
+        <span class="material-icons text-6xl mb-4 text-mint-primary/30">event_busy</span>
+        <p class="text-lg font-semibold mb-2">아직 참여한 모임이 없습니다</p>
+        <p class="text-sm">새로운 모임을 만들어보세요!</p>
       </div>
 
-      <div v-else class="flex flex-col">
-        <MeetingCard
-          v-for="meeting in sortedMeetings"
+      <!-- Meeting Cards -->
+      <div v-else>
+        <div
+          v-for="meeting in filteredMeetings"
           :key="meeting.id"
-          :meeting="meeting"
           @click="handleMeetingClick(meeting)"
-        />
+          class="bg-white rounded-3xl p-5 border border-gray-100 shadow-soft hover:shadow-soft-hover transition-all duration-300 relative group cursor-pointer mb-5"
+          :class="meeting.meetingDate ? 'bg-gradient-to-br from-white to-gray-50' : ''"
+        >
+          <!-- Decorative Blobs (only for confirmed meetings) -->
+          <div v-if="meeting.meetingDate" class="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-3xl"></div>
+          <div v-if="meeting.meetingDate" class="absolute bottom-0 left-0 w-24 h-24 bg-tertiary/30 rounded-full blur-2xl"></div>
 
-        <!-- 무한 스크롤 트리거 -->
-        <div ref="loadMoreTrigger" class="h-10"></div>
+          <div class="relative z-10">
+            <div class="flex justify-between items-start mb-3">
+              <div class="flex flex-col flex-1">
+                <h3 class="text-lg font-bold text-slate-700 mb-1">{{ meeting.name }}</h3>
+                <div class="flex items-center gap-1.5 text-xs font-semibold mt-1">
+                  <div v-if="meeting.meetingDate" class="flex items-center gap-1.5 text-slate-500">
+                    <div class="w-2 h-2 rounded-full bg-primary"></div>
+                    <span>확정됨</span>
+                  </div>
+                  <div v-else class="flex items-center gap-1.5 text-text-sub">
+                    <span class="material-icons text-sm text-mint-dark">how_to_vote</span>
+                    <span>투표 진행 중</span>
+                  </div>
+                </div>
+              </div>
+              <div 
+                v-if="calculateDday(meeting.meetingDate)"
+                class="font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm border backdrop-blur-sm"
+                :class="meeting.meetingDate 
+                  ? 'bg-white/80 text-primary-dark border-primary/20' 
+                  : 'bg-tertiary/20 text-slate-600 border-transparent'"
+              >
+                {{ calculateDday(meeting.meetingDate) }}
+              </div>
+            </div>
 
-        <!-- 추가 로딩 인디케이터 -->
-        <div v-if="isLoadingMore" class="text-center py-6">
-          <div
-            class="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"
-          ></div>
-          <p class="mt-2 text-sm text-gray-600">추가 로딩 중...</p>
+            <!-- Meeting Date -->
+            <div class="flex items-center gap-1.5 mb-4 text-sm font-medium">
+              <span class="material-icons text-base text-slate-400">event</span>
+              <span class="text-slate-600">{{ formatDate(meeting.meetingDate) }}</span>
+            </div>
+
+            <!-- Participants and Member Count -->
+            <div class="flex items-center justify-between">
+              <!-- Participants (placeholder - actual data from API if available) -->
+              <div v-if="meeting.memberNumber > 0" class="flex -space-x-3 overflow-hidden">
+                <div 
+                  v-for="n in Math.min(3, meeting.memberNumber)" 
+                  :key="n"
+                  class="h-9 w-9 rounded-full ring-2 ring-white bg-gradient-to-br from-primary/30 to-tertiary/30 flex items-center justify-center text-xs font-bold text-slate-600 shadow-sm"
+                >
+                  {{ n }}
+                </div>
+                <div 
+                  v-if="meeting.memberNumber > 3"
+                  class="h-9 w-9 rounded-full ring-2 ring-white bg-tertiary/30 flex items-center justify-center text-xs font-bold text-slate-600 shadow-sm"
+                >
+                  +{{ meeting.memberNumber - 3 }}
+                </div>
+              </div>
+
+              <!-- Total Member Count -->
+              <div class="flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-lg">
+                <span class="material-icons text-base text-slate-400">group</span>
+                <span class="text-slate-600 font-bold">{{ meeting.memberNumber || 0 }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- 더 이상 데이터 없음 -->
-        <div
-          v-if="!hasMore && sortedMeetings.length > 0"
-          class="text-center py-6 text-gray-400 text-sm"
-        >
+        <!-- Infinite Scroll Trigger -->
+        <div ref="loadMoreTrigger" class="h-10"></div>
+
+        <!-- Loading More -->
+        <div v-if="isLoadingMore" class="py-4 flex justify-center">
+          <div class="w-8 h-8 border-4 border-mint-primary/20 border-t-mint-primary rounded-full animate-spin"></div>
+        </div>
+
+        <!-- No More Data -->
+        <div v-if="!hasMore && filteredMeetings.length > 0" class="text-center py-6 text-text-sub text-sm">
           모든 모임을 불러왔습니다
         </div>
       </div>
-    </div>
+    </main>
 
-    <!-- ========== 테스트용 버튼 (나중에 삭제) ========== -->
-    <div class="p-4">
-      <button
-        @click="testAPI"
-        class="w-full py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
-      >
-        🧪 API 테스트 (401 인터셉터 확인)
-      </button>
-    </div>
-    <!-- ========== 테스트용 버튼 끝 ========== -->
-
-    <!-- 새 모임 버튼 (하단 고정) -->
-    <div
-      class="fixed bottom-0 left-0 right-0 max-w-app mx-auto px-5 py-4 bg-white border-t border-gray-300"
-    >
-      <button
-        class="w-full px-6 py-3 bg-primary text-white border-none rounded-lg text-base font-semibold cursor-pointer flex items-center justify-center gap-1.5 transition-colors hover:bg-primary-dark active:scale-95"
-        @click="handleCreateMeeting"
-      >
-        <span class="text-xl font-bold">+</span>
-        <span>새 모임</span>
-      </button>
+    <!-- FAB (Floating Action Button) -->
+    <div class="fixed bottom-8 right-0 left-0 z-50 max-w-app mx-auto px-6 pointer-events-none">
+      <div class="flex justify-end pointer-events-auto">
+        <button 
+          @click="handleCreateMeeting"
+          class="w-16 h-16 bg-primary rounded-full shadow-lg shadow-primary/40 flex items-center justify-center text-gray-800 hover:scale-105 active:scale-95 transition-all duration-300 group border-2 border-white"
+        >
+          <span class="material-icons text-3xl group-hover:rotate-90 transition-transform duration-300 text-slate-700">add</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>

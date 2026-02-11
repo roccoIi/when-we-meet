@@ -54,19 +54,23 @@ public class JwtUtil {
     /**
      * Access Token 생성
      */
-    public String generateAccessToken(Authentication authentication) {
-        return createToken(authentication, ACCESS_TOKEN_EXPIRE_TIME);
+    public String generateAccessToken(Long userId) {
+        return createToken(userId, ACCESS_TOKEN_EXPIRE_TIME);
+    }
+
+    public void generateAccessToken(Long userId, HttpServletResponse response) {
+        String token = createToken(userId, ACCESS_TOKEN_EXPIRE_TIME);
+        response.setHeader("Authorization", "Bearer " + token);
     }
 
     /**
      * Refresh Token 생성 및 쿠키 저장
      */
-    public void generateRefreshToken(Authentication authentication, HttpServletResponse response) {
-        String token = createToken(authentication, REFRESH_TOKEN_EXPIRE_TIME);
+    public void generateRefreshToken(Long userId, HttpServletResponse response) {
+        String token = createToken(userId, REFRESH_TOKEN_EXPIRE_TIME);
 
-        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
         // refreshToken redis 저장
-        RefreshToken refreshToken = new RefreshToken(customOAuth2User.getUserId(), token, REFRESH_TOKEN_EXPIRE_TIME);
+        RefreshToken refreshToken = new RefreshToken(userId, token, REFRESH_TOKEN_EXPIRE_TIME);
         refreshRepository.save(refreshToken);
 
         // 쿠키 생성
@@ -103,14 +107,13 @@ public class JwtUtil {
     /**
      * JWT 토큰 생성 공통 메서드
      */
-    private String createToken(Authentication authentication, long expireTime) {
+    private String createToken(Long userId, long expireTime) {
         Date now = new Date();
         Date expireDate = new Date(now.getTime() + expireTime);
 
-        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
         return Jwts.builder()
-                .subject(String.valueOf(customOAuth2User.getUserId())) // 사용자 ID
+                .subject(userId.toString()) // 사용자 ID
                 .issuedAt(now) // 발급 시간
                 .expiration(expireDate) // 만료 시간
                 .issuer(ISSUER) // 발급자
@@ -152,7 +155,7 @@ public class JwtUtil {
         return ResponseCookie.from(key, value)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("Strict")
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(expireTime / 1000)
                 .build();
@@ -174,7 +177,7 @@ public class JwtUtil {
         RefreshToken tokenInRedis = refreshRepository.findById(userIdInToken)
                 .orElseThrow(() -> new NotFoundException(T001));
 
-        return tokenInRedis.getRefreshToken().equals(token);
+        return validateToken(token) && tokenInRedis.getRefreshToken().equals(token);
     }
 
     public String tokenByCookie(HttpServletRequest request, String tokenName){

@@ -30,7 +30,9 @@ public class UserController {
     public ResponseEntity<CommonResponse<?>> getUserInfo(
             @AuthenticationPrincipal CustomOAuth2User user) {
         log.info("[GET] api/user/info");
-        UserInfoResponse response = userService.getUserInfo(user.getUserId());
+        if(user == null) return ResponseEntity.ok(CommonResponse.success());
+        log.info("[GET] api/user/info -> 사용자 정보 반환시작");
+        UserInfoResponse response = userService.getUserInfo(user.getId());
         return ResponseEntity.ok(CommonResponse.success(response));
     }
 
@@ -39,7 +41,7 @@ public class UserController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @RequestBody NickNameRequest request){
         log.info("[PUT] api/user/nickname");
-        userService.changeNickname(user.getUserId(), request.getNickname());
+        userService.changeNickname(user.getId(), request.getNickname());
         return ResponseEntity.ok(CommonResponse.success());
     }
 
@@ -52,7 +54,7 @@ public class UserController {
 //        }
 //        CustomOAuth2User user = (CustomOAuth2User) authentication.getPrincipal();
         UserType role = user.getUser().getRole();
-        User detail = userRepository.findUserById(user.getUserId())
+        User detail = userRepository.findUserById(user.getId())
                 .orElseThrow(() -> new NotFoundException(A001));
         if(role == UserType.GUEST){
 

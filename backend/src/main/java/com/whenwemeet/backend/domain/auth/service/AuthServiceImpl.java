@@ -6,11 +6,13 @@ import com.whenwemeet.backend.domain.user.repository.UserRepository;
 import com.whenwemeet.backend.global.exception.type.UnAuthorizedException;
 import com.whenwemeet.backend.global.jwt.util.JwtUtil;
 import com.whenwemeet.backend.global.security.authentication.AuthenticationFactory;
+import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +23,14 @@ public class AuthServiceImpl implements AuthService {
 
     private final JwtUtil jwtUtil;
     private final AuthenticationFactory authenticationFactory;
-    private final String REFRESHTOKENNAME = "refreshToken";
+
+    @Value("${spring.jwt.name.refresh-token}")
+    private String REFRESH_TOKEN_NAME;
 
     @Override
     public void reissueToken(HttpServletRequest request, HttpServletResponse response) {
         // 0. 쿠키가 있는지 먼저 확인해야 한다.
-        String refreshToken = jwtUtil.tokenByCookie(request, REFRESHTOKENNAME);
+        String refreshToken = jwtUtil.tokenByCookie(request, REFRESH_TOKEN_NAME);
         if(refreshToken == null) throw new UnAuthorizedException(T001);
 
         // 2. 토큰이 있으면??? 그 토큰이 아직 유효한지 확인한다.
@@ -37,13 +41,15 @@ public class AuthServiceImpl implements AuthService {
         log.info("객체생성");
         Authentication authentication = authenticationFactory.createAuthentication(refreshToken);
 
+        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+
         // 4. 이후 refreshToken 재발급 후 쿠키로 넘긴다.
         log.info("토큰 쿠키전달");
-        jwtUtil.generateRefreshToken(authentication, response);
+        jwtUtil.generateRefreshToken(customOAuth2User.getId(), response);
 
         // 5. accessToken도 재발급해서 헤더로 넘긴다.
         log.info("토큰 헤더 전달");
-        String accessToken = jwtUtil.generateAccessToken(authentication);
+        String accessToken = jwtUtil.generateAccessToken(customOAuth2User.getId());
         response.setHeader("Authorization", "Bearer " + accessToken);
     }
 }

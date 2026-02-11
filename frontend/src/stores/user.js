@@ -5,26 +5,25 @@ export const useUserStore = defineStore('user', () => {
   // 상태
   const isLoggedIn = ref(false)
   const nickname = ref('')
-  const userId = ref(null)
+  const profileImgUrl = ref('') // 프로필 이미지 URL
+  const provider = ref(null)
   const showNicknameModal = ref(false)
   const accessToken = ref(null) // accessToken을 메모리에 저장
+  const isInitialized = ref(false) // 초기화 완료 여부
 
   // 액션
   const login = (userInfo) => {
     isLoggedIn.value = true
-    userId.value = userInfo.id
+    provider.value = userInfo.provider || null
     nickname.value = userInfo.nickname || ''
-    
-    // 닉네임이 없으면 모달 표시
-    if (!nickname.value) {
-      showNicknameModal.value = true
-    }
+    profileImgUrl.value = userInfo.profileImgUrl || ''
   }
 
   const logout = () => {
     isLoggedIn.value = false
     nickname.value = ''
-    userId.value = null
+    profileImgUrl.value = ''
+    provider.value = null
     accessToken.value = null // accessToken 초기화
   }
 
@@ -49,19 +48,26 @@ export const useUserStore = defineStore('user', () => {
     showNicknameModal.value = false
   }
 
+  const setInitialized = (value) => {
+    isInitialized.value = value
+  }
+
   return {
     isLoggedIn,
     nickname,
-    userId,
+    profileImgUrl,
+    provider,
     showNicknameModal,
     accessToken,
+    isInitialized,
     login,
     logout,
     setAccessToken,
     getAccessToken,
     setNickname,
     openNicknameModal,
-    closeNicknameModal
+    closeNicknameModal,
+    setInitialized
   }
 })
 

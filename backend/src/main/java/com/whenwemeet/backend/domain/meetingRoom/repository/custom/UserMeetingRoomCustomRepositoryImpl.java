@@ -8,6 +8,7 @@ import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortType;
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortDirection;
 import static com.whenwemeet.backend.domain.meetingRoom.entity.QUserMeetingRoom.*;
 import static com.whenwemeet.backend.domain.meetingRoom.entity.QMeetingRoom.*;
+import static com.whenwemeet.backend.domain.user.entity.QUser.*;
 
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingListResponse;
 import lombok.AllArgsConstructor;
@@ -25,20 +26,45 @@ public class UserMeetingRoomCustomRepositoryImpl implements UserMeetingRoomCusto
 
 
     @Override
-    public List<MeetingListResponse> findAllByUserId(Long userId, SortType type, SortDirection direction) {
+    public List<MeetingListResponse> findAllByUserId(Long userId, Long offset, Long limit, SortType type, SortDirection direction) {
         return factory
                 .select(
                         Projections.fields(MeetingListResponse.class,
                                 meetingRoom.name,
                                 meetingRoom.memberNumber,
-                                meetingRoom.meetingDate)
+                                meetingRoom.meetingDate,
+                                userMeetingRoom.role,
+                                meetingRoom.shareCode)
                 )
                 .from(userMeetingRoom)
                 .leftJoin(userMeetingRoom.meetingRoom, meetingRoom)
                 .where(userMeetingRoom.user.id.eq(userId), meetingRoom.isDeleted.isFalse())
                 .orderBy(createOrderSpecifier(type, direction))
+                .offset(offset)
+                .limit(limit)
                 .fetch();
     }
+
+    @Override
+    public Long countByUserId(Long userId) {
+        return factory
+                .select(userMeetingRoom.count())
+                .from(userMeetingRoom)
+                .leftJoin(userMeetingRoom.meetingRoom, meetingRoom)
+                .where(userMeetingRoom.user.id.eq(userId), meetingRoom.isDeleted.isFalse())
+                .fetchOne();
+    }
+
+//    @Override
+//    public List<String> findNicknamesByShareCode(String shareCode) {
+//        return factory
+//                .select(user.nickname)
+//                .from(userMeetingRoom)
+//                .leftJoin(userMeetingRoom.meetingRoom, meetingRoom)
+//                .leftJoin(userMeetingRoom.user, user)
+//                .where(meetingRoom.shareCode.eq(shareCode), meetingRoom.isDeleted.isFalse())
+//                .fetch();
+//    }
 
 
     private OrderSpecifier<?>[] createOrderSpecifier(SortType type, SortDirection direction) {

@@ -46,6 +46,8 @@ spring:
       hibernate:
         show_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_SHOW_SQL}
         format_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL}
+        jdbc:
+          batch_size: :${SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_BATCH_SIZE}
     defer-datasource-initialization: ${SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION}
 
   ## OAuth 로그인 설정

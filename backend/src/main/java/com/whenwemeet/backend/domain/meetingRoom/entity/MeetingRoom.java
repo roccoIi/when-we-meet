@@ -37,15 +37,22 @@ public class MeetingRoom extends BaseEntity {
     @Column(name = "start_time")
     private LocalTime startTime;
 
+    @Builder.Default
+    @Column(name = "end_time")
+    private LocalTime endTime = LocalTime.of(23, 59, 59);
+
     @Column(name = "meeting_date")
-    private LocalDate meetingDate;
+    private LocalDateTime meetingDate;
 
     @Column(name = "share_code")
     private String shareCode;
-
-    public void changeSetting(String name, LocalDate meetingDate){
+    
+    public void changeSetting(String name, LocalDateTime meetingDate, LocalDate startDate, LocalTime startTime, LocalTime endTime){
         if(name != null) this.name = name;
-        if(meetingDate != null) this.meetingDate = meetingDate;
+        this.meetingDate = meetingDate;
+        if(startDate != null) this.startDate = startDate;
+        if(startTime != null) this.startTime = startTime;
+        if(endTime != null) this.endTime = endTime;
     }
 
     public void addMember(){

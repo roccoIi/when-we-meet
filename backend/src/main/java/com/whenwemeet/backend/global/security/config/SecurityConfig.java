@@ -52,8 +52,10 @@ public class SecurityConfig {
 
 
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(rq ->
-                        rq.anyRequest().permitAll())
+                .authorizeHttpRequests(rq -> rq
+//                        .requestMatchers("/api/meetings/share/**").permitAll()
+//                        .anyRequest().authenticated())
+                        .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(login -> login
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))

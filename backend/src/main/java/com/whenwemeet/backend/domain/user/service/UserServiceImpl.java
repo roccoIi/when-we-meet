@@ -21,14 +21,14 @@ public class UserServiceImpl implements UserService{
     @Override
     public UserInfoResponse getUserInfo(Long userId) {
         return userRepository.findInfoByUserId(userId)
-                .orElseThrow(() -> new NotFoundException(A001));
+                .orElseThrow(() -> new NotFoundException(U001));
     }
 
     @Override
     @Transactional
     public void changeNickname(Long userId, String nickname) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(A001));
+                .orElseThrow(() -> new NotFoundException(U001));
 
         log.info("닉네임 변경 진행");
         user.changeNickName(nickname);

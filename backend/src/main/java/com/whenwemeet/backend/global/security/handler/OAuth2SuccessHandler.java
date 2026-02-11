@@ -1,6 +1,7 @@
 package com.whenwemeet.backend.global.security.handler;
 
 import com.whenwemeet.backend.global.jwt.util.JwtUtil;
+import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,12 +29,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         System.out.println(authentication);
 
+        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+
         // 1. AccessToken 생성
-        String accessToken = jwtUtil.generateAccessToken(authentication);
+        String accessToken = jwtUtil.generateAccessToken(customOAuth2User.getId());
         System.out.println("accessToken: " + accessToken);
 
         // 2. RefreshToken 생성 및 쿠키전달
-        jwtUtil.generateRefreshToken(authentication, response);
+        jwtUtil.generateRefreshToken(customOAuth2User.getId(), response);
 
 //        // 3. AccessToken 헤더 전달
 //        response.setHeader("Authorization", "Bearer " + accessToken);

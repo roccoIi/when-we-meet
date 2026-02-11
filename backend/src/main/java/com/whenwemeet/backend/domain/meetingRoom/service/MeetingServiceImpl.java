@@ -4,28 +4,33 @@ import com.whenwemeet.backend.domain.meetingRoom.dto.request.MeetingCreateReques
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.MeetingUpdateRequest;
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortType;
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortDirection;
+import com.whenwemeet.backend.domain.meetingRoom.dto.response.CreateMeetingResponse;
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.EnterShareLinkResponse;
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingListResponse;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.UnavailableTimeList;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.UnavailableTimeListImpl;
+import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingRoomInfoResponse;
 import com.whenwemeet.backend.domain.meetingRoom.entity.MeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.enumType.Role;
 import com.whenwemeet.backend.domain.meetingRoom.repository.MeetingRoomRepository;
-import com.whenwemeet.backend.domain.meetingRoom.repository.UnavailableRepository;
+import com.whenwemeet.backend.domain.schedule.repository.UnavailableRepository;
 import com.whenwemeet.backend.domain.meetingRoom.repository.UserMeetingRoomRepository;
+import com.whenwemeet.backend.domain.user.dto.response.UserInfoResponse;
 import com.whenwemeet.backend.domain.user.entity.User;
 import com.whenwemeet.backend.domain.user.repository.UserRepository;
+import com.whenwemeet.backend.global.entity.Pagination;
+import com.whenwemeet.backend.global.exception.type.DuplicateException;
+import com.whenwemeet.backend.global.jwt.util.JwtUtil;
+import com.whenwemeet.backend.global.response.PageResponse;
 import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
+import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,22 +42,49 @@ public class MeetingServiceImpl implements MeetingService{
     private final UserRepository userRepository;
     private final MeetingRoomRepository meetingRoomRepository;
     private final UserMeetingRoomRepository userMeetingRoomRepository;
-    private final UnavailableRepository unavailableRepository;
+    private final JwtUtil jwtUtil;
 
     @Override
-    public List<MeetingListResponse> getAllMeeting(Long userId, SortType type, SortDirection direction) {
+    public PageResponse<List<MeetingListResponse>> getAllMeeting(Long userId, Long page, Long limit, SortType type, SortDirection direction) {
         // 1) 해당 유저가 존재하는지 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(U001));
 
-        // 2) 해당 유저가 참여중인 미팅룸 전체 조회
-        return userMeetingRoomRepository.findAllByUserId(user.getId(), type, direction);
+        // 2) offset 계산 (page는 1부터 시작)
+        Long offset = (page - 1) * limit;
+
+        // 3) 해당 유저가 참여중인 미팅룸 전체 조회
+        List<MeetingListResponse> meetingList = userMeetingRoomRepository.findAllByUserId(user.getId(), offset, limit, type, direction);
+
+        // 4) 전체 개수 조회
+        Long totalItems = userMeetingRoomRepository.countByUserId(user.getId());
+
+        // 5) 페이지네이션 정보 계산
+        long totalPages = (long) Math.ceil((double) totalItems / limit);
+        boolean hasMore = page < totalPages;
+
+        Pagination pagination = new Pagination(page, totalPages, totalItems, hasMore);
+
+        return new PageResponse<>(meetingList, pagination);
     }
 
     @Override
     @Transactional
-    public void addMeeting(Long userId, MeetingCreateRequest rq) {
-        // 1) 미팅룸 생성
+    public CreateMeetingResponse addMeeting(CustomOAuth2User user, MeetingCreateRequest rq, HttpServletResponse response) {
+
+        // 1) 유저객체 반환 (만일 이용기록 없는 사용자가 생성을 요청했더면 우선 User 객체먼저 생성)
+        User finalUser;
+        if(user == null){
+            finalUser = User.createGuest();
+            userRepository.save(finalUser);
+
+            jwtUtil.generateAccessToken(finalUser.getId(), response);
+            jwtUtil.generateRefreshToken(finalUser.getId(), response);
+        } else {
+            finalUser = userRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException(U001));
+        }
+
+        // 2) 미팅룸 생성
         MeetingRoom mr = MeetingRoom.builder()
                 .name(rq.getMeetingName())
                 .startDate(rq.getStartDate())
@@ -63,35 +95,39 @@ public class MeetingServiceImpl implements MeetingService{
         // 2) 미팅룸 저장
         meetingRoomRepository.save(mr);
 
-        // 3) 유저 객체 반환
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(U001));
-
         // 4) 유저 - 미팅룽 매칭
         UserMeetingRoom umr = UserMeetingRoom.builder()
                 .role(Role.HOST)
                 .joinAt(LocalDateTime.now())
-                .user(user)
+                .user(finalUser)
                 .meetingRoom(mr)
                 .build();
 
         // 5) 매칭정보 저장
         userMeetingRoomRepository.save(umr);
+
+        return new CreateMeetingResponse(mr.getShareCode());
     }
 
     @Override
     @Transactional
-    public void updateMeeting(Long userId, MeetingUpdateRequest request) {
+    public void updateMeeting(CustomOAuth2User user, String shareCode, MeetingUpdateRequest request) {
 
         // 1) 요청이 들어온 방이 존재하는지 확인
-        MeetingRoom meetingRoom = meetingRoomRepository.findById(request.getId())
-                .orElseThrow(() -> new NotFoundException(M003));
+        UserMeetingRoom umr = userMeetingRoomRepository.findByUserAndMeetingRoomShareCode(user.getUser(), shareCode)
+                .orElseThrow(() -> new NotFoundException(M002));
 
         // 2) 현재 사용자가 해당 미팅룸의 호스트인지 확인
-        if(hostCheck(userId, meetingRoom.getId())) throw new NotFoundException(M001);
+        if(hostCheck(user.getId(), umr.getMeetingRoom().getId())) throw new NotFoundException(M001);
 
-        // 3) 설정 변경 진행
-        meetingRoom.changeSetting(request.getName(), request.getMeetingDate());
+        // 3) 설정 변경 진행 (모든 필드 지원)
+        umr.getMeetingRoom().changeSetting(
+                request.name(),
+                request.meetingDate(),
+                request.startDate(),
+                request.startTime(),
+                request.endTime()
+        );
     }
 
     @Override
@@ -107,8 +143,8 @@ public class MeetingServiceImpl implements MeetingService{
 
     @Override
     public EnterShareLinkResponse getMeetingRoomSummary(String code) {
-        return meetingRoomRepository.findByShareCode(code)
-                .orElseThrow(() -> new NotFoundException(M003));
+        return meetingRoomRepository.findNameAndMemberNumberByShareCode(code)
+                .orElseThrow(() -> new NotFoundException(M005));
     }
 
     @Override
@@ -123,7 +159,12 @@ public class MeetingServiceImpl implements MeetingService{
         MeetingRoom room = meetingRoomRepository.findAllByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException(M003));
 
-        // 3) 유저-미팅룸 객체 생성
+        // 3) 이미 매핑되어있는지 확인
+        if(userMeetingRoomRepository.existsByUserAndMeetingRoom(user, room)) {
+            throw new DuplicateException(M004);
+        }
+
+        // 4) 유저-미팅룸 객체 생성
         UserMeetingRoom umr = UserMeetingRoom.builder()
                 .role(Role.MEMBER)
                 .joinAt(LocalDateTime.now())
@@ -139,17 +180,37 @@ public class MeetingServiceImpl implements MeetingService{
     }
 
     @Override
-    public List<UnavailableTimeList> getAllUnavailableTimeList(String shareCode) {
-        // 1) 미팅룸 조회
-        MeetingRoom room = meetingRoomRepository.findAllByShareCode(shareCode)
+    public MeetingRoomInfoResponse getMeetingRoomInfoByShareCode(CustomOAuth2User user, String shareCode) {
+        
+        // 1) shareCode로 MeetingRoom 조회
+        MeetingRoom mr = meetingRoomRepository.findAllByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException(M003));
+        
+        // 2) 해당 미팅룸에 속한 모든 User의 nickname 조회
+        List<UserInfoResponse> infos = userMeetingRoomRepository.findNicknamesByShareCode(shareCode);
 
-        // 2) 오늘 날짜 이후의 모든 불가능한 시간대 조회
-        List<UnavailableTimeList> times = unavailableRepository
-                .findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(room, LocalDateTime.now());
-
-        // 3) Sweepline 알고리즘을 사용하여 중복되는 시간대 병합
-        return mergeOverlappingTimeIntervals(times);
+        // 3) 현재 사용자의 권한 파싱
+        Role umr = Role.MEMBER;
+        if(user != null) {
+            UserMeetingRoom userMeetingRoom = userMeetingRoomRepository
+                    .findByUserIdAndMeetingRoomShareCode(user.getId(), shareCode)
+                    .orElse(null);
+            if(userMeetingRoom != null) {
+                umr = userMeetingRoom.getRole();
+            }
+        }
+        
+        // 3) 응답 DTO 생성
+        return new MeetingRoomInfoResponse(
+                mr.getName(),
+                umr,
+                infos.size(),
+                mr.getMeetingDate(),
+                infos,
+                mr.getStartDate(),
+                mr.getStartTime(),
+                mr.getEndTime()
+        );
     }
 
 
@@ -163,54 +224,6 @@ public class MeetingServiceImpl implements MeetingService{
         return userMeetingRoomRepository.findByUserIdAndMeetingRoomId(userId, roomId)
                 .orElseThrow(() -> new NotFoundException(M002))
                 .getRole() != Role.HOST;
-    }
-
-    /**
-     * Sweepline 알고리즘을 사용하여 중복되는 시간대를 병합합니다.
-     * @param timeList 병합할 시간대 리스트
-     * @return 병합된 시간대 리스트
-     */
-    private List<UnavailableTimeList> mergeOverlappingTimeIntervals(List<UnavailableTimeList> timeList) {
-        // 빈 리스트인 경우 그대로 반환
-        if (timeList == null || timeList.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // 1) 시작 시간 기준으로 정렬
-        List<UnavailableTimeList> sortedTimes = new ArrayList<>(timeList);
-        sortedTimes.sort(Comparator.comparing(UnavailableTimeList::getStartTime));
-
-        // 2) 병합 결과를 저장할 리스트
-        List<UnavailableTimeList> mergedList = new ArrayList<>();
-
-        // 3) 첫 번째 시간대로 초기화
-        LocalDateTime start = sortedTimes.get(0).getStartTime();
-        LocalDateTime end = sortedTimes.get(0).getEndTime();
-
-        // 4) Sweepline 알고리즘 적용
-        for (int i = 1; i < sortedTimes.size(); i++) {
-            UnavailableTimeList current = sortedTimes.get(i);
-            
-            // 현재 구간과 다음 구간이 겹치거나 인접한 경우
-            if (current.getStartTime().isAfter(end)) {
-                // 겹치지 않는 경우: 현재까지의 병합된 구간을 결과에 추가
-                mergedList.add(new UnavailableTimeListImpl(start, end));
-
-                // 새로운 구간 시작
-                start = current.getStartTime();
-                end = current.getEndTime();
-            } else {
-                // 끝 시간을 더 큰 값으로 확장
-                if (current.getEndTime().isAfter(end)) {
-                    end = current.getEndTime();
-                }
-            }
-        }
-
-        // 5) 마지막 구간 추가
-        mergedList.add(new UnavailableTimeListImpl(start, end));
-
-        return mergedList;
     }
 
     private String generateShareCode() {
