@@ -22,6 +22,7 @@ const recommendType = ref('ALL'); // 'ALL', 'WEEKDAY', 'WEEKEND'
 const confirmedSchedule = ref(null); // 확정된 일정 { day, startTime }
 const isUpdatingSchedule = ref(false); // 일정 업데이트 중
 const monthlyAvailability = ref(null); // 월별 가용성 데이터 { totalMembers, dateAvailability: Map }
+const userRole = ref('MEMBER'); // 현재 사용자의 역할 (HOST or MEMBER)
 
 // 공유 모달 상태
 const isShareModalOpen = ref(false);
@@ -97,24 +98,37 @@ const loadMeetingDetail = async () => {
     const data = response.data || response
     console.log('📦 [MeetingDetail] 파싱된 데이터:', data);
     console.log('📦 [MeetingDetail] data의 모든 키:', Object.keys(data));
-    console.log('📦 [MeetingDetail] meetingDate 값:', data.meetingDate);
-    console.log('📦 [MeetingDetail] meetingDate 타입:', typeof data.meetingDate);
-    console.log('📦 [MeetingDetail] meetingDate가 undefined인가?:', data.meetingDate === undefined);
-    console.log('📦 [MeetingDetail] meetingDate가 null인가?:', data.meetingDate === null);
+    console.log('📦 [MeetingDetail] confirmDate 값:', data.confirmDate);
+    console.log('📦 [MeetingDetail] confirmDate 타입:', typeof data.confirmDate);
+    
+    // meetingDate 파싱 (예: "2026-02-20T19:00:00")
+    let parsedStartDate = null;
+    if (data.meetingDate) {
+      const [datePart] = String(data.meetingDate).split('T');
+      parsedStartDate = datePart; // "2026-02-20"
+    }
     
     meeting.value = {
       shareCode: shareCode,
       name: data.name,
       memberNumber: data.memberNumber,
-      participants: data.info || []
+      participants: data.info || [],
+      startDate: parsedStartDate, // 미팅 시작 날짜
+      meetingDate: data.meetingDate // 원본 데이터 보관
     }
     
-    // 확정된 일정이 있으면 파싱
-    if (data.meetingDate && data.meetingDate !== null && data.meetingDate !== undefined) {
-      console.log('📅 [MeetingDetail] 확정된 일정 발견:', data.meetingDate);
+    // 사용자 역할 저장
+    if (data.role) {
+      userRole.value = data.role;
+      console.log('👤 [MeetingDetail] 사용자 역할:', userRole.value);
+    }
+    
+    // 확정된 일정이 있으면 파싱 (confirmDate 사용)
+    if (data.confirmDate && data.confirmDate !== null && data.confirmDate !== undefined) {
+      console.log('📅 [MeetingDetail] 확정된 일정 발견:', data.confirmDate);
       
       // LocalDateTime "2026-02-15T14:00:00"을 파싱
-      const dateTimeString = String(data.meetingDate);
+      const dateTimeString = String(data.confirmDate);
       const [datePart, timePart] = dateTimeString.split('T');
       
       console.log('📅 [MeetingDetail] datePart:', datePart);
@@ -129,7 +143,7 @@ const loadMeetingDetail = async () => {
       
       console.log('✅ [MeetingDetail] confirmedSchedule 설정됨:', confirmedSchedule.value);
     } else {
-      console.log('ℹ️ [MeetingDetail] 확정된 일정 없음 (meetingDate가 없거나 null/undefined)');
+      console.log('ℹ️ [MeetingDetail] 확정된 일정 없음 (confirmDate가 없거나 null/undefined)');
       confirmedSchedule.value = null;
     }
   } catch (error) {
@@ -251,6 +265,17 @@ const handleScheduleInput = () => {
   router.push(`/meeting/${shareCode}/schedule`);
 };
 
+const handleEditMeeting = () => {
+  // 수정 모드로 CreateMeeting 페이지로 이동
+  router.push({
+    path: '/create',
+    query: {
+      shareCode: shareCode,
+      mode: 'edit'
+    }
+  });
+};
+
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   const month = date.getMonth() + 1;
@@ -273,7 +298,7 @@ const formatTimeRange = (startTime, endTime) => {
 
 const getRankEmoji = (rank) => {
   const emojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
-  return emojis[rank - 1] || "";
+  return emojis[rank - 1] || "5️⃣";
 };
 
 /**
@@ -311,7 +336,10 @@ const handleConfirmSchedule = async (schedule) => {
     
     await meetingAPI.updateMeetingSchedule(shareCode, {
       name: null,
-      meetingDate: meetingDate
+      meetingDate: meetingDate,
+      startDate: null,
+      startTime: null,
+      endTime: null
     });
     
     // 확정된 일정 저장
@@ -351,7 +379,10 @@ const handleResetSchedule = async () => {
     
     await meetingAPI.updateMeetingSchedule(shareCode, {
       name: null,
-      meetingDate: null
+      meetingDate: null,
+      startDate: null,
+      startTime: null,
+      endTime: null
     });
     
     // 확정된 일정 제거
@@ -373,245 +404,236 @@ const handleResetSchedule = async () => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-60px)] bg-gray-100 p-5 pb-10">
-        <div v-if="meeting" class="w-full">
-          <!-- 모임 헤더 -->
-          <div class="flex justify-between items-center mb-3">
-            <h2 class="text-2xl font-bold text-gray-800">{{ meeting.name }}</h2>
-            
+  <div>
+    <div class="min-h-screen relative flex flex-col bg-background-light overflow-hidden text-gray-800 antialiased selection:bg-primary selection:text-neutral-dark font-display">
+    <!-- 메인 컨텐츠 -->
+    <main v-if="meeting" class="flex-1 overflow-y-auto pb-32 px-6 pt-2">
+      <!-- 모임 정보 -->
+      <div class="mb-8">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex-1">
+            <h2 class="text-3xl font-extrabold text-gray-800 leading-tight mb-2">{{ meeting.name }}</h2>
+            <p class="text-sm text-gray-500">
+              Created by <span class="font-medium text-gray-700">{{ meeting.participants[0]?.nickname || '호스트' }}</span>
+            </p>
+          </div>
+          <div class="flex gap-2 flex-shrink-0 ml-3">
+            <button 
+              v-if="userRole === 'HOST'"
+              @click="handleEditMeeting"
+              class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
+              title="모임 정보 수정"
+            >
+              <span class="material-symbols-rounded text-gray-600 group-hover:text-primary-dark transition-colors">edit</span>
+            </button>
+            <button 
+              @click="handleShareClick"
+              class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
+            >
+              <span class="material-symbols-rounded text-gray-600 group-hover:text-primary-dark transition-colors">ios_share</span>
+            </button>
+          </div>
+        </div>
+
+          <!-- 참여자 정보 -->
+          <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-soft">
+            <div class="flex -space-x-3 rtl:space-x-reverse overflow-hidden">
+              <div 
+                v-for="(participant, index) in meeting.participants.slice(0, 4)" 
+                :key="index"
+                class="relative group"
+              >
+                <img 
+                  :src="participant.profileImgUrl" 
+                  :alt="participant.nickname"
+                  class="w-10 h-10 border-2 border-pastel-border rounded-full object-cover cursor-pointer transition-transform hover:scale-110"
+                />
+                <!-- 툴팁 -->
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                  {{ participant.nickname }}
+                </div>
+              </div>
+              <div 
+                v-if="meeting.memberNumber > 4"
+                class="flex items-center justify-center w-10 h-10 text-xs font-bold text-gray-600 bg-neutral-light border-2 border-pastel-border rounded-full hover:bg-gray-200"
+              >
+                +{{ meeting.memberNumber - 4 }}
+              </div>
+            </div>
+            <button 
+              @click="showNicknameModal = true"
+              class="text-sm font-semibold text-primary-dark hover:text-primary transition-colors"
+            >
+              내 닉네임
+            </button>
+          </div>
+        </div>
+
+        <!-- 달력 -->
+        <div class="bg-white rounded-2xl p-5 shadow-soft border border-gray-100 mb-6">
+          <Calendar
+            :year="currentYear"
+            :month="currentMonth"
+            :unavailableDates="unavailableDates"
+            :monthlyAvailability="monthlyAvailability"
+            :confirmedDate="confirmedSchedule?.day || null"
+            :minDate="meeting?.startDate || null"
+            @update:year="(val) => { currentYear = val; handleMonthChange(); }"
+            @update:month="(val) => { currentMonth = val; handleMonthChange(); }"
+          />
+
+          <!-- 범례 -->
+          <div class="flex items-center justify-center gap-4 mt-6 text-xs font-medium">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-primary"></span>
+              <span class="text-gray-500">높음 (80%+)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-tertiary border border-gray-100"></span>
+              <span class="text-gray-500">중간 (50%+)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-secondary"></span>
+              <span class="text-gray-500">낮음</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 확정된 일정 표시 (있는 경우) -->
+        <div 
+          v-if="confirmedSchedule"
+          class="bg-gradient-to-r from-primary/30 to-primary/10 border border-primary rounded-2xl p-4 mb-6 relative overflow-hidden"
+        >
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-bold text-gray-700 bg-primary px-2 py-0.5 rounded-full">확정됨</span>
+              </div>
+              <h4 class="text-lg font-bold text-gray-800">{{ confirmedSchedule.displayDate }} {{ confirmedSchedule.displayTime }}</h4>
+            </div>
+            <button 
+              v-if="userStore.nickname"
+              @click="handleResetSchedule"
+              :disabled="isUpdatingSchedule"
+              class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-red-500 hover:bg-red-50 transition-all shadow-sm disabled:opacity-50"
+            >
+              <span class="material-symbols-rounded text-xl">close</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 추천 일정 -->
+        <div class="bg-white border-t border-gray-100 rounded-t-3xl px-5 pt-6 pb-20 relative shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.03)]">
+          <div class="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-200 rounded-full"></div>
+          
+          <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-              <!-- 닉네임 변경 버튼 -->
+              <span class="material-symbols-rounded text-primary-dark">auto_awesome</span>
+              <h3 class="text-base font-bold text-gray-800">추천 일정</h3>
+            </div>
+            
+            <!-- 필터 버튼 -->
+            <div class="flex gap-1">
               <button
-                class="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-400"
-                @click="showNicknameModal = true"
+                @click="handleRecommendTypeChange('ALL')"
+                class="px-2 py-1 text-xs font-medium rounded-lg transition-all"
+                :class="recommendType === 'ALL' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               >
-                <span>✏️</span>
-                <span>닉네임 변경</span>
+                전체
               </button>
-              
-              <!-- 공유 버튼 -->
               <button
-                class="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-primary cursor-pointer transition-all hover:bg-blue-50 hover:border-primary"
-                @click="handleShareClick"
+                @click="handleRecommendTypeChange('WEEKDAY')"
+                class="px-2 py-1 text-xs font-medium rounded-lg transition-all"
+                :class="recommendType === 'WEEKDAY' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               >
-                <span>📤</span>
-                <span>공유</span>
+                주중
+              </button>
+              <button
+                @click="handleRecommendTypeChange('WEEKEND')"
+                class="px-2 py-1 text-xs font-medium rounded-lg transition-all"
+                :class="recommendType === 'WEEKEND' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+              >
+                주말
               </button>
             </div>
           </div>
 
-      <!-- 참여 현황 -->
-      <div class="bg-white rounded-xl p-4 mb-5 shadow-sm">
-        <div class="flex items-center justify-between">
-          <!-- 참여자 수 -->
-          <div class="flex items-center gap-2">
-            <span class="text-2xl">👥</span>
-            <span class="text-base text-gray-700">
-              총 <strong class="text-primary font-semibold">{{ meeting.memberNumber }}명</strong> 참여중
-            </span>
+          <div v-if="recommendedSchedules.length === 0" class="text-center py-10 text-gray-400 text-sm">
+            아직 입력된 일정이 없습니다
           </div>
 
-          <!-- 참여자 프로필 이미지 (겹침 효과) -->
-          <div class="flex items-center">
-            <div 
-              v-for="(participant, index) in meeting.participants" 
-              :key="index"
-              class="relative group"
-              :style="{ 
-                zIndex: meeting.participants.length - index,
-                marginLeft: index > 0 ? '-12px' : '0'
-              }"
+          <div v-else class="space-y-3">
+            <div
+              v-for="item in recommendedSchedules"
+              :key="`${item.day}-${item.startTime}`"
+              class="flex items-center justify-between p-4 rounded-xl relative overflow-hidden group"
+              :class="item.rank === 1 
+                ? 'bg-gradient-to-r from-primary/30 to-primary/10 border border-primary' 
+                : 'bg-white border border-gray-100 shadow-sm'"
             >
-              <!-- 프로필 이미지 -->
-              <img 
-                :src="participant.profileImgUrl" 
-                :alt="participant.nickname"
-                class="w-10 h-10 rounded-full border-2 border-white object-cover cursor-pointer transition-transform hover:scale-110 hover:z-50"
-              />
+              <div v-if="item.rank === 1" class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
               
-              <!-- 호버 시 닉네임 툴팁 -->
-              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {{ participant.nickname }}
-                <!-- 화살표 -->
-                <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-0.5">
-                  <div class="border-4 border-transparent border-t-gray-800"></div>
+              <div class="relative z-10 flex items-center gap-3">
+                <!-- 순위 메달 이모지 -->
+                <div class="text-3xl flex-shrink-0">
+                  <span v-if="item.rank === 1">🥇</span>
+                  <span v-else-if="item.rank === 2">🥈</span>
+                  <span v-else-if="item.rank === 3">🥉</span>
+                  <span v-else-if="item.rank === 4">4️⃣</span>
+                  <span v-else>5️⃣</span>
                 </div>
+                
+                <div class="flex flex-col flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span v-if="item.rank === 1" class="text-xs font-bold text-gray-700 bg-primary px-2 py-0.5 rounded-full">
+                      추천
+                    </span>
+                  </div>
+                  <h4 class="text-lg font-bold text-gray-800">{{ item.displayDate }} {{ item.displayTime }}</h4>
+                </div>
+              </div>
+              
+              <div class="relative z-10">
+                <button
+                  v-if="userStore.nickname && !confirmedSchedule"
+                  @click="handleConfirmSchedule(item)"
+                  :disabled="isUpdatingSchedule"
+                  class="w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm disabled:opacity-50"
+                  :class="item.rank === 1 
+                    ? 'bg-white text-primary hover:bg-primary hover:text-white' 
+                    : 'bg-gray-50 text-gray-400 hover:text-white hover:bg-gray-400'"
+                >
+                  <span class="material-symbols-rounded">{{ item.rank === 1 ? 'check' : 'add' }}</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
-      <!-- 달력 -->
-      <div class="mb-5">
-        <Calendar
-          :year="currentYear"
-          :month="currentMonth"
-          :unavailableDates="unavailableDates"
-          :monthlyAvailability="monthlyAvailability"
-          :confirmedDate="confirmedSchedule?.day || null"
-          @update:year="
-            (val) => {
-              currentYear = val;
-              handleMonthChange();
-            }
-          "
-          @update:month="
-            (val) => {
-              currentMonth = val;
-              handleMonthChange();
-            }
-          "
-        />
-
-        <div class="flex justify-center mt-3 gap-4 flex-wrap">
-          <div class="flex items-center gap-1.5 text-xs text-gray-600">
-            <div class="w-5 h-5 bg-green-100 rounded border border-green-300"></div>
-            <span>많은 인원 가능</span>
-          </div>
-          <div class="flex items-center gap-1.5 text-xs text-gray-600">
-            <div class="w-5 h-5 bg-yellow-100 rounded border border-yellow-300"></div>
-            <span>보통</span>
-          </div>
-          <div class="flex items-center gap-1.5 text-xs text-gray-600">
-            <div class="w-5 h-5 bg-red-100 rounded border border-red-300"></div>
-            <span>적은 인원 가능</span>
-          </div>
-          <div class="flex items-center gap-1.5 text-xs text-gray-600">
-            <div class="w-5 h-5 bg-white rounded border-4 border-yellow-400"></div>
-            <span>확정된 날짜</span>
-          </div>
+      <!-- 로딩 상태 -->
+      <div v-else class="flex-1 flex items-center justify-center">
+        <div class="text-center">
+          <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p class="text-gray-600">로딩 중...</p>
         </div>
       </div>
 
-      <!-- 일정 입력 버튼 -->
+    <!-- 그라데이션 오버레이 -->
+    <div class="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background-light to-transparent pointer-events-none z-20 max-w-app mx-auto"></div>
+
+    <!-- 하단 고정 버튼 -->
+    <div class="fixed bottom-0 left-0 right-0 z-30 max-w-app mx-auto px-6 pb-6">
       <button
-        class="w-full px-4 py-4 bg-primary text-white border-none rounded-xl text-base font-semibold cursor-pointer transition-colors mb-6 hover:bg-primary-dark active:scale-[0.98]"
         @click="handleScheduleInput"
+        class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-extrabold text-lg py-4 rounded-2xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
       >
-        내 일정 추가하기
-      </button>
-
-      <!-- 확정된 일정 -->
-      <div 
-        class="rounded-2xl p-5 mb-5 shadow-sm border-2"
-        :class="confirmedSchedule 
-          ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300' 
-          : 'bg-gray-50 border-gray-300'"
-      >
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-lg font-semibold flex items-center gap-2"
-            :class="confirmedSchedule ? 'text-green-800' : 'text-gray-700'"
-          >
-            <span>{{ confirmedSchedule ? '✅' : '📅' }}</span>
-            <span>확정된 모임 일정</span>
-          </h3>
-          <button
-            v-if="userStore.nickname && confirmedSchedule"
-            class="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="handleResetSchedule"
-            :disabled="isUpdatingSchedule"
-          >
-            일정 초기화
-          </button>
-        </div>
-        
-        <!-- 확정된 일정이 있는 경우 -->
-        <div v-if="confirmedSchedule" class="bg-white rounded-xl p-4">
-          <p class="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <span>{{ confirmedSchedule.displayDate }}</span>
-            <span class="text-primary">⏰ {{ confirmedSchedule.displayTime }}</span>
-          </p>
-        </div>
-        
-        <!-- 확정된 일정이 없는 경우 -->
-        <div v-else class="bg-white rounded-xl p-4 text-center">
-          <p class="text-gray-500 py-4">
-            확정된 날짜가 존재하지 않습니다
-          </p>
-        </div>
-      </div>
-
-      <!-- 추천 일정 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-800">추천 모임 일정</h3>
-          
-          <!-- 필터 버튼 -->
-          <div class="flex gap-2">
-            <button
-              class="px-3 py-1.5 text-sm font-medium rounded-lg transition-all"
-              :class="recommendType === 'ALL' 
-                ? 'bg-primary text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-              @click="handleRecommendTypeChange('ALL')"
-            >
-              전체
-            </button>
-            <button
-              class="px-3 py-1.5 text-sm font-medium rounded-lg transition-all"
-              :class="recommendType === 'WEEKDAY' 
-                ? 'bg-primary text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-              @click="handleRecommendTypeChange('WEEKDAY')"
-            >
-              주중
-            </button>
-            <button
-              class="px-3 py-1.5 text-sm font-medium rounded-lg transition-all"
-              :class="recommendType === 'WEEKEND' 
-                ? 'bg-primary text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-              @click="handleRecommendTypeChange('WEEKEND')"
-            >
-              주말
-            </button>
-          </div>
-        </div>
-
-        <div
-          v-if="recommendedSchedules.length === 0"
-          class="text-center py-10 text-gray-400 text-sm"
-        >
-          아직 입력된 일정이 없습니다
-        </div>
-
-        <div v-else class="flex flex-col gap-3">
-          <div
-            v-for="item in recommendedSchedules"
-            :key="`${item.day}-${item.startTime}`"
-            class="flex items-center gap-3 p-4 rounded-xl transition-all"
-            :class="
-              item.rank === 1
-                ? 'bg-gradient-to-r from-yellow-100 to-yellow-200'
-                : 'bg-gray-50'
-            "
-          >
-            <div class="text-3xl">
-              {{ getRankEmoji(item.rank) }}
-            </div>
-            <div class="flex-1">
-              <p class="text-base font-semibold text-gray-800 mb-1">
-                {{ item.displayDate }}
-              </p>
-              <p class="text-sm text-primary font-medium">
-                ⏰ {{ item.displayTime }}
-              </p>
-            </div>
-            <button
-              v-if="userStore.nickname"
-              class="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-dark transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              @click="handleConfirmSchedule(item)"
-              :disabled="isUpdatingSchedule"
-            >
-              일정 선택
-            </button>
-          </div>
-        </div>
-      </div>
+          <span class="material-symbols-rounded">edit_calendar</span>
+          내 일정 추가하기
+        </button>
     </div>
-
-    <div v-else class="text-center py-10 text-gray-600">로딩 중...</div>
+    </div>
 
     <!-- 공유 모달 -->
     <ShareModal

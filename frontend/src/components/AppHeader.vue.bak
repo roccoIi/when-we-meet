@@ -54,7 +54,7 @@ const headerConfig = computed(() => {
 });
 
 const handleHomeClick = () => {
-  router.push('/');
+  router.push('/meetings');
 };
 
 const handleProfileClick = () => {

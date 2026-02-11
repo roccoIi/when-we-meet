@@ -10,8 +10,10 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 
-// 로그인 페이지에서는 헤더를 숨김
-const showHeader = computed(() => route.name !== "Login");
+// 헤더를 표시할지 여부 (Login, MeetingList, MeetingInvite는 제외)
+const showHeader = computed(() => {
+  return route.name !== "Login" && route.name !== "MeetingList" && route.name !== "MeetingInvite";
+});
 
 // 인증이 필요 없는 페이지 목록
 const noAuthPages = ["Login","OAuthCallback"];
@@ -79,9 +81,9 @@ const loadUserInfo = async () => {
 </script>
 
 <template>
-  <div id="app" class="font-sans antialiased text-gray-800">
+  <div id="app" class="font-display antialiased text-gray-800 bg-background-light">
     <div
-      class="max-w-app mx-auto min-h-screen bg-gray-100 relative md:shadow-xl max-md:max-w-full"
+      class="max-w-app mx-auto min-h-screen bg-background-light relative md:shadow-xl max-md:max-w-full"
     >
       <AppHeader v-if="showHeader" />
 

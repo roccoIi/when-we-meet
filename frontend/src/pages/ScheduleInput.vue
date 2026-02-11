@@ -483,127 +483,140 @@ const closeNicknameModal = () => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-60px)] bg-gray-100 p-5 pb-10">
-    <div class="w-full">
-      <div class="mb-5 flex justify-between items-start gap-4">
+  <div class="min-h-screen relative flex flex-col bg-background-light overflow-hidden text-gray-800 antialiased selection:bg-primary selection:text-neutral-dark">
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto no-scrollbar pb-32 px-6 pt-2">
+      <!-- Title Section -->
+      <div class="mb-6 flex items-start justify-between">
         <div class="flex-1">
           <h2 class="text-2xl font-bold text-gray-800 mb-2">
             내 일정 제외하기
           </h2>
           <p class="text-sm text-gray-600">
-            모임이
-            <strong class="text-primary font-semibold">{{
+            모임이 
+            <strong class="text-primary-dark font-semibold">{{
               viewMode === "date" ? "불가능한 날짜" : "불가능한 시간"
-            }}</strong
-            >을 선택해주세요
+            }}</strong>를 선택해주세요
           </p>
         </div>
-        <button
-          class="px-5 py-2.5 bg-white border-2 border-primary rounded-lg text-primary text-sm font-semibold cursor-pointer transition-all whitespace-nowrap min-w-[100px] hover:bg-primary hover:text-white active:scale-95"
+        
+        <!-- View Mode Toggle Button -->
+        <button 
           @click="toggleViewMode"
+          class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl bg-white hover:bg-neutral-light transition-colors shadow-sm border border-gray-100 flex-shrink-0 ml-4"
         >
-          {{ viewMode === "date" ? "시간변경" : "날짜변경" }}
+          <span class="material-symbols-rounded text-gray-600 text-2xl">
+            {{ viewMode === "date" ? "schedule" : "calendar_month" }}
+          </span>
+          <span class="text-xs text-gray-600 font-medium whitespace-nowrap">
+            {{ viewMode === "date" ? "시간보기" : "날짜보기" }}
+          </span>
         </button>
       </div>
 
-      <div class="mb-5">
-        <Calendar
-          v-if="viewMode === 'date'"
-          :year="currentYear"
-          :month="currentMonth"
-          :unavailableDates="[]"
-          :selectedDates="selectedDates"
-          @update:year="(val) => (currentYear = val)"
-          @update:month="(val) => (currentMonth = val)"
-          @dateClick="handleDateClick"
-        />
+        <!-- Calendar/Time Selection -->
+        <div class="bg-white rounded-2xl p-5 shadow-soft border border-gray-100 mb-6">
+          <Calendar
+            v-if="viewMode === 'date'"
+            :year="currentYear"
+            :month="currentMonth"
+            :unavailableDates="[]"
+            :selectedDates="selectedDates"
+            @update:year="(val) => (currentYear = val)"
+            @update:month="(val) => (currentMonth = val)"
+            @dateClick="handleDateClick"
+          />
 
-        <TimeCalendar
-          v-else
-          :selectedTimes="selectedTimes"
-          @timeClick="handleTimeClick"
-        />
+          <TimeCalendar
+            v-else
+            :selectedTimes="selectedTimes"
+            @timeClick="handleTimeClick"
+          />
 
-        <div class="bg-white px-3 py-3 text-center rounded-b-xl -mt-3">
-          <p class="text-sm text-gray-600">
-            <span class="text-xl font-bold text-primary">{{
-              selectedCount
-            }}</span
-            >개의 {{ viewMode === "date" ? "날짜" : "시간" }} 선택됨
-          </p>
-        </div>
-      </div>
-
-      <div
-        v-if="selectedCount > 0"
-        class="bg-white rounded-2xl p-5 mb-4 shadow-sm"
-      >
-        <h3 class="text-base font-semibold text-gray-800 mb-3">
-          선택한 {{ viewMode === "date" ? "날짜" : "시간" }}
-        </h3>
-
-        <div v-if="viewMode === 'date'" class="flex flex-wrap gap-2">
-          <div
-            v-for="date in [...selectedDates].sort()"
-            :key="date"
-            class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-primary rounded-full text-sm text-gray-800"
-          >
-            <span>{{ formatDate(date) }}</span>
-            <button
-              class="bg-none border-none text-gray-400 text-base cursor-pointer p-0 w-5 h-5 flex items-center justify-center transition-colors hover:text-red-500"
-              @click="handleDateClick(date)"
-            >
-              ✕
-            </button>
+          <!-- Selection Count -->
+          <div class="mt-6 pt-4 border-t border-gray-100">
+            <div class="flex items-center justify-center gap-2">
+              <span class="material-icons text-primary-dark">event_available</span>
+              <p class="text-sm text-gray-600">
+                <span class="text-xl font-bold text-primary-dark">{{ selectedCount }}</span>
+                개의 {{ viewMode === "date" ? "날짜" : "시간" }} 선택됨
+              </p>
+            </div>
           </div>
         </div>
 
-        <div v-else class="flex flex-wrap gap-2">
-          <div
-            v-for="(range, index) in groupedTimeRanges"
-            :key="`range-${index}`"
-            class="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-primary rounded-full text-sm text-gray-800"
-          >
-            <span>{{ formatTimeRange(range.start, range.end) }}</span>
-            <button
-              class="bg-none border-none text-gray-400 text-base cursor-pointer p-0 w-5 h-5 flex items-center justify-center transition-colors hover:text-red-500"
-              @click="handleTimeRangeRemove(range.times)"
+        <!-- Selected Items -->
+        <div
+          v-if="selectedCount > 0"
+          class="bg-white rounded-2xl p-5 mb-6 shadow-soft border border-gray-100"
+        >
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-icons text-primary-dark text-lg">check_circle</span>
+            <h3 class="text-base font-bold text-gray-800">
+              선택한 {{ viewMode === "date" ? "날짜" : "시간" }}
+            </h3>
+          </div>
+
+          <div v-if="viewMode === 'date'" class="flex flex-wrap gap-2">
+            <div
+              v-for="date in [...selectedDates].sort()"
+              :key="date"
+              class="flex items-center gap-2 px-3 py-2 bg-primary/20 border border-primary rounded-full text-sm text-gray-800 hover:bg-primary/30 transition-colors"
             >
-              ✕
-            </button>
+              <span class="font-medium">{{ formatDate(date) }}</span>
+              <button
+                class="bg-none border-none text-gray-400 cursor-pointer p-0 w-4 h-4 flex items-center justify-center transition-colors hover:text-red-500"
+                @click="handleDateClick(date)"
+              >
+                <span class="material-icons text-sm">close</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="flex flex-wrap gap-2">
+            <div
+              v-for="(range, index) in groupedTimeRanges"
+              :key="`range-${index}`"
+              class="flex items-center gap-2 px-3 py-2 bg-primary/20 border border-primary rounded-full text-sm text-gray-800 hover:bg-primary/30 transition-colors"
+            >
+              <span class="font-medium">{{ formatTimeRange(range.start, range.end) }}</span>
+              <button
+                class="bg-none border-none text-gray-400 cursor-pointer p-0 w-4 h-4 flex items-center justify-center transition-colors hover:text-red-500"
+                @click="handleTimeRangeRemove(range.times)"
+              >
+                <span class="material-icons text-sm">close</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="bg-yellow-50 rounded-xl p-4 mb-5">
-        <p class="text-sm text-gray-600 leading-relaxed text-center">
-          💡 선택한 날짜들은 다른 참여자들과 비교하여<br />
-          가장 많은 사람이 가능한 날짜를 추천해드립니다
-        </p>
-      </div>
+        <!-- Info Box -->
+        <div class="bg-tertiary/30 rounded-2xl p-4 mb-6 border border-tertiary/50">
+          <div class="flex items-start gap-3">
+            <span class="material-icons text-amber-600 text-xl mt-0.5">lightbulb</span>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              선택한 날짜들은 다른 참여자들과 비교하여 가장 많은 사람이 가능한 날짜를 추천해드립니다
+            </p>
+          </div>
+        </div>
+      </main>
 
-      <div class="flex gap-3">
-        <button
-          class="flex-1 px-3 py-4 border-none rounded-xl text-base font-semibold cursor-pointer transition-all bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="handleCancel"
-          :disabled="isSaving"
-        >
-          취소
-        </button>
-        <button
-          class="flex-1 px-3 py-4 border-none rounded-xl text-base font-semibold cursor-pointer transition-all bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-          @click="handleSave"
-          :disabled="isSaving || selectedCount === 0"
-        >
-          {{ isSaving ? "저장 중..." : "저장" }}
-        </button>
-      </div>
-    </div>
-
-    <!-- 닉네임 모달 -->
-    <NicknameModal
-      v-if="showNicknameModal"
-      @close="closeNicknameModal"
-    />
+  <!-- Bottom Fixed Area -->
+  <div class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] px-6 py-6 pb-8 max-w-app mx-auto">
+    <button
+      @click="handleSave"
+      :disabled="isSaving || selectedCount === 0"
+      class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-extrabold text-lg py-4 rounded-2xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+        <span class="material-symbols-rounded">save</span>
+        {{ isSaving ? "저장 중..." : "일정 저장하기" }}
+      </button>
   </div>
+
+  <!-- Nickname Modal -->
+  <NicknameModal
+    v-if="showNicknameModal"
+    @close="closeNicknameModal"
+  />
+</div>
 </template>

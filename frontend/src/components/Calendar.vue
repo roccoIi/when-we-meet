@@ -26,6 +26,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  minDate: {
+    type: String,
+    default: null, // "2026-02-15" 형식
+  },
 });
 
 const emit = defineEmits(["update:year", "update:month", "dateClick"]);
@@ -120,6 +124,17 @@ const isToday = (date) => {
 
 const isPast = (date) => {
   if (!date) return false;
+  
+  // minDate가 설정되어 있으면 그 날짜 이전을 회색 처리
+  if (props.minDate) {
+    const minDateTime = new Date(props.minDate);
+    minDateTime.setHours(0, 0, 0, 0);
+    const checkDate = new Date(currentYear.value, currentMonth.value - 1, date);
+    checkDate.setHours(0, 0, 0, 0);
+    return checkDate < minDateTime;
+  }
+  
+  // minDate가 없으면 오늘 이전을 회색 처리
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const checkDate = new Date(currentYear.value, currentMonth.value - 1, date);
@@ -187,12 +202,12 @@ const getAvailabilityClass = (date) => {
   const availability = getAvailability(date);
   if (!availability) return '';
   
-  if (availability.percentage >= 70) {
-    return 'bg-green-100 text-green-800';
-  } else if (availability.percentage >= 40) {
-    return 'bg-yellow-100 text-yellow-800';
+  if (availability.percentage >= 80) {
+    return 'bg-primary';
+  } else if (availability.percentage >= 50) {
+    return 'bg-tertiary';
   } else {
-    return 'bg-red-100 text-red-800';
+    return 'bg-secondary';
   }
 };
 
@@ -218,91 +233,73 @@ const getUnavailableMembers = (date) => {
 </script>
 
 <template>
-  <div class="bg-white rounded-xl p-4">
-    <div class="flex justify-between items-center mb-4">
+  <div>
+    <!-- 달력 헤더 -->
+    <div class="flex items-center justify-between mb-6">
       <button
-        class="w-9 h-9 border-none bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-200"
         @click="prevMonth"
+        class="p-1 hover:bg-neutral-light rounded-full transition-colors"
       >
-        ◀
+        <span class="material-symbols-rounded text-gray-400">chevron_left</span>
       </button>
-      <h3 class="text-lg font-semibold text-gray-800">
+      <h3 class="text-lg font-bold text-gray-800">
         {{ currentYear }}년 {{ currentMonth }}월
       </h3>
       <button
-        class="w-9 h-9 border-none bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-200"
         @click="nextMonth"
+        class="p-1 hover:bg-neutral-light rounded-full transition-colors"
       >
-        ▶
+        <span class="material-symbols-rounded text-gray-400">chevron_right</span>
       </button>
     </div>
 
     <div class="w-full">
-      <div class="grid grid-cols-7 gap-1 mb-2">
+      <!-- 요일 헤더 -->
+      <div class="grid grid-cols-7 gap-y-4 gap-x-2 mb-2 text-center">
         <div
-          v-for="(day, index) in weekdays"
+          v-for="(day, index) in ['일', '월', '화', '수', '목', '금', '토']"
           :key="day"
-          class="text-center text-sm font-semibold py-2"
-          :class="{
-            'text-sunday': index === 0,
-            'text-saturday': index === 6,
-            'text-gray-600': index !== 0 && index !== 6,
-          }"
+          class="text-xs font-bold text-gray-400 uppercase tracking-wide"
         >
           {{ day }}
         </div>
       </div>
 
-      <div class="grid grid-cols-7 gap-1">
+      <!-- 날짜 그리드 -->
+      <div class="grid grid-cols-7 gap-y-4 gap-x-2 text-center">
         <div
           v-for="(date, index) in calendarDates"
           :key="index"
-          class="aspect-square flex flex-col justify-start items-center p-1 rounded-lg cursor-pointer transition-all relative group"
-          :class="[
-            {
-              'cursor-default': !date,
-              'opacity-30 cursor-not-allowed': date && isPast(date),
-              'bg-gray-300': date && isUnavailable(date),
-              'bg-primary text-white font-bold shadow-md': date && isSelected(date),
-              'border-2 border-primary': date && isToday(date) && !isSelected(date) && !isConfirmedDate(date),
-              'border-4 border-yellow-400 shadow-lg': date && isConfirmedDate(date),
-              'hover:bg-gray-100': date && !isPast(date) && !isSelected(date),
-            },
-            date && !isSelected(date) && !isUnavailable(date) ? getAvailabilityClass(date) : ''
-          ]"
+          class="relative group cursor-pointer"
           @click="handleDateClick(date)"
         >
-          <!-- 확정 날짜 뱃지 -->
-          <div v-if="date && isConfirmedDate(date)" class="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold shadow z-10">
-            확정
-          </div>
-          
-          <!-- 날짜 숫자 -->
-          <span
+          <div
             v-if="date"
-            class="text-sm font-medium"
-            :class="{
-              'text-white': isSelected(date),
-              'text-sunday': !isSelected(date) && getDayClass(index, date) === 'sunday',
-              'text-saturday': !isSelected(date) && getDayClass(index, date) === 'saturday',
-              'text-gray-400': !isSelected(date) && isPast(date),
-            }"
+            :class="[
+              'w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-medium transition-colors',
+              {
+                'cursor-default': !date,
+                'bg-gray-200 text-gray-400 cursor-not-allowed': date && isPast(date),
+                'bg-primary text-gray-800 font-bold border border-white shadow-sm': date && isSelected(date) && !isPast(date),
+                'bg-primary text-gray-800 font-extrabold ring-2 ring-primary ring-offset-2': date && isConfirmedDate(date) && !isPast(date),
+                'text-gray-600 hover:bg-neutral-light': date && !isPast(date) && !isSelected(date) && !isConfirmedDate(date) && !monthlyAvailability,
+              },
+              date && !isPast(date) && !isSelected(date) && !isConfirmedDate(date) && monthlyAvailability ? getAvailabilityClass(date) + ' text-gray-700 font-bold border border-white shadow-sm' : ''
+            ]"
           >
+            <!-- 확정된 날짜 표시 -->
+            <div 
+              v-if="date && isConfirmedDate(date)"
+              class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FF8B94] rounded-full animate-pulse border-2 border-white"
+            ></div>
+            
             {{ date }}
-          </span>
-          
-          <!-- 가용 인원 표시 -->
-          <span
-            v-if="date && monthlyAvailability && !isSelected(date) && !isPast(date)"
-            class="text-xs font-semibold mt-0.5"
-          >
-            {{ getAvailability(date)?.availableCount }}/{{ monthlyAvailability.totalMembers }}
-          </span>
+          </div>
           
           <!-- 불가능한 멤버 툴팁 -->
           <div 
             v-if="date && monthlyAvailability && getUnavailableMembers(date).length > 0"
-            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 shadow-lg"
+            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg"
           >
             <div class="font-semibold mb-1">불가능한 멤버</div>
             <div class="flex flex-col gap-0.5">
@@ -315,11 +312,6 @@ const getUnavailableMembers = (date) => {
               <div class="border-4 border-transparent border-t-gray-800"></div>
             </div>
           </div>
-          
-          <div
-            v-if="date && isUnavailable(date)"
-            class="absolute inset-0 bg-gray-400/20 rounded-lg"
-          ></div>
         </div>
       </div>
     </div>

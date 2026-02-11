@@ -1,26 +1,73 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useUserStore } from "../stores/user";
 import { useMeetingsStore } from "../stores/meetings";
 import NicknameModal from "../components/NicknameModal.vue";
 import { meetingAPI } from "../services";
 
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const meetingsStore = useMeetingsStore();
+
+// 수정 모드 체크
+const isEditMode = ref(false);
+const editShareCode = ref(null);
 
 const meetingName = ref("");
 const isLoading = ref(false);
 const error = ref("");
 
+// 다음 가능한 30분 단위 시간 계산
+const getNextAvailableTime = () => {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  
+  // 현재 시간보다 미래의 가장 가까운 30분 단위로 올림
+  let nextHour, nextMinute;
+  
+  if (currentMinute < 30) {
+    nextHour = currentHour;
+    nextMinute = 30;
+  } else {
+    // 30분 이후면 다음 시간의 0분
+    nextHour = currentHour + 1;
+    nextMinute = 0;
+  }
+  
+  // 6시 이전이면 6:00으로 설정
+  if (nextHour < 6) {
+    return { hour: 6, minute: 0 };
+  }
+  
+  // 23시를 넘으면 23:30으로 설정
+  if (nextHour > 23) {
+    return { hour: 23, minute: 30 };
+  }
+  
+  // 23:30을 넘으면 23:30으로 설정
+  if (nextHour === 23 && nextMinute > 30) {
+    return { hour: 23, minute: 30 };
+  }
+  
+  return { hour: nextHour, minute: nextMinute };
+};
+
+const nextTime = getNextAvailableTime();
+
 // 날짜 및 시간 선택
 const selectedDate = ref(new Date());
-const selectedHour = ref(new Date().getHours());
-const selectedMinute = ref(Math.floor(new Date().getMinutes() / 30) * 30); // 30분 단위로 반올림
+const selectedHour = ref(nextTime.hour);
+const selectedMinute = ref(nextTime.minute);
 
-// 시간 옵션 생성
-const allHours = Array.from({ length: 24 }, (_, i) => i);
+// 종료 시간 (기본값 23:30)
+const endHour = ref(23);
+const endMinute = ref(30);
+
+// 시간 옵션 생성 (6시부터 23시까지)
+const allHours = Array.from({ length: 18 }, (_, i) => i + 6); // 6시 ~ 23시
 const allMinutes = [0, 30];
 
 // 오늘 날짜 체크
@@ -55,6 +102,29 @@ const availableMinutes = computed(() => {
   return allMinutes;
 });
 
+// 종료 시간 선택 가능한 시간 목록 (시작 시간 + 30분 이후부터)
+const availableEndHours = computed(() => {
+  const startTotalMinutes = selectedHour.value * 60 + selectedMinute.value;
+  const minEndTotalMinutes = startTotalMinutes + 30;
+  
+  return allHours.filter(hour => {
+    const hourInMinutes = hour * 60;
+    // 해당 시간의 마지막 분(30분)이 최소 종료 시간보다 크거나 같으면 선택 가능
+    return hourInMinutes + 30 >= minEndTotalMinutes;
+  });
+});
+
+// 종료 분 선택 가능한 분 목록
+const availableEndMinutes = computed(() => {
+  const startTotalMinutes = selectedHour.value * 60 + selectedMinute.value;
+  const minEndTotalMinutes = startTotalMinutes + 30;
+  
+  return allMinutes.filter(minute => {
+    const endTotalMinutes = endHour.value * 60 + minute;
+    return endTotalMinutes >= minEndTotalMinutes;
+  });
+});
+
 // 선택된 날짜/시간 포맷팅
 const formattedDateTime = computed(() => {
   const year = selectedDate.value.getFullYear();
@@ -64,6 +134,31 @@ const formattedDateTime = computed(() => {
   const minute = String(selectedMinute.value).padStart(2, '0');
   
   return `${year}년 ${month}월 ${day}일 ${hour}:${minute}`;
+});
+
+// 날짜 포맷 (한국어)
+const formattedDateShort = computed(() => {
+  const month = selectedDate.value.getMonth() + 1;
+  const day = selectedDate.value.getDate();
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const dayName = days[selectedDate.value.getDay()];
+  
+  return `${month}월 ${day}일 (${dayName})`;
+});
+
+// 시간 범위 포맷
+const formattedTimeRange = computed(() => {
+  const startH = String(selectedHour.value).padStart(2, '0');
+  const startM = String(selectedMinute.value).padStart(2, '0');
+  const endH = String(endHour.value).padStart(2, '0');
+  const endM = String(endMinute.value).padStart(2, '0');
+  
+  return `${startH}:${startM} - ${endH}:${endM}`;
+});
+
+// 현재 월 이름 (한국어)
+const currentMonthName = computed(() => {
+  return `${currentYear.value}년 ${currentMonth.value + 1}월`;
 });
 
 // 닉네임 모달 상태
@@ -88,13 +183,15 @@ onMounted(async () => {
     }
   }
 
-  // 초기화 완료 후 닉네임 체크
-  // if (!userStore.isLoggedIn) {
-  //   console.log('⚠️ [CreateMeeting] 닉네임 없음 - 모달 표시');
-  //   showNicknameModal.value = true;
-  // } else {
-  //   console.log('✅ [CreateMeeting] 닉네임 존재:', userStore.nickname);
-  // }
+  // 수정 모드 확인
+  if (route.query.mode === 'edit' && route.query.shareCode) {
+    isEditMode.value = true;
+    editShareCode.value = route.query.shareCode;
+    console.log('✏️ [CreateMeeting] 수정 모드:', editShareCode.value);
+    
+    // 기존 미팅 정보 로드
+    await loadExistingMeeting(editShareCode.value);
+  }
 });
 
 // 날짜가 과거인지 확인
@@ -105,6 +202,55 @@ const isPastDate = (date) => {
   const checkDate = new Date(date);
   checkDate.setHours(0, 0, 0, 0);
   return checkDate < today;
+};
+
+// 기존 미팅 정보 로드
+const loadExistingMeeting = async (shareCode) => {
+  try {
+    console.log('🔄 [CreateMeeting] 기존 미팅 정보 로드 중...');
+    const response = await meetingAPI.getMeetingDetailByShareCode(shareCode);
+    const data = response.data || response;
+    
+    console.log('📦 [CreateMeeting] 기존 미팅 데이터:', data);
+    
+    // 모임 이름 설정
+    if (data.name) {
+      meetingName.value = data.name;
+      console.log('📝 [CreateMeeting] 모임 이름:', data.name);
+    }
+    
+    // 희망 날짜 설정 (meetingDate - LocalDate)
+    if (data.meetingDate) {
+      const dateString = String(data.meetingDate); // "2026-02-15"
+      const [year, month, day] = dateString.split('-').map(Number);
+      selectedDate.value = new Date(year, month - 1, day);
+      console.log('📅 [CreateMeeting] 희망 날짜:', dateString);
+    }
+    
+    // 희망 시작 시간 설정 (startTime - LocalTime)
+    if (data.startTime) {
+      const timeString = String(data.startTime); // "14:00:00" or "14:00"
+      const [hour, minute] = timeString.split(':').map(Number);
+      selectedHour.value = hour;
+      selectedMinute.value = minute;
+      console.log('⏰ [CreateMeeting] 희망 시작 시간:', timeString);
+    }
+    
+    // 희망 종료 시간 설정 (endTime - LocalTime)
+    if (data.endTime) {
+      const timeString = String(data.endTime); // "16:00:00" or "16:00"
+      const [hour, minute] = timeString.split(':').map(Number);
+      endHour.value = hour;
+      endMinute.value = minute;
+      console.log('⏰ [CreateMeeting] 희망 종료 시간:', timeString);
+    }
+    
+    console.log('✅ [CreateMeeting] 기존 미팅 정보 로드 완료');
+  } catch (error) {
+    console.error('❌ [CreateMeeting] 기존 미팅 정보 로드 실패:', error);
+    alert('미팅 정보를 불러오는데 실패했습니다.');
+    router.back();
+  }
 };
 
 // 날짜 선택 핸들러
@@ -198,43 +344,62 @@ const handleSubmit = async () => {
   error.value = "";
 
   try {
-    // 날짜/시간 포맷팅
-    const startDate = `${selectedDate.value.getFullYear()}-${String(selectedDate.value.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.value.getDate()).padStart(2, '0')}`;
-    const startTime = `${String(selectedHour.value).padStart(2, '0')}:${String(selectedMinute.value).padStart(2, '0')}:00`;
-    
-    console.log('모임 생성 데이터:', {
-      meetingName: meetingName.value,
-      startDate,
-      startTime
-    });
+    if (isEditMode.value) {
+      // 수정 모드: UPDATE API 호출
+      const startDate = `${selectedDate.value.getFullYear()}-${String(selectedDate.value.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.value.getDate()).padStart(2, '0')}`;
+      const startTime = `${String(selectedHour.value).padStart(2, '0')}:${String(selectedMinute.value).padStart(2, '0')}:00`;
+      const endTime = `${String(endHour.value).padStart(2, '0')}:${String(endMinute.value).padStart(2, '0')}:00`;
+      
+      console.log('✏️ [CreateMeeting] 모임 수정 데이터:', {
+        name: meetingName.value,
+        meetingDate: null, // 확정일자는 수정하지 않음
+        startDate,
+        startTime,
+        endTime
+      });
 
-    // API 호출
-    const response = await meetingAPI.createMeeting({
-      meetingName: meetingName.value,
-      startDate: startDate,
-      startTime: startTime
-    })
-    
-    console.log('✅ [CreateMeeting] 전체 응답:', response);
-    console.log('✅ [CreateMeeting] response.data:', response.data);
-    
-    // CommonResponse 형식에서 데이터 추출
-    // response.data = { code, message, data: { shareCode } }
-    const responseData = response.data || response;
-    const actualData = responseData.data || responseData;
-    const shareCode = actualData.shareCode;
-    
-    console.log('✅ [CreateMeeting] 추출된 데이터:', actualData);
-    console.log('✅ [CreateMeeting] shareCode:', shareCode);
-    
-    if (!shareCode) {
-      throw new Error('shareCode를 받지 못했습니다');
+      await meetingAPI.updateMeetingSchedule(editShareCode.value, {
+        name: meetingName.value,
+        meetingDate: null,
+        startDate: startDate,
+        startTime: startTime,
+        endTime: endTime
+      });
+      
+      alert('모임이 수정되었습니다! ✅');
+      router.push(`/meeting/${editShareCode.value}`);
+    } else {
+      // 생성 모드: CREATE API 호출
+      const startDate = `${selectedDate.value.getFullYear()}-${String(selectedDate.value.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.value.getDate()).padStart(2, '0')}`;
+      const startTime = `${String(selectedHour.value).padStart(2, '0')}:${String(selectedMinute.value).padStart(2, '0')}:00`;
+      
+      console.log('➕ [CreateMeeting] 모임 생성 데이터:', {
+        meetingName: meetingName.value,
+        startDate,
+        startTime
+      });
+
+      const response = await meetingAPI.createMeeting({
+        meetingName: meetingName.value,
+        startDate: startDate,
+        startTime: startTime
+      });
+      
+      console.log('✅ [CreateMeeting] 전체 응답:', response);
+      
+      const responseData = response.data || response;
+      const actualData = responseData.data || responseData;
+      const shareCode = actualData.shareCode;
+      
+      if (!shareCode) {
+        throw new Error('shareCode를 받지 못했습니다');
+      }
+      
+      alert('모임이 생성되었습니다! 🎉');
+      router.push(`/meeting/${shareCode}`);
     }
-    
-    alert(`모임이 생성되었습니다! 🎉`);
-    router.push(`/meeting/${shareCode}`)
   } catch (err) {
-    error.value = "모임 생성에 실패했습니다";
+    error.value = isEditMode.value ? "모임 수정에 실패했습니다" : "모임 생성에 실패했습니다";
     console.error(err);
   } finally {
     isLoading.value = false;
@@ -259,188 +424,204 @@ const closeNicknameModal = () => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-60px)] bg-gray-100 p-5 pb-20">
-    <div class="w-full max-w-2xl mx-auto">
-      <h2 class="text-xl font-bold text-gray-800 mb-3">새 모임 만들기</h2>
-
-      <!-- 모임 이름 입력 -->
-      <div class="bg-white rounded-2xl p-4 mb-5 shadow-sm">
-        <label
-          for="meeting-name"
-          class="block text-sm font-semibold text-gray-800 mb-2"
-        >
-          모임 이름
-        </label>
-        <input
-          id="meeting-name"
-          v-model="meetingName"
-          type="text"
-          class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base transition-colors focus:outline-none focus:border-primary"
-          placeholder="예: 친구들 모임, 스터디 그룹"
-          maxlength="30"
-          autofocus
-        />
-        <p class="text-right text-xs text-gray-400 mt-1">
-          {{ meetingName.length }}/30
-        </p>
-      </div>
-
-      <!-- 날짜 및 시간 선택 -->
-      <div class="bg-white rounded-2xl p-5 mb-5 shadow-sm">
-        <h3 class="text-base font-semibold text-gray-800 mb-4">
-          모임 시작 날짜 및 시간
-        </h3>
-
-        <!-- 선택된 날짜/시간 표시 -->
-        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-5">
-          <p class="text-sm text-gray-600 mb-1">선택한 시작 시점</p>
-          <p class="text-lg font-bold text-primary">{{ formattedDateTime }} 부터</p>
+  <div>
+    <div class="min-h-screen relative flex flex-col bg-background-light overflow-hidden text-gray-800 antialiased selection:bg-primary selection:text-neutral-dark">
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto no-scrollbar pb-32 px-6 pt-2">
+        <!-- Meeting Name Input -->
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-600 mb-2 ml-1" for="meeting-name">모임 이름</label>
+          <div class="relative">
+            <input 
+              id="meeting-name"
+              v-model="meetingName"
+              class="w-full bg-white border border-pastel-border rounded-xl px-4 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-soft" 
+              placeholder="예) 점심 약속 🥗" 
+              type="text"
+              maxlength="30"
+              autofocus
+            />
+          </div>
+          <p class="text-right text-xs text-gray-400 mt-1 mr-1">
+            {{ meetingName.length }}/30
+          </p>
         </div>
 
-        <!-- 달력 -->
-        <div class="mb-5">
-          <!-- 달력 헤더 -->
-          <div class="flex justify-between items-center mb-4">
-            <button
-              @click="prevMonth"
-              class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              ←
-            </button>
-            <h4 class="text-base font-semibold text-gray-800">
-              {{ currentYear }}년 {{ currentMonth + 1 }}월
-            </h4>
-            <button
-              @click="nextMonth"
-              class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              →
-            </button>
-          </div>
-
-          <!-- 요일 헤더 -->
-          <div class="grid grid-cols-7 gap-1 mb-2">
-            <div
-              v-for="day in ['일', '월', '화', '수', '목', '금', '토']"
-              :key="day"
-              class="text-center text-xs font-medium text-gray-500 py-2"
-            >
-              {{ day }}
+        <!-- Date Selection -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-3 ml-1">
+            <label class="block text-sm font-bold text-gray-600">날짜 선택</label>
+            <div class="flex items-center gap-2">
+              <button 
+                @click="prevMonth"
+                class="p-1 hover:bg-neutral-light rounded-full transition-colors"
+              >
+                <span class="material-symbols-rounded text-gray-400 text-lg">chevron_left</span>
+              </button>
+              <span class="text-sm font-bold text-gray-800">{{ currentMonthName }}</span>
+              <button 
+                @click="nextMonth"
+                class="p-1 hover:bg-neutral-light rounded-full transition-colors"
+              >
+                <span class="material-symbols-rounded text-gray-400 text-lg">chevron_right</span>
+              </button>
             </div>
           </div>
-
-          <!-- 날짜 그리드 -->
-          <div class="grid grid-cols-7 gap-1">
-            <button
-              v-for="(day, index) in calendarDays"
-              :key="index"
-              @click="day && !isPastDate(day) && handleDateSelect(day)"
-              :disabled="!day || isPastDate(day)"
-              :class="[
-                'aspect-square flex items-center justify-center rounded-lg text-sm transition-all',
-                !day ? 'invisible' : '',
-                isPastDate(day)
-                  ? 'text-gray-300 cursor-not-allowed'
-                  : isSameDay(day, selectedDate)
-                  ? 'bg-primary text-white font-bold shadow-lg'
-                  : 'hover:bg-gray-100 text-gray-700 cursor-pointer'
-              ]"
-            >
-              {{ day?.getDate() }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 시간 선택 -->
-        <div class="grid grid-cols-2 gap-4">
-          <!-- 시 선택 -->
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-              시
-            </label>
-            <div class="h-40 overflow-y-auto border border-gray-300 rounded-lg">
-              <button
-                v-for="hour in availableHours"
-                :key="hour"
-                @click="selectedHour = hour"
-                :class="[
-                  'w-full py-3 text-center transition-colors',
-                  selectedHour === hour
-                    ? 'bg-primary text-white font-bold'
-                    : 'hover:bg-gray-100'
-                ]"
+          
+          <div class="bg-white rounded-2xl p-4 shadow-soft border border-gray-100">
+            <div class="grid grid-cols-7 gap-y-2 gap-x-1 mb-2 text-center">
+              <div 
+                v-for="day in ['일', '월', '화', '수', '목', '금', '토']"
+                :key="day"
+                class="text-[10px] font-bold text-gray-400 uppercase tracking-wide"
               >
-                {{ String(hour).padStart(2, '0') }}시
-              </button>
-              <!-- 선택 불가능한 시간 표시 (과거) -->
-              <div
-                v-for="hour in allHours.filter(h => !availableHours.includes(h))"
-                :key="`disabled-${hour}`"
-                class="w-full py-3 text-center text-gray-300 cursor-not-allowed"
-              >
-                {{ String(hour).padStart(2, '0') }}시
+                {{ day }}
               </div>
-            </div>
-          </div>
-
-          <!-- 분 선택 -->
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-              분
-            </label>
-            <div class="h-40 overflow-y-auto border border-gray-300 rounded-lg">
-              <button
-                v-for="minute in availableMinutes"
-                :key="minute"
-                @click="selectedMinute = minute"
-                :class="[
-                  'w-full py-3 text-center transition-colors',
-                  selectedMinute === minute
-                    ? 'bg-primary text-white font-bold'
-                    : 'hover:bg-gray-100'
-                ]"
-              >
-                {{ String(minute).padStart(2, '0') }}분
-              </button>
-              <!-- 선택 불가능한 분 표시 (과거) -->
+              
+              <!-- Empty cells for offset -->
+              <div 
+                v-for="n in calendarDays.findIndex(d => d !== null)"
+                :key="`empty-${n}`"
+                class="h-8"
+              ></div>
+              
+              <!-- Date cells -->
               <div
-                v-for="minute in allMinutes.filter(m => !availableMinutes.includes(m))"
-                :key="`disabled-${minute}`"
-                class="w-full py-3 text-center text-gray-300 cursor-not-allowed"
+                v-for="(day, index) in calendarDays.filter(d => d !== null)"
+                :key="`day-${index}`"
+                class="relative group cursor-pointer"
+                @click="!isPastDate(day) && handleDateSelect(day)"
               >
-                {{ String(minute).padStart(2, '0') }}분
+                <div 
+                  :class="[
+                    'w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-medium transition-all',
+                    isPastDate(day) 
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : isSameDay(day, selectedDate)
+                      ? 'bg-primary text-gray-800 font-bold shadow-md shadow-primary/30'
+                      : 'text-gray-600 hover:bg-neutral-light'
+                  ]"
+                >
+                  {{ day.getDate() }}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <p class="text-xs text-gray-500 mt-4 text-center">
-          💡 이 시점부터 가능한 날짜와 시간을 참여자들이 선택할 수 있습니다
-        </p>
-      </div>
+        <!-- Time Selection -->
+        <div class="mb-24">
+          <label class="block text-sm font-bold text-gray-600 mb-3 ml-1">모임 시간 선택</label>
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Start Time -->
+            <div class="bg-white rounded-2xl p-4 shadow-soft border border-gray-100">
+              <span class="text-xs font-bold text-gray-400 uppercase tracking-wide block mb-3 text-center">
+                {{ String(selectedHour).padStart(2, '0') }}:{{ String(selectedMinute).padStart(2, '0') }}부터
+              </span>
+              <div class="flex flex-col gap-3">
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block">시</label>
+                  <select 
+                    v-model="selectedHour"
+                    class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option 
+                      v-for="hour in availableHours" 
+                      :key="hour" 
+                      :value="hour"
+                    >
+                      {{ String(hour).padStart(2, '0') }}
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block">분</label>
+                  <select 
+                    v-model="selectedMinute"
+                    class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option 
+                      v-for="minute in availableMinutes" 
+                      :key="minute" 
+                      :value="minute"
+                    >
+                      {{ String(minute).padStart(2, '0') }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
-      <p v-if="error" class="text-red-500 text-sm mb-4 text-center">{{ error }}</p>
+            <!-- End Time -->
+            <div class="bg-white rounded-2xl p-4 shadow-soft border border-gray-100">
+              <span class="text-xs font-bold text-gray-400 uppercase tracking-wide block mb-3 text-center">
+                {{ String(endHour).padStart(2, '0') }}:{{ String(endMinute).padStart(2, '0') }}까지
+              </span>
+              <div class="flex flex-col gap-3">
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block">시</label>
+                  <select 
+                    v-model="endHour"
+                    class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option 
+                      v-for="hour in availableEndHours" 
+                      :key="hour" 
+                      :value="hour"
+                    >
+                      {{ String(hour).padStart(2, '0') }}
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block">분</label>
+                  <select 
+                    v-model="endMinute"
+                    class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option 
+                      v-for="minute in availableEndMinutes" 
+                      :key="minute" 
+                      :value="minute"
+                    >
+                      {{ String(minute).padStart(2, '0') }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
 
-      <!-- 버튼 -->
-      <div class="flex gap-3">
-        <button
-          class="flex-1 px-4 py-3.5 border-none rounded-xl text-base font-semibold cursor-pointer transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="handleCancel"
-          :disabled="isLoading"
-        >
-          취소
-        </button>
-        <button
-          class="flex-1 px-4 py-3.5 border-none rounded-xl text-base font-semibold cursor-pointer transition-all bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          @click="handleSubmit"
-          :disabled="isLoading || !meetingName.trim()"
-        >
-          {{ isLoading ? "생성 중..." : "모임 만들기" }}
-        </button>
+    <!-- Bottom Fixed Area -->
+    <div class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] px-6 py-6 pb-8 max-w-app mx-auto">
+      <div class="flex items-center justify-between mb-5">
+        <div class="flex flex-col">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">최종 선택</span>
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-rounded text-primary-dark text-lg">event</span>
+            <span class="text-base font-bold text-gray-800">{{ formattedDateShort }}</span>
+            <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+            <span class="text-base font-medium text-gray-600">{{ formattedTimeRange }}</span>
+          </div>
+        </div>
       </div>
+      
+      <p v-if="error" class="text-red-500 text-sm mb-3 text-center">{{ error }}</p>
+      
+      <button 
+        @click="handleSubmit"
+        :disabled="isLoading || !meetingName.trim()"
+          class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-extrabold text-lg py-4 rounded-2xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span class="material-symbols-rounded">{{ isEditMode ? 'edit' : 'check_circle' }}</span>
+          {{ isLoading ? (isEditMode ? "수정 중..." : "생성 중...") : (isEditMode ? "모임 수정하기" : "모임 생성하기") }}
+        </button>
+    </div>
     </div>
 
-    <!-- 닉네임 모달 -->
+    <!-- Nickname Modal -->
     <NicknameModal
       v-if="showNicknameModal"
       @close="closeNicknameModal"
