@@ -11,6 +11,7 @@ import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
 import com.whenwemeet.backend.global.response.CommonResponse;
 import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +42,17 @@ public class UserController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @RequestBody NickNameRequest request){
         log.info("[PUT] api/user/nickname");
-        userService.changeNickname(user.getId(), request.getNickname());
+        userService.changeNickname(user.getId(), request.nickname());
+        return ResponseEntity.ok(CommonResponse.success());
+    }
+
+    @PostMapping("/first")
+    public ResponseEntity<CommonResponse<?>> addFirstUser(
+            @RequestBody NickNameRequest request,
+            HttpServletResponse response
+    ){
+        log.info("[POST] /api/user/first");
+        userService.makeFirstUser(request.nickname(), response);
         return ResponseEntity.ok(CommonResponse.success());
     }
 

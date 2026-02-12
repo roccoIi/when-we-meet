@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -172,11 +173,15 @@ public class MeetingServiceImpl implements MeetingService{
                 .meetingRoom(room)
                 .build();
 
-        // 4) 미팅룸 인원 추가(+1)
-        room.addMember();
-
         // 5) 저장
         userMeetingRoomRepository.save(umr);
+
+        // 6) shareCount 수정 (만약 0이 됐다면 shareCode 새롭게 발급)
+        room.minusShareCount();
+        if(room.getShareCount() == 0){
+            room.updateShareCode(generateShareCode());
+            room.initializeShareCount();
+        }
     }
 
     @Override
@@ -239,5 +244,7 @@ public class MeetingServiceImpl implements MeetingService{
         }
         throw new NotFoundException(T003);
     }
+
+
     
 }

@@ -10,6 +10,7 @@ import com.whenwemeet.backend.domain.schedule.entity.DayType;
 import com.whenwemeet.backend.domain.schedule.entity.UnavailableTime;
 import com.whenwemeet.backend.domain.schedule.repository.ScheduleRepository;
 import com.whenwemeet.backend.domain.schedule.repository.UnavailableRepository;
+import com.whenwemeet.backend.domain.user.entity.User;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -352,4 +353,5 @@ public class ScheduleServiceImpl implements ScheduleService{
 
         return mergedList;
     }
+
 }

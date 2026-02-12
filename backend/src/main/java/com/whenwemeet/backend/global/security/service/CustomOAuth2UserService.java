@@ -28,7 +28,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -74,7 +78,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
      * @param oAuth2Response OAuth 업체 측에서 제공한 사용자 정보
      * @return 현재 사용자 객체
      */
-    @Transactional
     public User getUser(HttpServletRequest request, OAuth2Response oAuth2Response){
 
         // 1) RefreshTokendl 들어있을 쿠키를 확인합니다.
@@ -120,10 +123,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 5-2) 만일 기존에 Oauth로그인 기록이 있다면, 지금까지 게스트유저로 입력한 모든 정보를 기존 Oauth계정으로 수정
         } else {
             log.info("5-2) 만일 기존에 Oauth로그인 기록이 있다면, 지금까지 게스트유저로 입력한 모든 정보를 기존 Oauth계정으로 수정");
-            // 참여중인 미팅룸 리스트 수정 (UserMeetingRoom)
-            List<UserMeetingRoom> UserMeetingRoomList = userMeetingRoomRepository.findAllByUser(guestUser);
-            UserMeetingRoomList.forEach(umr -> umr.changeUser(user));
-            userMeetingRoomRepository.saveAll(UserMeetingRoomList);
+            // 참여중인 미팅룸의 ID 조회 (GuestUser, User)
+            HashSet<UserMeetingRoom> guestUserMeetingRoomIdSet = userMeetingRoomRepository.findAllByUser(guestUser);
+            HashSet<Long> userMeetingRoomIdSet = userMeetingRoomRepository.findMeetingRoomIdsByUser(user);
+
+            // 두 Set의 차집합 필터링 이후 해당 값에 대한 유저 변경
+            List<Long> removeIdList = new ArrayList<>();
+            guestUserMeetingRoomIdSet.forEach(umr -> {
+                if(userMeetingRoomIdSet.contains(umr.getMeetingRoom().getId())){
+                    // 여기선 겹치는 존재이기 때문에 guest데이터를 삭제해야한다. (한번에 삭제해야하니깐 그 리스트를 담아두는게 나을듯)
+                    removeIdList.add(umr.getId());
+                } else {
+                    //  여기선 겹치지 않기 때문에 userMeetingRoom 의 User를 변경해줘야 한다.
+                    umr.changeUser(user);
+                }
+            });
+            userMeetingRoomRepository.saveAll(guestUserMeetingRoomIdSet);
+            userMeetingRoomRepository.deleteAllById(removeIdList);
 
             // 방별로 등록한 불가능일정 모두 수정 (Unavailable)
             List<UnavailableTime> unavailableList = unavailableRepository.findAllByUser(guestUser);

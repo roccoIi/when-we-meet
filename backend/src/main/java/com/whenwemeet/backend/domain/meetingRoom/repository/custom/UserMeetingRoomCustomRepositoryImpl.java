@@ -3,6 +3,7 @@ package com.whenwemeet.backend.domain.meetingRoom.repository.custom;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortType;
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortDirection;
@@ -29,12 +30,16 @@ public class UserMeetingRoomCustomRepositoryImpl implements UserMeetingRoomCusto
     public List<MeetingListResponse> findAllByUserId(Long userId, Long offset, Long limit, SortType type, SortDirection direction) {
         return factory
                 .select(
-                        Projections.fields(MeetingListResponse.class,
+                        Projections.constructor(MeetingListResponse.class,
                                 meetingRoom.name,
-                                meetingRoom.memberNumber,
-                                meetingRoom.meetingDate,
                                 userMeetingRoom.role,
-                                meetingRoom.shareCode)
+                                JPAExpressions
+                                        .select(userMeetingRoom.count())
+                                        .from(userMeetingRoom)
+                                        .where(userMeetingRoom.meetingRoom.id.eq(meetingRoom.id)),
+                                meetingRoom.meetingDate,
+                                meetingRoom.shareCode
+                        )
                 )
                 .from(userMeetingRoom)
                 .leftJoin(userMeetingRoom.meetingRoom, meetingRoom)

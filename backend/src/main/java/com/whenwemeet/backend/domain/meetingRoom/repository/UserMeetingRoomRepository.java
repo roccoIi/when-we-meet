@@ -7,11 +7,14 @@ import com.whenwemeet.backend.domain.meetingRoom.repository.custom.UserMeetingRo
 import com.whenwemeet.backend.domain.user.dto.response.UserInfoResponse;
 import com.whenwemeet.backend.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface UserMeetingRoomRepository extends JpaRepository<UserMeetingRoom, Long>, UserMeetingRoomCustomRepository {
 
@@ -21,13 +24,39 @@ public interface UserMeetingRoomRepository extends JpaRepository<UserMeetingRoom
 
     Optional<UserMeetingRoom> findByUserAndMeetingRoomShareCode(User user, String shareCode);
 
-    List<UserMeetingRoom> findAllByUser(User user);
+    HashSet<UserMeetingRoom> findAllByUser(User user);
 
     List<UserMeetingRoom> findAllByMeetingRoom(MeetingRoom meetingRoom);
 
     Integer countByMeetingRoom(MeetingRoom meetingRoom);
 
     Integer countByMeetingRoomShareCode(String shareCode);
+
+    boolean existsByUserAndMeetingRoom(User user, MeetingRoom meetingRoom);
+
+    @Query("""
+            select umr.meetingRoom.id
+            from UserMeetingRoom umr
+            where umr.user=:user""")
+    HashSet<Long> findMeetingRoomIdsByUser(User user);
+
+    @Modifying(clearAutomatically = true)
+    @Query(value = """
+            delete from UserMeetingRoom umr
+            where umr.id = :meetingRoomId
+            """)
+    void deleteAllByUserId(Long userId);
+
+    @Modifying(clearAutomatically = true)
+    @Query(value = """
+           update UserMeetingRoom umr
+           set umr.user = :user
+           where umr.user = :guestUser
+           and umr.meetingRoom.id not in :userMeetingRoomIdSet
+           """)
+    void updateAllGuestUserToUser(User user, User guestUser, HashSet<Long> userMeetingRoomIdSet);
+
+
 
     // from절 서브쿼리가 더 성능이 좋을 것으로 생각되어 우선 sql문으로 작성
     // 쓰기-읽기 요청 비교하여 만일 쓰기가 월등히 적다면 index생성 후 jpql/queryDsl로 변경하는게 가독성 측면에서 우위
@@ -43,5 +72,4 @@ public interface UserMeetingRoomRepository extends JpaRepository<UserMeetingRoom
             nativeQuery = true)
     List<UserInfoResponse> findNicknamesByShareCode(@Param("shareCode") String shareCode);
 
-    boolean existsByUserAndMeetingRoom(User user, MeetingRoom meetingRoom);
 }
