@@ -6,10 +6,12 @@ import Calendar from "../components/Calendar.vue";
 import TimeCalendar from "../components/TimeCalendar.vue";
 import NicknameModal from "../components/NicknameModal.vue";
 import { scheduleAPI, userAPI } from "../services";
+import { useMeetingsStore } from "../stores/meetings";
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const meetingsStore = useMeetingsStore();
 
 const shareCode = route.params.shareCode;
 const currentYear = ref(new Date().getFullYear());
@@ -19,6 +21,7 @@ const selectedTimes = ref([]);
 const isLoading = ref(false);
 const isSaving = ref(false);
 const viewMode = ref("date");
+const meeting = ref(null); // 미팅 정보
 
 // 닉네임 모달 상태
 const showNicknameModal = ref(false);
@@ -75,9 +78,36 @@ onMounted(async () => {
     console.log('✅ [ScheduleInput] 닉네임 존재:', userStore.nickname);
   }
 
-  // 4️⃣ 사용자 일정 로드
+  // 4️⃣ 미팅 정보 로드
+  await loadMeetingInfo();
+
+  // 5️⃣ 사용자 일정 로드
   await loadUserSchedule();
 });
+
+/**
+ * 미팅 정보 로드 (캐싱 사용)
+ */
+const loadMeetingInfo = async () => {
+  try {
+    console.log('🔄 [ScheduleInput] 미팅 정보 로드 시작:', shareCode);
+    
+    // meetingsStore의 캐싱 로직 사용
+    const data = await meetingsStore.loadMeetingByShareCode(shareCode);
+    
+    console.log('📦 [ScheduleInput] 미팅 정보:', data);
+    
+    meeting.value = {
+      name: data.name,
+      startDate: data.startDate,
+      meetingDate: data.meetingDate
+    };
+    
+    console.log('✅ [ScheduleInput] 미팅 정보 로드 완료, startDate:', data.startDate);
+  } catch (error) {
+    console.error('❌ [ScheduleInput] 미팅 정보 로드 실패:', error);
+  }
+};
 
 /**
  * 백엔드에서 받은 일정 데이터를 날짜/시간 선택으로 변환
@@ -522,6 +552,7 @@ const closeNicknameModal = () => {
             :month="currentMonth"
             :unavailableDates="[]"
             :selectedDates="selectedDates"
+            :minDate="meeting?.startDate || null"
             @update:year="(val) => (currentYear = val)"
             @update:month="(val) => (currentMonth = val)"
             @dateClick="handleDateClick"
@@ -530,6 +561,7 @@ const closeNicknameModal = () => {
           <TimeCalendar
             v-else
             :selectedTimes="selectedTimes"
+            :minDate="meeting?.startDate || null"
             @timeClick="handleTimeClick"
           />
 

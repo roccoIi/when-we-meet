@@ -204,12 +204,13 @@ const isPastDate = (date) => {
   return checkDate < today;
 };
 
-// 기존 미팅 정보 로드
+// 기존 미팅 정보 로드 (캐싱 사용)
 const loadExistingMeeting = async (shareCode) => {
   try {
     console.log('🔄 [CreateMeeting] 기존 미팅 정보 로드 중...');
-    const response = await meetingAPI.getMeetingDetailByShareCode(shareCode);
-    const data = response.data || response;
+    
+    // meetingsStore의 캐싱 로직 사용
+    const data = await meetingsStore.loadMeetingByShareCode(shareCode);
     
     console.log('📦 [CreateMeeting] 기존 미팅 데이터:', data);
     
@@ -219,31 +220,28 @@ const loadExistingMeeting = async (shareCode) => {
       console.log('📝 [CreateMeeting] 모임 이름:', data.name);
     }
     
-    // 희망 날짜 설정 (meetingDate - LocalDate)
+    // 희망 날짜 설정 (meetingDate)
     if (data.meetingDate) {
-      const dateString = String(data.meetingDate); // "2026-02-15"
+      // meetingDate는 "2026-02-15T19:00:00" 형식
+      const dateString = String(data.meetingDate).split('T')[0]; // "2026-02-15"
       const [year, month, day] = dateString.split('-').map(Number);
       selectedDate.value = new Date(year, month - 1, day);
       console.log('📅 [CreateMeeting] 희망 날짜:', dateString);
+      
+      // 시간도 meetingDate에서 추출
+      const timeString = String(data.meetingDate).split('T')[1]; // "19:00:00"
+      if (timeString) {
+        const [hour, minute] = timeString.split(':').map(Number);
+        selectedHour.value = hour;
+        selectedMinute.value = minute;
+        console.log('⏰ [CreateMeeting] 희망 시작 시간:', timeString);
+      }
     }
     
-    // 희망 시작 시간 설정 (startTime - LocalTime)
-    if (data.startTime) {
-      const timeString = String(data.startTime); // "14:00:00" or "14:00"
-      const [hour, minute] = timeString.split(':').map(Number);
-      selectedHour.value = hour;
-      selectedMinute.value = minute;
-      console.log('⏰ [CreateMeeting] 희망 시작 시간:', timeString);
-    }
-    
-    // 희망 종료 시간 설정 (endTime - LocalTime)
-    if (data.endTime) {
-      const timeString = String(data.endTime); // "16:00:00" or "16:00"
-      const [hour, minute] = timeString.split(':').map(Number);
-      endHour.value = hour;
-      endMinute.value = minute;
-      console.log('⏰ [CreateMeeting] 희망 종료 시간:', timeString);
-    }
+    // 희망 종료 시간 설정 (백엔드 API 응답에 endTime이 있다면)
+    // 참고: meetingsStore에는 endTime이 저장되지 않으므로
+    // 필요하다면 별도로 API 호출이 필요할 수 있음
+    // 현재는 기본값(23:30) 사용
     
     console.log('✅ [CreateMeeting] 기존 미팅 정보 로드 완료');
   } catch (error) {
@@ -372,17 +370,20 @@ const handleSubmit = async () => {
       // 생성 모드: CREATE API 호출
       const startDate = `${selectedDate.value.getFullYear()}-${String(selectedDate.value.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.value.getDate()).padStart(2, '0')}`;
       const startTime = `${String(selectedHour.value).padStart(2, '0')}:${String(selectedMinute.value).padStart(2, '0')}:00`;
+      const endTime = `${String(endHour.value).padStart(2, '0')}:${String(endMinute.value).padStart(2, '0')}:00`;
       
       console.log('➕ [CreateMeeting] 모임 생성 데이터:', {
         meetingName: meetingName.value,
         startDate,
-        startTime
+        startTime,
+        endTime
       });
 
       const response = await meetingAPI.createMeeting({
         meetingName: meetingName.value,
         startDate: startDate,
-        startTime: startTime
+        startTime: startTime,
+        endTime: endTime
       });
       
       console.log('✅ [CreateMeeting] 전체 응답:', response);
@@ -408,6 +409,45 @@ const handleSubmit = async () => {
 
 const handleCancel = () => {
   router.back();
+};
+
+const handleDelete = async () => {
+  if (!isEditMode.value || !editShareCode.value) {
+    return;
+  }
+  
+  const confirmDelete = confirm(`"${meetingName.value}" 모임을 정말 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`);
+  
+  if (!confirmDelete) {
+    return;
+  }
+  
+  isLoading.value = true;
+  error.value = "";
+  
+  try {
+    console.log('🗑️ [CreateMeeting] 모임 삭제 요청:', editShareCode.value);
+    
+    await meetingAPI.deleteMeetingByShareCode(editShareCode.value);
+    
+    console.log('✅ [CreateMeeting] 모임 삭제 성공');
+    
+    // meetingsStore에서 캐시 제거
+    meetingsStore.clearCurrentMeeting();
+    
+    alert('모임이 삭제되었습니다.');
+    router.push('/');
+  } catch (err) {
+    console.error('❌ [CreateMeeting] 모임 삭제 실패:', err);
+    
+    const errorData = err.response?.data;
+    const errorMessage = errorData?.message || '모임 삭제에 실패했습니다.';
+    
+    error.value = errorMessage;
+    alert(errorMessage);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const closeNicknameModal = () => {
@@ -436,7 +476,7 @@ const closeNicknameModal = () => {
               id="meeting-name"
               v-model="meetingName"
               class="w-full bg-white border border-pastel-border rounded-xl px-4 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-soft" 
-              placeholder="예) 점심 약속 🥗" 
+              placeholder="예) 여우들의 송년회 🦊" 
               type="text"
               maxlength="30"
               autofocus
@@ -510,7 +550,7 @@ const closeNicknameModal = () => {
         </div>
 
         <!-- Time Selection -->
-        <div class="mb-24">
+        <div class="mb-44">
           <label class="block text-sm font-bold text-gray-600 mb-3 ml-1">모임 시간 선택</label>
           <div class="grid grid-cols-2 gap-4">
             <!-- Start Time -->
@@ -520,7 +560,7 @@ const closeNicknameModal = () => {
               </span>
               <div class="flex flex-col gap-3">
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">시</label>
+                  <label class="text-xs text-gray-500 mb-1 block">Hour</label>
                   <select 
                     v-model="selectedHour"
                     class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -535,7 +575,7 @@ const closeNicknameModal = () => {
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">분</label>
+                  <label class="text-xs text-gray-500 mb-1 block">Minute</label>
                   <select 
                     v-model="selectedMinute"
                     class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -559,7 +599,7 @@ const closeNicknameModal = () => {
               </span>
               <div class="flex flex-col gap-3">
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">시</label>
+                  <label class="text-xs text-gray-500 mb-1 block">Hour</label>
                   <select 
                     v-model="endHour"
                     class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -574,7 +614,7 @@ const closeNicknameModal = () => {
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">분</label>
+                  <label class="text-xs text-gray-500 mb-1 block">Minute</label>
                   <select 
                     v-model="endMinute"
                     class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -618,6 +658,17 @@ const closeNicknameModal = () => {
           <span class="material-symbols-rounded">{{ isEditMode ? 'edit' : 'check_circle' }}</span>
           {{ isLoading ? (isEditMode ? "수정 중..." : "생성 중...") : (isEditMode ? "모임 수정하기" : "모임 생성하기") }}
         </button>
+      
+      <!-- 삭제 버튼 (수정 모드일 때만 표시) -->
+      <button
+        v-if="isEditMode"
+        @click="handleDelete"
+        :disabled="isLoading"
+        class="w-full mt-3 bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 hover:border-red-300 font-bold text-base py-3 rounded-2xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span class="material-symbols-rounded">delete</span>
+        {{ isLoading ? "삭제 중..." : "모임 삭제하기" }}
+      </button>
     </div>
     </div>
 

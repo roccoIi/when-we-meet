@@ -115,6 +115,28 @@ export const meetingAPI = {
   },
 
   /**
+   * 모임 삭제 (ShareCode 기반)
+   * 생성자만 삭제 가능 (백엔드에서 권한 체크)
+   * 
+   * @param {string} shareCode - 공유 코드
+   */
+  deleteMeetingByShareCode: async (shareCode) => {
+    const response = await apiClient.delete(`/api/meetings/share/${shareCode}`)
+    return response.data
+  },
+
+  /**
+   * 모임 탈퇴
+   * 현재 사용자가 모임에서 나가기
+   * 
+   * @param {string} shareCode - 공유 코드
+   */
+  leaveMeeting: async (shareCode) => {
+    const response = await apiClient.delete(`/api/meetings/leave/${shareCode}`)
+    return response.data
+  },
+
+  /**
    * 모임 공유 링크 생성/조회
    * 
    * @param {number} meetingId - 모임 ID

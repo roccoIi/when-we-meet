@@ -71,4 +71,15 @@ export const userAPI = {
     const response = await apiClient.delete('/api/user/me')
     return response.data
   },
+
+  /**
+   * 게스트 유저 생성 (첫 접속 시 닉네임 설정)
+   * 
+   * @param {string} nickname - 설정할 닉네임
+   * @returns {Promise<void>}
+   */
+  createFirstUser: async (nickname) => {
+    const response = await apiClient.post('/api/user/first', { nickname })
+    return response.data
+  },
 }

@@ -14,6 +14,12 @@ const isLoading = ref(true);
 const isJoining = ref(false);
 const errorMessage = ref("");
 
+// 닉네임 설정 모달 관련
+const showNicknameModal = ref(false);
+const nicknameInput = ref("");
+const isSettingNickname = ref(false);
+const nicknameError = ref("");
+
 onMounted(async () => {
   // 1️⃣ App.vue의 초기화가 완료될 때까지 대기
   if (!userStore.isInitialized) {
@@ -153,6 +159,69 @@ const loadMeetingInfo = async () => {
 };
 
 const handleJoinMeeting = async () => {
+  // 닉네임이 없으면 모달 표시
+  if (!userStore.nickname) {
+    console.log('⚠️ [Invite] 닉네임 없음 - 모달 표시');
+    nicknameError.value = "";
+    nicknameInput.value = "";
+    showNicknameModal.value = true;
+    return;
+  }
+  
+  // 닉네임이 있으면 바로 참여 처리
+  await joinMeeting();
+};
+
+const handleNicknameSubmit = async () => {
+  const nickname = nicknameInput.value.trim();
+  
+  // 유효성 검사
+  if (!nickname) {
+    nicknameError.value = "닉네임을 입력해주세요.";
+    return;
+  }
+  
+  if (nickname.length > 10) {
+    nicknameError.value = "닉네임은 10자 이하로 입력해주세요.";
+    return;
+  }
+  
+  isSettingNickname.value = true;
+  nicknameError.value = "";
+  
+  try {
+    console.log('🔄 [Invite] 게스트 유저 생성 요청:', nickname);
+    
+    // 1단계: 게스트 유저 생성
+    await userAPI.createFirstUser(nickname);
+    console.log('✅ [Invite] 게스트 유저 생성 성공');
+    
+    // 2단계: 사용자 정보 업데이트
+    userStore.login({
+      nickname: nickname,
+      profileImgUrl: '',
+      provider: ''
+    });
+    
+    // 3단계: 모달 닫기
+    showNicknameModal.value = false;
+    
+    // 4단계: 미팅룸 입장
+    await joinMeeting();
+    
+  } catch (error) {
+    console.error('❌ [Invite] 게스트 유저 생성 실패:', error);
+    
+    const errorData = error.response?.data;
+    const backendErrorMessage = errorData?.message;
+    
+    nicknameError.value = backendErrorMessage || "닉네임 설정에 실패했습니다. 다시 시도해주세요.";
+  } finally {
+    isSettingNickname.value = false;
+  }
+};
+
+const joinMeeting = async () => {
   isJoining.value = true;
   
   try {
@@ -239,6 +308,12 @@ const handleJoinMeeting = async () => {
 
 const goToMeetingList = () => {
   router.push("/");
+};
+
+const closeNicknameModal = () => {
+  showNicknameModal.value = false;
+  nicknameInput.value = "";
+  nicknameError.value = "";
 };
 </script>
 
@@ -335,6 +410,81 @@ const goToMeetingList = () => {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nickname Setting Modal -->
+    <div 
+      v-if="showNicknameModal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      @click.self="closeNicknameModal"
+    >
+      <div class="bg-white rounded-3xl shadow-soft max-w-md w-full p-8 relative">
+        <!-- Close Button -->
+        <button
+          @click="closeNicknameModal"
+          class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <span class="material-icons">close</span>
+        </button>
+
+        <!-- Icon -->
+        <div class="text-center mb-6">
+          <div class="relative inline-block mb-4">
+            <div class="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-full blur-md opacity-40"></div>
+            <div class="relative w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-soft">
+              <span class="material-icons text-white text-3xl">person_add</span>
+            </div>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">닉네임 설정</h3>
+          <p class="text-sm text-gray-600">
+            입장을 위해선 닉네임 설정이 필요합니다.
+          </p>
+        </div>
+
+        <!-- Input -->
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            닉네임
+          </label>
+          <input
+            v-model="nicknameInput"
+            type="text"
+            placeholder="닉네임을 입력하세요 (최대 10자)"
+            maxlength="10"
+            class="w-full px-4 py-3 bg-neutral-light border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            @keyup.enter="handleNicknameSubmit"
+            :disabled="isSettingNickname"
+          />
+          <p v-if="nicknameError" class="mt-2 text-sm text-red-500">
+            {{ nicknameError }}
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            {{ nicknameInput.length }}/10자
+          </p>
+        </div>
+
+        <!-- Buttons -->
+        <div class="space-y-3">
+          <button
+            @click="handleNicknameSubmit"
+            :disabled="isSettingNickname || !nicknameInput.trim()"
+            class="w-full px-6 py-3 bg-primary hover:bg-primary-dark text-gray-800 rounded-2xl font-bold shadow-glow transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <span v-if="!isSettingNickname">확인</span>
+            <span v-else class="flex items-center justify-center gap-2">
+              <div class="w-5 h-5 border-2 border-gray-800 border-t-transparent rounded-full animate-spin"></div>
+              설정 중...
+            </span>
+          </button>
+          <button
+            @click="closeNicknameModal"
+            :disabled="isSettingNickname"
+            class="w-full px-6 py-3 bg-white text-gray-700 border border-gray-200 rounded-2xl font-semibold hover:bg-gray-50 transition-all disabled:opacity-50"
+          >
+            취소
+          </button>
         </div>
       </div>
     </div>

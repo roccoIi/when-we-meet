@@ -2,14 +2,17 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUserStore } from "../stores/user";
+import { useMeetingsStore } from "../stores/meetings";
 import Calendar from "../components/Calendar.vue";
 import ShareModal from "../components/ShareModal.vue";
 import NicknameModal from "../components/NicknameModal.vue";
+import LeaveConfirmModal from "../components/LeaveConfirmModal.vue";
 import { meetingAPI, userAPI, scheduleAPI } from "../services";
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const meetingsStore = useMeetingsStore();
 
 const shareCode = route.params.shareCode;
 const meeting = ref(null);
@@ -30,6 +33,10 @@ const shareUrl = ref("");
 
 // 닉네임 모달 상태
 const showNicknameModal = ref(false);
+
+// 탈퇴 모달 상태
+const showLeaveModal = ref(false);
+const isLeaving = ref(false);
 
 onMounted(async () => {
   // 1️⃣ App.vue의 초기화가 완료될 때까지 대기
@@ -91,30 +98,20 @@ onMounted(async () => {
 
 const loadMeetingDetail = async () => {
   try {
-    // API 호출
-    const response = await meetingAPI.getMeetingDetailByShareCode(shareCode)
-    console.log('📦 [MeetingDetail] API 응답 전체:', response);
+    // meetingsStore의 캐싱 로직 사용
+    const data = await meetingsStore.loadMeetingByShareCode(shareCode)
     
-    const data = response.data || response
-    console.log('📦 [MeetingDetail] 파싱된 데이터:', data);
-    console.log('📦 [MeetingDetail] data의 모든 키:', Object.keys(data));
+    console.log('📦 [MeetingDetail] 미팅 정보:', data);
     console.log('📦 [MeetingDetail] confirmDate 값:', data.confirmDate);
     console.log('📦 [MeetingDetail] confirmDate 타입:', typeof data.confirmDate);
     
-    // meetingDate 파싱 (예: "2026-02-20T19:00:00")
-    let parsedStartDate = null;
-    if (data.meetingDate) {
-      const [datePart] = String(data.meetingDate).split('T');
-      parsedStartDate = datePart; // "2026-02-20"
-    }
-    
     meeting.value = {
-      shareCode: shareCode,
+      shareCode: data.shareCode,
       name: data.name,
       memberNumber: data.memberNumber,
-      participants: data.info || [],
-      startDate: parsedStartDate, // 미팅 시작 날짜
-      meetingDate: data.meetingDate // 원본 데이터 보관
+      participants: data.participants || [],
+      startDate: data.startDate,
+      meetingDate: data.meetingDate
     }
     
     // 사용자 역할 저장
@@ -276,6 +273,43 @@ const handleEditMeeting = () => {
   });
 };
 
+const handleLeaveMeeting = () => {
+  // 탈퇴 확인 모달 표시
+  showLeaveModal.value = true;
+};
+
+const confirmLeave = async () => {
+  isLeaving.value = true;
+  
+  try {
+    console.log('🚪 [MeetingDetail] 모임 탈퇴 요청:', shareCode);
+    
+    await meetingAPI.leaveMeeting(shareCode);
+    
+    console.log('✅ [MeetingDetail] 모임 탈퇴 성공');
+    
+    // meetingsStore에서 캐시 제거
+    meetingsStore.clearCurrentMeeting();
+    
+    alert('모임에서 나갔습니다.');
+    router.push('/');
+  } catch (error) {
+    console.error('❌ [MeetingDetail] 모임 탈퇴 실패:', error);
+    
+    const errorData = error.response?.data;
+    const errorMessage = errorData?.message || '모임 탈퇴에 실패했습니다.';
+    
+    alert(errorMessage);
+  } finally {
+    isLeaving.value = false;
+    showLeaveModal.value = false;
+  }
+};
+
+const cancelLeave = () => {
+  showLeaveModal.value = false;
+};
+
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   const month = date.getMonth() + 1;
@@ -418,6 +452,7 @@ const handleResetSchedule = async () => {
             </p>
           </div>
           <div class="flex gap-2 flex-shrink-0 ml-3">
+            <!-- HOST: 수정 버튼 -->
             <button 
               v-if="userRole === 'HOST'"
               @click="handleEditMeeting"
@@ -426,6 +461,18 @@ const handleResetSchedule = async () => {
             >
               <span class="material-symbols-rounded text-gray-600 group-hover:text-primary-dark transition-colors">edit</span>
             </button>
+            
+            <!-- MEMBER: 탈퇴 버튼 -->
+            <button 
+              v-if="userRole === 'MEMBER'"
+              @click="handleLeaveMeeting"
+              class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-red-50 transition-colors group shadow-sm border border-gray-100"
+              title="모임 탈퇴"
+            >
+              <span class="material-symbols-rounded text-gray-600 group-hover:text-red-500 transition-colors">logout</span>
+            </button>
+            
+            <!-- 공유 버튼 (공통) -->
             <button 
               @click="handleShareClick"
               class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
@@ -647,6 +694,15 @@ const handleResetSchedule = async () => {
     <NicknameModal
       v-if="showNicknameModal"
       @close="closeNicknameModal"
+    />
+
+    <!-- 탈퇴 확인 모달 -->
+    <LeaveConfirmModal
+      :isOpen="showLeaveModal"
+      :isLeaving="isLeaving"
+      :meetingName="meeting?.name"
+      @confirm="confirmLeave"
+      @cancel="cancelLeave"
     />
   </div>
 </template>

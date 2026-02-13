@@ -254,7 +254,7 @@ setInterval(() => {
       <!-- Title and Profile -->
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight text-slate-700">My Schedules</h1>
+          <h1 class="text-2xl font-bold tracking-tight text-slate-700">내 일정</h1>
           <p class="text-sm text-text-sub font-medium">Coordinate your sweet meetups</p>
         </div>
         
@@ -305,8 +305,8 @@ setInterval(() => {
               @change="loadMeetings(true)"
               class="appearance-none bg-white text-slate-600 font-bold text-sm py-2.5 pl-4 pr-10 rounded-xl shadow-sm border border-transparent focus:ring-2 focus:ring-primary/30 focus:outline-none cursor-pointer hover:bg-gray-50 transition-colors w-32"
             >
-              <option value="JOIN_DATE">Join At</option>
-              <option value="NAME">Name</option>
+              <option value="JOIN_DATE">참여일자</option>
+              <option value="NAME">이름</option>
               <option value="MEETING_DATE">D-Day</option>
             </select>
             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-mint-dark">

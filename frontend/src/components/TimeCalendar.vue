@@ -10,6 +10,10 @@ const props = defineProps({
     type: Number,
     default: 7,
   },
+  minDate: {
+    type: String,
+    default: null, // "2026-02-15" 형식
+  },
 });
 
 const emit = defineEmits(["timeClick"]);
@@ -65,9 +69,35 @@ const isSelected = (date, hour, minute) => {
 };
 
 const isPast = (date, hour, minute) => {
-  const now = new Date();
   const checkTime = new Date(date);
   checkTime.setHours(hour, minute, 0, 0);
+  
+  // minDate가 설정되어 있으면 그 날짜 이전을 회색 처리
+  if (props.minDate) {
+    const minDateTime = new Date(props.minDate);
+    minDateTime.setHours(0, 0, 0, 0);
+    
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    // minDate보다 이전 날짜는 모두 회색
+    if (checkDate < minDateTime) {
+      return true;
+    }
+    
+    // minDate와 같은 날이면 시간도 체크
+    if (checkDate.getTime() === minDateTime.getTime()) {
+      // minDate의 시작 시간을 0시로 간주하므로, 해당 날짜의 모든 시간은 사용 가능
+      return false;
+    }
+    
+    // minDate보다 이후 날짜면 현재 시간과 비교
+    const now = new Date();
+    return checkTime < now;
+  }
+  
+  // minDate가 없으면 오늘 이전을 회색 처리
+  const now = new Date();
   return checkTime < now;
 };
 
