@@ -7,14 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class MeetingListResponse {
-
-    private String name;
-    private Role role;
-    private Long memberNumber;
-    private LocalDateTime meetingDate;
-    private String shareCode;
-}
+public record MeetingListResponse (
+        String name,
+        Role role,
+        Long memberNumber,
+        LocalDateTime meetingDate,
+        String shareCode
+){}

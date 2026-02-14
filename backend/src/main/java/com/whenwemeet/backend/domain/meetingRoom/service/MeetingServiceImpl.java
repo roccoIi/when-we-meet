@@ -1,17 +1,12 @@
 package com.whenwemeet.backend.domain.meetingRoom.service;
 
-import com.whenwemeet.backend.domain.meetingRoom.dto.request.MeetingCreateRequest;
-import com.whenwemeet.backend.domain.meetingRoom.dto.request.MeetingUpdateRequest;
-import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortType;
-import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortDirection;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.CreateMeetingResponse;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.EnterShareLinkResponse;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingListResponse;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingRoomInfoResponse;
+import com.whenwemeet.backend.domain.meetingRoom.dto.request.*;
+import com.whenwemeet.backend.domain.meetingRoom.dto.response.*;
 import com.whenwemeet.backend.domain.meetingRoom.entity.MeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.enumType.Role;
 import com.whenwemeet.backend.domain.meetingRoom.repository.MeetingRoomRepository;
+import com.whenwemeet.backend.domain.schedule.repository.ScheduleRepository;
 import com.whenwemeet.backend.domain.schedule.repository.UnavailableRepository;
 import com.whenwemeet.backend.domain.meetingRoom.repository.UserMeetingRoomRepository;
 import com.whenwemeet.backend.domain.user.dto.response.UserInfoResponse;
@@ -19,6 +14,7 @@ import com.whenwemeet.backend.domain.user.entity.User;
 import com.whenwemeet.backend.domain.user.repository.UserRepository;
 import com.whenwemeet.backend.global.entity.Pagination;
 import com.whenwemeet.backend.global.exception.type.DuplicateException;
+import com.whenwemeet.backend.global.exception.type.UnAuthorizedException;
 import com.whenwemeet.backend.global.jwt.util.JwtUtil;
 import com.whenwemeet.backend.global.response.PageResponse;
 import static com.whenwemeet.backend.global.exception.ErrorCode.*;
@@ -44,6 +40,7 @@ public class MeetingServiceImpl implements MeetingService{
     private final MeetingRoomRepository meetingRoomRepository;
     private final UserMeetingRoomRepository userMeetingRoomRepository;
     private final JwtUtil jwtUtil;
+    private final UnavailableRepository unavailableRepository;
 
     @Override
     public PageResponse<List<MeetingListResponse>> getAllMeeting(Long userId, Long page, Long limit, SortType type, SortDirection direction) {
@@ -52,13 +49,13 @@ public class MeetingServiceImpl implements MeetingService{
                 .orElseThrow(() -> new NotFoundException(U001));
 
         // 2) offset 계산 (page는 1부터 시작)
-        Long offset = (page - 1) * limit;
+        long offset = (page - 1) * limit;
 
         // 3) 해당 유저가 참여중인 미팅룸 전체 조회
         List<MeetingListResponse> meetingList = userMeetingRoomRepository.findAllByUserId(user.getId(), offset, limit, type, direction);
 
         // 4) 전체 개수 조회
-        Long totalItems = userMeetingRoomRepository.countByUserId(user.getId());
+        long totalItems = meetingList.size();
 
         // 5) 페이지네이션 정보 계산
         long totalPages = (long) Math.ceil((double) totalItems / limit);
@@ -74,22 +71,23 @@ public class MeetingServiceImpl implements MeetingService{
     public CreateMeetingResponse addMeeting(CustomOAuth2User user, MeetingCreateRequest rq, HttpServletResponse response) {
 
         // 1) 유저객체 반환 (만일 이용기록 없는 사용자가 생성을 요청했더면 우선 User 객체먼저 생성)
-        User finalUser;
+        User finalUser = userRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException(U001));
         if(user == null){
-            finalUser = User.createGuest();
-            userRepository.save(finalUser);
-
-            jwtUtil.generateAccessToken(finalUser.getId(), response);
-            jwtUtil.generateRefreshToken(finalUser.getId(), response);
+//            finalUser = User.createGuest();
+//            userRepository.save(finalUser);
+//
+//            jwtUtil.generateAccessToken(finalUser.getId(), response);
+//            jwtUtil.generateRefreshToken(finalUser.getId(), response);
         } else {
-            finalUser = userRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException(U001));
+//            finalUser = userRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException(U001));
         }
 
         // 2) 미팅룸 생성
         MeetingRoom mr = MeetingRoom.builder()
-                .name(rq.getMeetingName())
-                .startDate(rq.getStartDate())
-                .startTime(rq.getStartTime())
+                .name(rq.meetingName())
+                .startDate(rq.startDate())
+                .startTime(rq.startTime())
+                .endTime(rq.endTime())
                 .shareCode(generateShareCode())
                 .build();
 
@@ -112,14 +110,16 @@ public class MeetingServiceImpl implements MeetingService{
 
     @Override
     @Transactional
-    public void updateMeeting(CustomOAuth2User user, String shareCode, MeetingUpdateRequest request) {
+    public void updateMeeting(CustomOAuth2User user, MeetingUpdateRequest request) {
 
         // 1) 요청이 들어온 방이 존재하는지 확인
-        UserMeetingRoom umr = userMeetingRoomRepository.findByUserAndMeetingRoomShareCode(user.getUser(), shareCode)
+        UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomId(user.getId(), request.id())
                 .orElseThrow(() -> new NotFoundException(M002));
 
         // 2) 현재 사용자가 해당 미팅룸의 호스트인지 확인
-        if(hostCheck(user.getId(), umr.getMeetingRoom().getId())) throw new NotFoundException(M001);
+        if(umr.getRole() != Role.HOST){
+            throw new NotFoundException(M001);
+        }
 
         // 3) 설정 변경 진행 (모든 필드 지원)
         umr.getMeetingRoom().changeSetting(
@@ -133,18 +133,39 @@ public class MeetingServiceImpl implements MeetingService{
 
     @Override
     @Transactional
-    public void deleteMeeting(Long userId, Long roomId) {
-
-        // 1) 현재 사용자가 해당 미팅룸의 호스트인지 확인
-        if(hostCheck(userId, roomId)) throw new NotFoundException(M002);
+    public void deleteMeeting(Long userId, DeleteRoomRequest request) {
+        // 1) 권한체크
+        log.info("권한체크");
+        UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomIdisHost(userId, request.id(), Role.HOST)
+                        .orElseThrow(() -> new NotFoundException(M002));
 
         // 2) 삭제 진행 (Soft Delete)
-        meetingRoomRepository.deleteById(roomId);
+        log.info("1. [방장]삭제 진행 user-meetingroom 관계 삭제");
+        userMeetingRoomRepository.deleteAllUserInMeetingRoom(request.id());
+        log.info("2. [방장]schedule 삭제");
+        unavailableRepository.deleteAllTimeInMeetingRoom(request.id());
+        log.info("3. [방장]MeetingRoom 삭제(softDelete)");
+        meetingRoomRepository.delete(umr.getMeetingRoom());
+    }
+
+    @Override
+    @Transactional
+    public void leaveMeeting(CustomOAuth2User user, DeleteRoomRequest request) {
+        // 1) 권한체크
+        log.info("권한체크");
+        UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomIdisHost(user.getId(), request.id(), Role.MEMBER)
+                .orElseThrow(() -> new NotFoundException(M002));
+
+        log.info("1. [맴버]삭제 진행 user-meetingroom 관계 삭제");
+        userMeetingRoomRepository.deleteUserInMeetingRoom(user.getId(), request.id());
+
+        log.info("2. [맴버]schedule 삭제");
+        unavailableRepository.deleteTimeInMeetingRoom(user.getId(), request.id());
     }
 
     @Override
     public EnterShareLinkResponse getMeetingRoomSummary(String code) {
-        return meetingRoomRepository.findNameAndMemberNumberByShareCode(code)
+        return userMeetingRoomRepository.findNameAndMemberNumberByShareCode(code)
                 .orElseThrow(() -> new NotFoundException(M005));
     }
 
@@ -185,48 +206,47 @@ public class MeetingServiceImpl implements MeetingService{
     }
 
     @Override
-    public MeetingRoomInfoResponse getMeetingRoomInfoByShareCode(CustomOAuth2User user, String shareCode) {
-        
-        // 1) shareCode로 MeetingRoom 조회
-        MeetingRoom mr = meetingRoomRepository.findAllByShareCode(shareCode)
-                .orElseThrow(() -> new NotFoundException(M003));
-        
-        // 2) 해당 미팅룸에 속한 모든 User의 nickname 조회
-        List<UserInfoResponse> infos = userMeetingRoomRepository.findNicknamesByShareCode(shareCode);
+    public MeetingRoomInfoResponse getMeetingRoomInfoByShareCode(CustomOAuth2User user, String ShareCode) {
+        // 1) 요청이 들어온 user와 meetingroom 권한체크
+        UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomIdWithShareCode(user.getId(), ShareCode)
+                .orElseThrow(() -> new NotFoundException(M002));
 
-        // 3) 현재 사용자의 권한 파싱
-        Role umr = Role.MEMBER;
-        if(user != null) {
-            UserMeetingRoom userMeetingRoom = userMeetingRoomRepository
-                    .findByUserIdAndMeetingRoomShareCode(user.getId(), shareCode)
-                    .orElse(null);
-            if(userMeetingRoom != null) {
-                umr = userMeetingRoom.getRole();
-            }
-        }
-        
+        // 2) 해당 미팅룸에 속한 모든 User의 nickname 조회
+        List<UserInfoResponse> infos = userMeetingRoomRepository.findNicknamesByMeetingRoomId(umr.getMeetingRoom().getId());
+
         // 3) 응답 DTO 생성
         return new MeetingRoomInfoResponse(
-                mr.getName(),
-                umr,
+                umr.getMeetingRoom().getId(),
+                umr.getMeetingRoom().getName(),
+                umr.getRole(),
                 infos.size(),
-                mr.getMeetingDate(),
+                umr.getMeetingRoom().getMeetingDate(),
                 infos,
-                mr.getStartDate(),
-                mr.getStartTime(),
-                mr.getEndTime()
+                umr.getMeetingRoom().getStartDate(),
+                umr.getMeetingRoom().getStartTime(),
+                umr.getMeetingRoom().getEndTime(),
+                umr.getMeetingRoom().getVersion()
         );
     }
+
+    @Override
+    public MeetingRoomVersionResponse getMeetingRoomVersion(String shareCode) {
+        return meetingRoomRepository.findVersionByShareCode(shareCode)
+                .orElseThrow(() -> new NotFoundException(M003));
+    }
+
+
 
 
     /**
      * 현재 사용자가 해당 미팅룸의 호스트인지 확인합니다.
      * @param userId 사용자 PK
-     * @param roomId MeetingRoom PK
+     * @param meetingRoomId MeetingRoom PK
      * @return 불일치할 경우 True 반환, 일치할경우 False 반환
      */
-    private boolean hostCheck(Long userId, Long roomId) {
-        return userMeetingRoomRepository.findByUserIdAndMeetingRoomId(userId, roomId)
+    private boolean hostCheck(Long userId, Long meetingRoomId) {
+        log.info("hostCheck");
+        return userMeetingRoomRepository.findByUserIdAndMeetingRoomId(userId, meetingRoomId)
                 .orElseThrow(() -> new NotFoundException(M002))
                 .getRole() != Role.HOST;
     }
@@ -245,6 +265,9 @@ public class MeetingServiceImpl implements MeetingService{
         throw new NotFoundException(T003);
     }
 
-
+    private boolean checkAuthorize(Long userId, Long meetingRoomId){
+        log.info("권한관계 확인진행: {} - {}", userId, meetingRoomId);
+        return userMeetingRoomRepository.existsByUserIdAndMeetingRoomId(userId, meetingRoomId);
+    }
     
 }

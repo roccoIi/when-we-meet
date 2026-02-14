@@ -65,6 +65,4 @@ public class ScheduleController {
         List<RecommendList> response = scheduleService.getRecommendSchedule(shareCode, type);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
-
-
 }

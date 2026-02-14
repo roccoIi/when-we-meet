@@ -1,12 +1,9 @@
 package com.whenwemeet.backend.domain.user.entity;
 
 import com.whenwemeet.backend.global.entity.BaseEntity;
-import com.whenwemeet.backend.global.util.RandomNickname;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -37,7 +34,7 @@ public class User extends BaseEntity {
     private String provider;
 
     @Column(name = "provider_id")
-    private Long providerID;
+    private String providerID;
 
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
@@ -46,12 +43,12 @@ public class User extends BaseEntity {
     @Column(name="profile_img_url")
     private String profileImgUrl;
 
-    public static User createGuest(){
-        return User.builder()
-                .nickname(new RandomNickname().generateNickname())
-                .role(UserType.GUEST)
-                .build();
-    }
+//    public static User createGuest(){
+//        return User.builder()
+//                .nickname(new RandomNickname().generateNickname())
+//                .role(UserType.GUEST)
+//                .build();
+//    }
 
     public void changeNickName(String nickname){
         this.nickname = nickname;

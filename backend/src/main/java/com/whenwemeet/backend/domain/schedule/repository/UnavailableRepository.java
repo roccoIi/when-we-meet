@@ -16,20 +16,6 @@ import java.util.List;
 
 public interface UnavailableRepository extends JpaRepository<UnavailableTime, Long>, UnavailableCustomRepository {
 
-    // 현재 날짜/시간 이후의 불가능한 시간대를 조회
-    @Query(value = """
-           SELECT u 
-           FROM UnavailableTime u 
-           WHERE u.meetingRoom = :meetingRoom
-           AND (u.unavailableDate > :currentDate
-           OR (u.unavailableDate = :currentDate AND u.unavailableEndTime >= :currentTime))""")
-    List<UnavailableTimeList> findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(
-            @Param("meetingRoom") MeetingRoom meetingRoom, 
-            @Param("currentDate") LocalDate currentDate, 
-            @Param("currentTime") LocalTime currentTime);
-
-    List<UnavailableTimeList> findAllByMeetingRoomAndUser(MeetingRoom meetingRoom, User user);
-
     List<UnavailableTime> findAllByUser(User user);
 
     @Modifying(clearAutomatically = true)
@@ -47,7 +33,17 @@ public interface UnavailableRepository extends JpaRepository<UnavailableTime, Lo
             """)
     void updateGuestTimeToUserTime(User user, User guestUser);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            delete UnavailableTime u
+            where u.meetingRoom.id = :meetingRoomId""")
+    void deleteAllTimeInMeetingRoom(Long meetingRoomId);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            delete UnavailableTime u
+            where u.meetingRoom.id = :meetingRoomId AND u.user.id = :userId""")
+    void deleteTimeInMeetingRoom(Long userId, Long meetingRoomId);
 
 
 }

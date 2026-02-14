@@ -1,7 +1,7 @@
 package com.whenwemeet.backend.domain.meetingRoom.dto.response;
 
 
-public interface EnterShareLinkResponse {
-    String getName();
-    Long getMemberNumber();
-}
+public record EnterShareLinkResponse (
+        String name,
+        Long memberNumber
+){}

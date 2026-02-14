@@ -16,11 +16,11 @@ import java.time.LocalTime;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@SQLDelete(sql = "UPDATE meeting_room SET is_deleted = true WHERE id = ?")
+@SQLDelete(sql = "UPDATE meeting_room SET is_deleted = true, version = version + 1 WHERE id = ? AND version = ?")
 public class MeetingRoom extends BaseEntity {
 
     @Id
-    @Tsid
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
@@ -44,7 +44,11 @@ public class MeetingRoom extends BaseEntity {
 
     @Builder.Default
     @Column(name = "share_count")
-    private Integer shareCount = 15;
+    private Integer shareCount = 30;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
     
     public void changeSetting(String name, LocalDateTime meetingDate, LocalDate startDate, LocalTime startTime, LocalTime endTime){
         if(name != null) this.name = name;
@@ -63,6 +67,6 @@ public class MeetingRoom extends BaseEntity {
     }
 
     public void initializeShareCount(){
-        this.shareCount = 10;
+        this.shareCount = 30;
     }
 }

@@ -16,6 +16,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,11 +35,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    private static final Logger log = LoggerFactory.getLogger(CustomOAuth2UserService.class);
     @Value("${spring.jwt.name.refresh-token}")
     private String REFRESH_TOKEN_NAME;
     private final UserRepository userRepository;
@@ -52,10 +53,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 1. 로그인한 유저 정보
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
+        System.out.println(oAuth2User);
+        System.out.println(userRequest.getClientRegistration());
+        System.out.println(oAuth2User.getAttributes());
+
         // 2. Oauth 로그인 서비스 제공한 기업명 추출
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
 
         // 3. 유저정보에 대한 DTO를 생성한다.
+        log.info("getAttributes -> {}", oAuth2User.getAttributes());
         OAuth2Response oAuth2Response = OAuth2Response.of(registrationId, oAuth2User.getAttributes());
 
         HttpServletRequest request =

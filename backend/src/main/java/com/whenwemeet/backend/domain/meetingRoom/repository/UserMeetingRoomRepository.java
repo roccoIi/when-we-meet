@@ -2,7 +2,6 @@ package com.whenwemeet.backend.domain.meetingRoom.repository;
 
 import com.whenwemeet.backend.domain.meetingRoom.entity.MeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
-import com.whenwemeet.backend.domain.meetingRoom.entity.enumType.Role;
 import com.whenwemeet.backend.domain.meetingRoom.repository.custom.UserMeetingRoomCustomRepository;
 import com.whenwemeet.backend.domain.user.dto.response.UserInfoResponse;
 import com.whenwemeet.backend.domain.user.entity.User;
@@ -14,7 +13,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface UserMeetingRoomRepository extends JpaRepository<UserMeetingRoom, Long>, UserMeetingRoomCustomRepository {
 
@@ -23,6 +21,8 @@ public interface UserMeetingRoomRepository extends JpaRepository<UserMeetingRoom
     Optional<UserMeetingRoom> findByUserIdAndMeetingRoomShareCode(Long userId, String shareCode);
 
     Optional<UserMeetingRoom> findByUserAndMeetingRoomShareCode(User user, String shareCode);
+
+    boolean existsByUserIdAndMeetingRoomId(Long userId, Long meetingRoomId);
 
     HashSet<UserMeetingRoom> findAllByUser(User user);
 
@@ -33,6 +33,18 @@ public interface UserMeetingRoomRepository extends JpaRepository<UserMeetingRoom
     Integer countByMeetingRoomShareCode(String shareCode);
 
     boolean existsByUserAndMeetingRoom(User user, MeetingRoom meetingRoom);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            DELETE FROM UserMeetingRoom umr
+            WHERE umr.meetingRoom.id = :meetingRoomId""")
+    void deleteAllUserInMeetingRoom(Long meetingRoomId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        DELETE FROM UserMeetingRoom umr
+        WHERE umr.meetingRoom.id = :meetingRoomId AND umr.user.id= :userId""")
+    void deleteUserInMeetingRoom(Long userId, Long meetingRoomId);
 
     @Query("""
             select umr.meetingRoom.id

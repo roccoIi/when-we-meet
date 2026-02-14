@@ -7,6 +7,7 @@ import com.whenwemeet.backend.domain.user.repository.UserRepository;
 import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
 import com.whenwemeet.backend.global.jwt.util.JwtUtil;
+import com.whenwemeet.backend.global.util.RandomProfile;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,10 +43,14 @@ public class UserServiceImpl implements UserService{
     @Override
     @Transactional
     public void makeFirstUser(String nickname, HttpServletResponse response) {
+        // 0) 프로필 생성
+        String profile = new RandomProfile().generateProfileImg();
+
         // 1) 유저 생성
         User user = User.builder()
                 .nickname(nickname)
                 .role(UserType.GUEST)
+                .profileImgUrl(profile)
                 .build();
 
         // 2) 유저 저장

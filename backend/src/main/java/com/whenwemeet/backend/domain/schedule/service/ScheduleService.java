@@ -18,6 +18,4 @@ public interface ScheduleService {
     List<RecommendList> getRecommendSchedule(String shareCode, DayType type);
 
     List<UnavailableTimeList> getAllUnavailableMyTimeList(Long userId, String shareCode);
-
-//    public User mergeUserAndGuestUserInfo(User user, User guestUser);
 }
