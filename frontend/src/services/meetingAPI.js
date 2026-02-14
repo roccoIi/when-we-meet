@@ -64,7 +64,7 @@ export const meetingAPI = {
    * })
    */
   createMeeting: async (meetingData) => {
-    const response = await apiClient.post('/api/meetings', meetingData)
+    const response = await apiClient.post('/api/meetings/create', meetingData)
     return response.data
   },
 
@@ -90,49 +90,41 @@ export const meetingAPI = {
   },
 
   /**
-   * 모임 수정
+   * 모임 삭제 (Host만 가능)
    * 
-   * @param {number} meetingId - 모임 ID
-   * @param {Object} meetingData - 수정할 모임 정보
-   * @param {string} meetingData.name - 모임 이름 (선택)
-   * @param {string} meetingData.description - 모임 설명 (선택)
-   * @param {string} meetingData.confirmedDate - 확정된 날짜 (선택, ISO 8601 형식)
+   * @param {Object} deleteData - 삭제 정보
+   * @param {number} deleteData.id - 모임 ID
+   * @param {number} deleteData.version - 모임 버전
    */
-  updateMeeting: async (meetingId, meetingData) => {
-    const response = await apiClient.put(`/api/meetings/${meetingId}`, meetingData)
+  deleteMeeting: async (deleteData) => {
+    const response = await apiClient.delete('/api/meetings/host', {
+      data: deleteData
+    })
     return response.data
   },
 
   /**
-   * 모임 삭제
-   * 생성자만 삭제 가능 (백엔드에서 권한 체크)
+   * 모임 탈퇴 (Member만 가능)
    * 
-   * @param {number} meetingId - 모임 ID
+   * @param {Object} withdrawData - 탈퇴 정보
+   * @param {number} withdrawData.id - 모임 ID
+   * @param {number} withdrawData.version - 모임 버전
    */
-  deleteMeeting: async (meetingId) => {
-    const response = await apiClient.delete(`/api/meetings/${meetingId}`)
+  withdrawMeeting: async (withdrawData) => {
+    const response = await apiClient.delete('/api/meetings/member', {
+      data: withdrawData
+    })
     return response.data
   },
 
   /**
-   * 모임 삭제 (ShareCode 기반)
-   * 생성자만 삭제 가능 (백엔드에서 권한 체크)
+   * 미팅 버전 정보 조회 (캐시 유효성 체크용)
    * 
    * @param {string} shareCode - 공유 코드
+   * @returns {Promise<{version: number}>}
    */
-  deleteMeetingByShareCode: async (shareCode) => {
-    const response = await apiClient.delete(`/api/meetings/share/${shareCode}`)
-    return response.data
-  },
-
-  /**
-   * 모임 탈퇴
-   * 현재 사용자가 모임에서 나가기
-   * 
-   * @param {string} shareCode - 공유 코드
-   */
-  leaveMeeting: async (shareCode) => {
-    const response = await apiClient.delete(`/api/meetings/leave/${shareCode}`)
+  getMeetingVersion: async (shareCode) => {
+    const response = await apiClient.get(`/api/meetings/${shareCode}/version`)
     return response.data
   },
 
@@ -236,22 +228,28 @@ export const meetingAPI = {
   },
 
   /**
-   * 미팅 일정 확정/초기화 (ShareCode 기반)
+   * 미팅 정보 수정 (이름, 일정, 확정일자 등)
    * 
-   * @param {string} shareCode - 공유 코드
    * @param {Object} updateData - 업데이트 데이터
-   * @param {string|null} updateData.name - 미팅룸 이름 (선택사항, null 가능)
+   * @param {number} updateData.id - 미팅룸 ID (필수)
+   * @param {string|null} updateData.name - 미팅룸 이름
    * @param {string|null} updateData.meetingDate - 확정 일정 (LocalDateTime 형식: YYYY-MM-DDTHH:mm:ss, null이면 초기화)
+   * @param {string|null} updateData.startDate - 희망 시작 날짜 (YYYY-MM-DD)
+   * @param {string|null} updateData.startTime - 희망 시작 시간 (HH:mm:ss)
+   * @param {string|null} updateData.endTime - 희망 종료 시간 (HH:mm:ss)
    * 
    * @example
    * // 일정 확정
-   * updateMeetingSchedule('abc123', { name: null, meetingDate: '2026-02-15T14:00:00' })
+   * updateMeetingSchedule({ id: 1, name: null, meetingDate: '2026-02-15T14:00:00' })
    * 
    * // 일정 초기화
-   * updateMeetingSchedule('abc123', { name: null, meetingDate: null })
+   * updateMeetingSchedule({ id: 1, name: null, meetingDate: null })
+   * 
+   * // 이름 수정
+   * updateMeetingSchedule({ id: 1, name: '새 이름', meetingDate: null, startDate: '2026-02-20', ... })
    */
-  updateMeetingSchedule: async (shareCode, updateData) => {
-    const response = await apiClient.put(`/api/meetings/${shareCode}`, updateData)
+  updateMeetingSchedule: async (updateData) => {
+    const response = await apiClient.put('/api/meetings/update', updateData)
     return response.data
   },
 }

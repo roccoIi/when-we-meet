@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { API_BASE_URL } from '../config/constants'
 
 export const useUserStore = defineStore('user', () => {
   // 상태
@@ -16,7 +17,17 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn.value = true
     provider.value = userInfo.provider || null
     nickname.value = userInfo.nickname || ''
-    profileImgUrl.value = userInfo.profileImgUrl || ''
+    
+    // profileImgUrl 처리
+    let imageUrl = userInfo.profileImgUrl || ''
+    
+    // provider가 없으면 guest 유저 → BASE_URL 붙이기
+    if (!userInfo.provider && imageUrl && !imageUrl.startsWith('http')) {
+      profileImgUrl.value = `${API_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`
+    } else {
+      // OAuth 유저는 그대로 사용
+      profileImgUrl.value = imageUrl
+    }
   }
 
   const logout = () => {

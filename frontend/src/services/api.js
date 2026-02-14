@@ -24,9 +24,12 @@ apiClient.interceptors.request.use(
     const userStore = useUserStore()
     const accessToken = userStore.getAccessToken()
 
+
+
     // accessToken이 있으면 헤더에 추가
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`
+    } else {
     }
 
     return config
@@ -45,7 +48,6 @@ apiClient.interceptors.response.use(
       const accessToken = authorization.replace('Bearer ', '')
       const userStore = useUserStore()
       userStore.setAccessToken(accessToken)
-      console.log('🔄 [Interceptor] 새 토큰 자동 저장:', accessToken.substring(0, 20) + '...')
     }
     
     return response
@@ -70,7 +72,6 @@ apiClient.interceptors.response.use(
     ) {
       originalRequest._retry = true
       
-      console.log('🔄 [Interceptor] 401 에러 - 토큰 재발급 시도...')
       
       try {
         // 토큰 재발급 요청 (refreshToken은 쿠키로 자동 전송됨)
@@ -83,7 +84,6 @@ apiClient.interceptors.response.use(
           // store에 새 토큰 저장
           const userStore = useUserStore()
           userStore.setAccessToken(newAccessToken)
-          console.log('✅ [Interceptor] 토큰 재발급 성공')
 
           // 원래 요청에 새 토큰 추가하고 재시도
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`

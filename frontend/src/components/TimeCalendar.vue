@@ -14,18 +14,36 @@ const props = defineProps({
     type: String,
     default: null, // "2026-02-15" 형식
   },
+  startTime: {
+    type: String,
+    default: null, // "18:00:00" 형식
+  },
 });
 
 const emit = defineEmits(["timeClick"]);
 
+// minDate가 있으면 그 날짜부터 시작, 없으면 오늘부터
 const startDate = ref(new Date());
-startDate.value.setHours(0, 0, 0, 0);
+if (props.minDate) {
+  startDate.value = new Date(props.minDate);
+} else {
+  startDate.value.setHours(0, 0, 0, 0);
+}
 
-// 30분 단위 시간 슬롯 생성 (9:00 ~ 23:30)
-// { hour: 9, minute: 0 }, { hour: 9, minute: 30 }, { hour: 10, minute: 0 }, ...
+// 30분 단위 시간 슬롯 생성
+// startTime이 있으면 그 시간부터, 없으면 9:00부터 23:30까지
 const timeSlots = computed(() => {
   const slots = [];
-  for (let hour = 9; hour <= 23; hour++) {
+  let startHour = 9;
+  
+  // startTime이 있으면 파싱
+  if (props.startTime) {
+    const [hourStr] = props.startTime.split(':');
+    startHour = parseInt(hourStr, 10);
+  }
+  
+  // startHour부터 23:30까지 생성
+  for (let hour = startHour; hour <= 23; hour++) {
     slots.push({ hour, minute: 0 });
     slots.push({ hour, minute: 30 });
   }

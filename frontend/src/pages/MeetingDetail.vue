@@ -26,6 +26,7 @@ const confirmedSchedule = ref(null); // 확정된 일정 { day, startTime }
 const isUpdatingSchedule = ref(false); // 일정 업데이트 중
 const monthlyAvailability = ref(null); // 월별 가용성 데이터 { totalMembers, dateAvailability: Map }
 const userRole = ref('MEMBER'); // 현재 사용자의 역할 (HOST or MEMBER)
+const isCalendarInitialized = ref(false); // 달력 초기화 여부
 
 // 공유 모달 상태
 const isShareModalOpen = ref(false);
@@ -41,7 +42,6 @@ const isLeaving = ref(false);
 onMounted(async () => {
   // 1️⃣ App.vue의 초기화가 완료될 때까지 대기
   if (!userStore.isInitialized) {
-    console.log('⏳ [MeetingDetail] 초기화 대기 중...')
     let attempts = 0
     const maxAttempts = 50 // 5초 (100ms * 50)
     
@@ -51,20 +51,16 @@ onMounted(async () => {
     }
     
     if (userStore.isInitialized) {
-      console.log('✅ [MeetingDetail] 초기화 완료')
     } else {
-      console.log('⚠️ [MeetingDetail] 초기화 타임아웃')
     }
   }
 
   // 2️⃣ 사용자 정보가 없으면 로드 (invite에서 왔을 경우)
   if (!userStore.isLoggedIn || !userStore.nickname) {
-    console.log('🔄 [MeetingDetail] 사용자 정보 로드 시도...')
     try {
       const userInfoResponse = await userAPI.getUserInfo()
       const userInfo = userInfoResponse.data || userInfoResponse
       
-      console.log('📦 [MeetingDetail] 받은 사용자 정보:', userInfo)
       
       if (userInfo && (userInfo.nickname || userInfo.profileImgUrl || userInfo.provider)) {
         userStore.login({
@@ -72,22 +68,17 @@ onMounted(async () => {
           profileImgUrl: userInfo.profileImgUrl || '',
           provider: userInfo.provider || ''
         })
-        console.log('✅ [MeetingDetail] 사용자 정보 로드 완료:', userInfo.nickname, '(', userInfo.provider, ')')
       } else {
-        console.log('⚠️ [MeetingDetail] 사용자 정보 없음')
       }
     } catch (error) {
-      console.error('⚠️ [MeetingDetail] 사용자 정보 로드 실패:', error)
       // 로그인 실패 시 아무것도 하지 않음 (로그인 안 한 상태 유지)
     }
   }
 
   // 3️⃣ 닉네임 체크 (사용자 정보 로드 후)
   if (!userStore.nickname) {
-    console.log('⚠️ [MeetingDetail] 닉네임 없음 - 모달 표시');
     showNicknameModal.value = true;
   } else {
-    console.log('✅ [MeetingDetail] 닉네임 존재:', userStore.nickname);
   }
 
   // 4️⃣ 모임 데이터 로드
@@ -98,12 +89,9 @@ onMounted(async () => {
 
 const loadMeetingDetail = async () => {
   try {
-    // meetingsStore의 캐싱 로직 사용
+    // meetingsStore의 버전 체크 캐싱 사용
     const data = await meetingsStore.loadMeetingByShareCode(shareCode)
     
-    console.log('📦 [MeetingDetail] 미팅 정보:', data);
-    console.log('📦 [MeetingDetail] confirmDate 값:', data.confirmDate);
-    console.log('📦 [MeetingDetail] confirmDate 타입:', typeof data.confirmDate);
     
     meeting.value = {
       shareCode: data.shareCode,
@@ -114,22 +102,26 @@ const loadMeetingDetail = async () => {
       meetingDate: data.meetingDate
     }
     
+    // 달력 초기 월을 startDate 기준으로 설정
+    if (data.startDate && !isCalendarInitialized.value) {
+      const startDate = new Date(data.startDate);
+      currentYear.value = startDate.getFullYear();
+      currentMonth.value = startDate.getMonth() + 1;
+      isCalendarInitialized.value = true;
+    }
+    
     // 사용자 역할 저장
     if (data.role) {
       userRole.value = data.role;
-      console.log('👤 [MeetingDetail] 사용자 역할:', userRole.value);
     }
     
     // 확정된 일정이 있으면 파싱 (confirmDate 사용)
     if (data.confirmDate && data.confirmDate !== null && data.confirmDate !== undefined) {
-      console.log('📅 [MeetingDetail] 확정된 일정 발견:', data.confirmDate);
       
       // LocalDateTime "2026-02-15T14:00:00"을 파싱
       const dateTimeString = String(data.confirmDate);
       const [datePart, timePart] = dateTimeString.split('T');
       
-      console.log('📅 [MeetingDetail] datePart:', datePart);
-      console.log('📅 [MeetingDetail] timePart:', timePart);
       
       confirmedSchedule.value = {
         day: datePart,
@@ -138,9 +130,7 @@ const loadMeetingDetail = async () => {
         displayTime: timePart ? timePart.substring(0, 5) : '00:00' // "14:00"
       };
       
-      console.log('✅ [MeetingDetail] confirmedSchedule 설정됨:', confirmedSchedule.value);
     } else {
-      console.log('ℹ️ [MeetingDetail] 확정된 일정 없음 (confirmDate가 없거나 null/undefined)');
       confirmedSchedule.value = null;
     }
   } catch (error) {
@@ -150,10 +140,8 @@ const loadMeetingDetail = async () => {
 
 const loadCalendarData = async () => {
   try {
-    console.log(`🔄 [MeetingDetail] 월별 가용성 조회 중... (${currentYear.value}년 ${currentMonth.value}월)`);
     
     const response = await scheduleAPI.getMonthlyAvailability(shareCode, currentYear.value, currentMonth.value);
-    console.log('📦 [MeetingDetail] 월별 가용성 응답:', response);
     
     const data = response.data || response;
     
@@ -173,9 +161,6 @@ const loadCalendarData = async () => {
         dateAvailability: dateMap
       };
       
-      console.log('✅ [MeetingDetail] 월별 가용성 로드 완료');
-      console.log('   - 전체 참여자:', data.totalMembers);
-      console.log('   - 데이터 개수:', dateMap.size);
     } else {
       monthlyAvailability.value = null;
     }
@@ -187,10 +172,8 @@ const loadCalendarData = async () => {
 
 const loadRecommendedSchedules = async (type = 'ALL') => {
   try {
-    console.log(`🔄 [MeetingDetail] 추천 스케줄 조회 중... (타입: ${type})`);
     
     const response = await scheduleAPI.getRecommendSchedule(shareCode, type);
-    console.log('📦 [MeetingDetail] 추천 스케줄 응답:', response);
     
     // 응답 데이터 추출
     const data = response.data || response;
@@ -206,10 +189,8 @@ const loadRecommendedSchedules = async (type = 'ALL') => {
         displayTime: formatTimeRange(item.startTime, item.endTime)
       }));
       
-      console.log('✅ [MeetingDetail] 추천 스케줄 로드 완료:', recommendedSchedules.value);
     } else {
       recommendedSchedules.value = [];
-      console.log('ℹ️ [MeetingDetail] 추천 스케줄이 없습니다.');
     }
   } catch (error) {
     console.error("❌ [MeetingDetail] 추천 스케줄 조회 실패:", error);
@@ -251,7 +232,6 @@ const closeNicknameModal = () => {
   // 닉네임이 설정되었는지 확인
   if (userStore.nickname) {
     showNicknameModal.value = false;
-    console.log('✅ [MeetingDetail] 닉네임 설정 완료:', userStore.nickname);
   } else {
     // 닉네임이 없으면 모달을 닫지 않음
     alert('닉네임을 설정해야 모임에 참여할 수 있습니다.');
@@ -282,11 +262,15 @@ const confirmLeave = async () => {
   isLeaving.value = true;
   
   try {
-    console.log('🚪 [MeetingDetail] 모임 탈퇴 요청:', shareCode);
     
-    await meetingAPI.leaveMeeting(shareCode);
+    // 최신 미팅 정보 로드하여 id와 version 가져오기
+    const meetingData = await meetingsStore.loadMeetingByShareCode(shareCode);
     
-    console.log('✅ [MeetingDetail] 모임 탈퇴 성공');
+    await meetingAPI.withdrawMeeting({
+      id: meetingData.id,
+      version: meetingData.version
+    });
+    
     
     // meetingsStore에서 캐시 제거
     meetingsStore.clearCurrentMeeting();
@@ -366,9 +350,9 @@ const handleConfirmSchedule = async (schedule) => {
     // LocalDate + LocalTime -> LocalDateTime 변환
     const meetingDate = convertToLocalDateTime(schedule.day, schedule.startTime);
     
-    console.log('🔄 [MeetingDetail] 일정 확정 요청:', { meetingDate });
     
-    await meetingAPI.updateMeetingSchedule(shareCode, {
+    await meetingAPI.updateMeetingSchedule({
+      id: meetingsStore.currentMeeting?.id,
       name: null,
       meetingDate: meetingDate,
       startDate: null,
@@ -384,7 +368,6 @@ const handleConfirmSchedule = async (schedule) => {
       displayTime: schedule.displayTime
     };
     
-    console.log('✅ [MeetingDetail] 일정 확정 완료');
     alert('모임 일정이 확정되었습니다! 🎉');
     
     // 모임 정보 및 달력 데이터 다시 로드
@@ -409,9 +392,9 @@ const handleResetSchedule = async () => {
   isUpdatingSchedule.value = true;
   
   try {
-    console.log('🔄 [MeetingDetail] 일정 초기화 요청');
     
-    await meetingAPI.updateMeetingSchedule(shareCode, {
+    await meetingAPI.updateMeetingSchedule({
+      id: meetingsStore.currentMeeting?.id,
       name: null,
       meetingDate: null,
       startDate: null,
@@ -422,7 +405,6 @@ const handleResetSchedule = async () => {
     // 확정된 일정 제거
     confirmedSchedule.value = null;
     
-    console.log('✅ [MeetingDetail] 일정 초기화 완료');
     alert('모임 일정이 초기화되었습니다.');
     
     // 모임 정보 및 달력 데이터 다시 로드
@@ -443,7 +425,7 @@ const handleResetSchedule = async () => {
     <!-- 메인 컨텐츠 -->
     <main v-if="meeting" class="flex-1 overflow-y-auto pb-32 px-6 pt-2">
       <!-- 모임 정보 -->
-      <div class="mb-8">
+      <div class="mb-8 pt-2">
         <div class="flex items-start justify-between mb-4">
           <div class="flex-1">
             <h2 class="text-3xl font-extrabold text-gray-800 leading-tight mb-2">{{ meeting.name }}</h2>
@@ -483,8 +465,8 @@ const handleResetSchedule = async () => {
         </div>
 
           <!-- 참여자 정보 -->
-          <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-soft">
-            <div class="flex -space-x-3 rtl:space-x-reverse overflow-hidden">
+          <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-soft mt-2">
+            <div class="flex -space-x-3 rtl:space-x-reverse overflow-visible pt-1">
               <div 
                 v-for="(participant, index) in meeting.participants.slice(0, 4)" 
                 :key="index"
@@ -496,7 +478,7 @@ const handleResetSchedule = async () => {
                   class="w-10 h-10 border-2 border-pastel-border rounded-full object-cover cursor-pointer transition-transform hover:scale-110"
                 />
                 <!-- 툴팁 -->
-                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                   {{ participant.nickname }}
                 </div>
               </div>

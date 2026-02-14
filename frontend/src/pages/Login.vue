@@ -15,7 +15,6 @@ const handleKakaoLogin = async () => {
     // 카카오 로그인 페이지로 리다이렉트
     window.location.href = KAKAO_AUTH_URL;
   } catch (error) {
-    console.error("카카오 로그인 실패:", error);
     alert("로그인에 실패했습니다");
   } finally {
     isLoading.value = false;
@@ -25,14 +24,8 @@ const handleKakaoLogin = async () => {
 const handleGoogleLogin = async () => {
   isLoading.value = true;
   try {
-    // 실제 구글 로그인 구현 시 주석 해제
-    // window.location.href = GOOGLE_AUTH_URL;
-
-    // 임시: 로그인 처리
-    userStore.login({ id: 1, nickname: "구글유저" });
-    router.push("/");
+    window.location.href = GOOGLE_AUTH_URL;
   } catch (error) {
-    console.error("구글 로그인 실패:", error);
     alert("로그인에 실패했습니다");
   } finally {
     isLoading.value = false;

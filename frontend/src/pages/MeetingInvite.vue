@@ -23,7 +23,6 @@ const nicknameError = ref("");
 onMounted(async () => {
   // 1️⃣ App.vue의 초기화가 완료될 때까지 대기
   if (!userStore.isInitialized) {
-    console.log('⏳ [Invite] 초기화 대기 중...')
     let attempts = 0
     const maxAttempts = 50 // 5초 (100ms * 50)
     
@@ -33,20 +32,16 @@ onMounted(async () => {
     }
     
     if (userStore.isInitialized) {
-      console.log('✅ [Invite] 초기화 완료')
     } else {
-      console.log('⚠️ [Invite] 초기화 타임아웃')
     }
   }
 
   // 2️⃣ 사용자 정보가 없으면 로드
   if (!userStore.isLoggedIn || !userStore.nickname) {
-    console.log('🔄 [Invite] 사용자 정보 로드 시도...')
     try {
       const userInfoResponse = await userAPI.getUserInfo()
       const userInfo = userInfoResponse.data || userInfoResponse
       
-      console.log('📦 [Invite] 받은 사용자 정보:', userInfo)
       
       if (userInfo && (userInfo.nickname || userInfo.profileImgUrl || userInfo.provider)) {
         userStore.login({
@@ -54,9 +49,7 @@ onMounted(async () => {
           profileImgUrl: userInfo.profileImgUrl || '',
           provider: userInfo.provider || ''
         })
-        console.log('✅ [Invite] 사용자 정보 로드 완료:', userInfo.nickname, '(', userInfo.provider, ')')
       } else {
-        console.log('⚠️ [Invite] 사용자 정보 없음')
       }
     } catch (error) {
       console.error('⚠️ [Invite] 사용자 정보 로드 실패:', error)
@@ -73,10 +66,8 @@ const loadMeetingInfo = async () => {
   errorMessage.value = "";
   
   try {
-    console.log('🔄 [Invite] 모임 정보 조회 중...', shareCode);
     const response = await meetingAPI.getMeetingByShareCode(shareCode);
     
-    console.log('📦 [Invite] 응답:', response);
     
     // 백엔드 응답 구조에 맞게 데이터 추출
     const data = response.data || response;
@@ -86,7 +77,6 @@ const loadMeetingInfo = async () => {
         name: data.name,
         participantCount: data.memberNumber || 0
       };
-      console.log('✅ [Invite] 모임 정보 로드 완료:', meetingInfo.value);
     } else {
       throw new Error('Invalid response data');
     }
@@ -94,11 +84,6 @@ const loadMeetingInfo = async () => {
     console.error("❌ [Invite] 모임 정보 조회 실패:", error);
     
     // 에러 구조 상세 로깅
-    console.log("🔍 [Invite] 에러 객체 전체:", error);
-    console.log("🔍 [Invite] error.response:", error.response);
-    console.log("🔍 [Invite] error.response?.data:", error.response?.data);
-    console.log("🔍 [Invite] error.response?.status:", error.response?.status);
-    console.log("🔍 [Invite] error.message:", error.message);
     
     // 백엔드에서 전달한 에러 메시지 추출
     let backendMessage = null;
@@ -106,8 +91,6 @@ const loadMeetingInfo = async () => {
       const errorData = error.response.data;
       // CommonResponse 구조: { code, message, data, pagination }
       backendMessage = errorData.message || errorData.error || null;
-      console.log("🔍 [Invite] 백엔드 에러 메시지:", backendMessage);
-      console.log("🔍 [Invite] 백엔드 에러 코드:", errorData.code);
     }
     
     // 백엔드 에러 코드 추출
@@ -115,36 +98,27 @@ const loadMeetingInfo = async () => {
     
     // 에러 코드별 처리
     if (errorCode) {
-      console.log(`⚠️ [Invite] 에러 코드 ${errorCode} 감지`);
       
       switch(errorCode) {
         case 'M003':
-          console.log("⚠️ [Invite] M003 - 더이상 존재하지 않는 모임");
           errorMessage.value = backendMessage || "더이상 존재하지 않는 모임입니다.";
           break;
         case 'M005':
-          console.log("⚠️ [Invite] M005 - 만료된 초대링크");
           errorMessage.value = backendMessage || "이미 만료된 초대링크입니다. 새로 발급된 초대링크를 확인해주세요.";
           break;
         case 'A001':
-          console.log("⚠️ [Invite] A001 - 만료된 JWT");
           errorMessage.value = backendMessage || "로그인이 만료되었습니다. 다시 로그인해주세요.";
           break;
         default:
-          console.log(`⚠️ [Invite] 기타 에러 코드: ${errorCode}`);
           errorMessage.value = backendMessage || "모임 정보를 불러올 수 없습니다.";
       }
     } else {
       // HTTP 상태 코드로 판단
-      console.log("⚠️ [Invite] 에러 코드 없음 - HTTP 상태로 판단");
       if (error.response?.status === 401) {
-        console.log("⚠️ [Invite] 401 인증 오류");
         errorMessage.value = backendMessage || "로그인이 필요합니다.";
       } else if (error.response?.status === 404) {
-        console.log("⚠️ [Invite] 404 모임을 찾을 수 없음");
         errorMessage.value = backendMessage || "존재하지 않는 모임입니다.";
       } else if (error.response?.status === 403) {
-        console.log("⚠️ [Invite] 403 접근 권한 없음");
         errorMessage.value = backendMessage || "접근 권한이 없습니다.";
       } else {
         // 기타 에러
@@ -152,7 +126,6 @@ const loadMeetingInfo = async () => {
       }
     }
     
-    console.log("📢 [Invite] 최종 표시될 에러 메시지:", errorMessage.value);
   } finally {
     isLoading.value = false;
   }
@@ -161,7 +134,6 @@ const loadMeetingInfo = async () => {
 const handleJoinMeeting = async () => {
   // 닉네임이 없으면 모달 표시
   if (!userStore.nickname) {
-    console.log('⚠️ [Invite] 닉네임 없음 - 모달 표시');
     nicknameError.value = "";
     nicknameInput.value = "";
     showNicknameModal.value = true;
@@ -190,11 +162,9 @@ const handleNicknameSubmit = async () => {
   nicknameError.value = "";
   
   try {
-    console.log('🔄 [Invite] 게스트 유저 생성 요청:', nickname);
     
     // 1단계: 게스트 유저 생성
     await userAPI.createFirstUser(nickname);
-    console.log('✅ [Invite] 게스트 유저 생성 성공');
     
     // 2단계: 사용자 정보 업데이트
     userStore.login({
@@ -225,9 +195,7 @@ const joinMeeting = async () => {
   isJoining.value = true;
   
   try {
-    console.log('🔄 [Invite] 모임 참여 요청 시작:', shareCode);
     await meetingAPI.joinMeetingByShareCode(shareCode);
-    console.log('✅ [Invite] 모임 참여 성공');
     alert("모임에 참여했습니다! 🎉");
     // 참여 후 해당 모임 상세 페이지로 이동 (shareCode 사용)
     router.push(`/meeting/${shareCode}`);
@@ -235,33 +203,25 @@ const joinMeeting = async () => {
     console.error("❌ [Invite] 모임 참여 실패:", error);
     
     // 에러 구조 상세 로깅
-    console.log("🔍 [Invite] 참여 에러 - error.response:", error.response);
-    console.log("🔍 [Invite] 참여 에러 - error.response?.data:", error.response?.data);
-    console.log("🔍 [Invite] 참여 에러 - error.response?.status:", error.response?.status);
     
     // 백엔드 에러 정보 추출
     const errorData = error.response?.data;
     const errorCode = errorData?.code;
     const backendErrorMessage = errorData?.message;
     
-    console.log("🔍 [Invite] 참여 에러 코드:", errorCode);
-    console.log("🔍 [Invite] 참여 에러 메시지:", backendErrorMessage);
     
     // 에러 코드별 처리
     if (errorCode) {
-      console.log(`⚠️ [Invite] 에러 코드 ${errorCode} 감지`);
       
       switch(errorCode) {
         case "M003":
           // 더이상 존재하지 않는 모임
-          console.log("⚠️ [Invite] M003 - 더이상 존재하지 않는 모임");
           alert(backendErrorMessage || "더이상 존재하지 않는 모임입니다.");
           router.push(`/`);
           break;
           
         case "M004":
           // 이미 참여중인 모임
-          console.log("ℹ️ [Invite] M004 - 이미 참여중인 모임");
           alert(backendErrorMessage || "이미 참여중인 모임입니다.");
           // 이미 참여중이면 바로 모임 페이지로 이동
           router.push(`/meeting/${shareCode}`);
@@ -269,36 +229,29 @@ const joinMeeting = async () => {
           
         case "M005":
           // 만료된 초대링크
-          console.log("⚠️ [Invite] M005 - 만료된 초대링크");
           alert(backendErrorMessage || "이미 만료된 초대링크입니다. 새로 발급된 초대링크를 확인해주세요.");
           router.push(`/`);
           break;
           
         case "A001":
           // 만료된 JWT
-          console.log("⚠️ [Invite] A001 - 만료된 JWT");
           alert(backendErrorMessage || "로그인이 만료되었습니다. 다시 로그인해주세요.");
           router.push("/login");
           break;
           
         case "U001":
           // 등록되지 않은 사용자
-          console.log("⚠️ [Invite] U001 - 등록되지 않은 사용자");
           alert(backendErrorMessage || "등록되지 않은 사용자입니다.");
           router.push("/login");
           break;
           
         default:
-          console.log(`⚠️ [Invite] 기타 에러 코드: ${errorCode}`);
           const displayMessage = backendErrorMessage || "모임 참여에 실패했습니다. 다시 시도해주세요.";
-          console.log("📢 [Invite] 표시할 에러 메시지:", displayMessage);
           alert(displayMessage);
       }
     } else {
       // 에러 코드가 없는 경우
-      console.log("⚠️ [Invite] 에러 코드 없음");
       const displayMessage = backendErrorMessage || "모임 참여에 실패했습니다. 다시 시도해주세요.";
-      console.log("📢 [Invite] 표시할 에러 메시지:", displayMessage);
       alert(displayMessage);
     }
   } finally {
