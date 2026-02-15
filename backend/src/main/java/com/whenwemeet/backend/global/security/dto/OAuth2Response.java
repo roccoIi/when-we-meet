@@ -43,7 +43,7 @@ public class OAuth2Response {
                 .provider("kakao")
                 .providerId(attributes.get("id").toString())
                 .nickname(properties.get("nickname").toString())
-                .thumbnail(properties.get("thumbnail_image").toString())
+                .thumbnail(convertHttps(properties.get("thumbnail_image").toString()))
                 .build();
     }
 
@@ -53,9 +53,16 @@ public class OAuth2Response {
                 .provider("google")
                 .providerId(attributes.get("id").toString())
                 .nickname(attributes.get("name").toString())
-                .thumbnail(attributes.get("picture").toString())
+                .thumbnail(convertHttps(attributes.get("picture").toString()))
                 .build();
 
+    }
+
+    public static String convertHttps(String thumbnail) {
+        if (thumbnail.startsWith("http://")) {
+            return thumbnail.replace("http://", "https://");
+        }
+        return thumbnail;
     }
 
     public User toEntity(){
