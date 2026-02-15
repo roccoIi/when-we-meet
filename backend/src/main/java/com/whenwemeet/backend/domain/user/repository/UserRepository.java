@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long>, UserCustomRepository {
 
-    Optional<User> findUserByProviderAndProviderID(String provider, Long providerId);
+    Optional<User> findUserByProviderAndProviderID(String provider, String providerId);
 
     Optional<User> findUserById(Long userId);
 

@@ -18,7 +18,7 @@ public class OAuth2Response {
     String provider;
 
     // 제공자 측 ID
-    Long providerId;
+    String providerId;
 
     // 사용자 설정 닉네임
     String nickname;
@@ -30,6 +30,7 @@ public class OAuth2Response {
     public static OAuth2Response of(String registrationId, Map<String, Object> attributes) {
         return switch (registrationId) {
             case "kakao" -> ofKakao(attributes);
+            case "google" -> ofGoogle(attributes);
             default -> throw new UnAuthorizedException(A002);
         };
     }
@@ -40,10 +41,21 @@ public class OAuth2Response {
 
         return OAuth2Response.builder()
                 .provider("kakao")
-                .providerId(Long.valueOf(attributes.get("id").toString()))
+                .providerId(attributes.get("id").toString())
                 .nickname(properties.get("nickname").toString())
                 .thumbnail(properties.get("thumbnail_image").toString())
                 .build();
+    }
+
+    // google 사용자 정보 매핑 메서드
+    private static OAuth2Response ofGoogle(Map<String, Object> attributes) {
+        return OAuth2Response.builder()
+                .provider("google")
+                .providerId(attributes.get("id").toString())
+                .nickname(attributes.get("name").toString())
+                .thumbnail(attributes.get("picture").toString())
+                .build();
+
     }
 
     public User toEntity(){

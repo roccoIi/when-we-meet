@@ -6,10 +6,12 @@ import Calendar from "../components/Calendar.vue";
 import TimeCalendar from "../components/TimeCalendar.vue";
 import NicknameModal from "../components/NicknameModal.vue";
 import { scheduleAPI, userAPI } from "../services";
+import { useMeetingsStore } from "../stores/meetings";
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const meetingsStore = useMeetingsStore();
 
 const shareCode = route.params.shareCode;
 const currentYear = ref(new Date().getFullYear());
@@ -19,6 +21,7 @@ const selectedTimes = ref([]);
 const isLoading = ref(false);
 const isSaving = ref(false);
 const viewMode = ref("date");
+const meeting = ref(null); // 미팅 정보
 
 // 닉네임 모달 상태
 const showNicknameModal = ref(false);
@@ -26,7 +29,6 @@ const showNicknameModal = ref(false);
 onMounted(async () => {
   // 1️⃣ App.vue의 초기화가 완료될 때까지 대기
   if (!userStore.isInitialized) {
-    console.log('⏳ [ScheduleInput] 초기화 대기 중...')
     let attempts = 0
     const maxAttempts = 50 // 5초 (100ms * 50)
     
@@ -36,20 +38,16 @@ onMounted(async () => {
     }
     
     if (userStore.isInitialized) {
-      console.log('✅ [ScheduleInput] 초기화 완료')
     } else {
-      console.log('⚠️ [ScheduleInput] 초기화 타임아웃')
     }
   }
 
   // 2️⃣ 사용자 정보가 없으면 로드
   if (!userStore.isLoggedIn || !userStore.nickname) {
-    console.log('🔄 [ScheduleInput] 사용자 정보 로드 시도...')
     try {
       const userInfoResponse = await userAPI.getUserInfo()
       const userInfo = userInfoResponse.data || userInfoResponse
       
-      console.log('📦 [ScheduleInput] 받은 사용자 정보:', userInfo)
       
       if (userInfo && (userInfo.nickname || userInfo.profileImgUrl || userInfo.provider)) {
         userStore.login({
@@ -57,9 +55,7 @@ onMounted(async () => {
           profileImgUrl: userInfo.profileImgUrl || '',
           provider: userInfo.provider || ''
         })
-        console.log('✅ [ScheduleInput] 사용자 정보 로드 완료:', userInfo.nickname, '(', userInfo.provider, ')')
       } else {
-        console.log('⚠️ [ScheduleInput] 사용자 정보 없음')
       }
     } catch (error) {
       console.error('⚠️ [ScheduleInput] 사용자 정보 로드 실패:', error)
@@ -69,15 +65,46 @@ onMounted(async () => {
 
   // 3️⃣ 닉네임 체크 (사용자 정보 로드 후)
   if (!userStore.nickname) {
-    console.log('⚠️ [ScheduleInput] 닉네임 없음 - 모달 표시');
     showNicknameModal.value = true;
   } else {
-    console.log('✅ [ScheduleInput] 닉네임 존재:', userStore.nickname);
   }
 
-  // 4️⃣ 사용자 일정 로드
+  // 4️⃣ 미팅 정보 로드
+  await loadMeetingInfo();
+
+  // 5️⃣ 사용자 일정 로드
   await loadUserSchedule();
 });
+
+/**
+ * 미팅 정보 로드 (캐싱 사용)
+ */
+const loadMeetingInfo = async () => {
+  try {
+    
+    // meetingsStore의 버전 체크 캐싱 사용
+    const data = await meetingsStore.loadMeetingByShareCode(shareCode);
+    
+    
+    meeting.value = {
+      name: data.name,
+      startDate: data.startDate,
+      meetingDate: data.meetingDate,
+      startTime: data.startTime,
+      endTime: data.endTime
+    };
+    
+    // 달력 초기 월을 startDate 기준으로 설정
+    if (data.startDate) {
+      const startDate = new Date(data.startDate);
+      currentYear.value = startDate.getFullYear();
+      currentMonth.value = startDate.getMonth() + 1;
+    }
+    
+  } catch (error) {
+    console.error('❌ [ScheduleInput] 미팅 정보 로드 실패:', error);
+  }
+};
 
 /**
  * 백엔드에서 받은 일정 데이터를 날짜/시간 선택으로 변환
@@ -87,12 +114,8 @@ const convertSchedulesToSelections = (schedules) => {
   const dates = [];
   const times = [];
 
-  console.log('🔄 [convertSchedulesToSelections] 변환 시작, 개수:', schedules.length);
 
   schedules.forEach((schedule, index) => {
-    console.log(`🔄 [Schedule ${index}] unavailableDate:`, schedule.unavailableDate);
-    console.log(`🔄 [Schedule ${index}] unavailableStartTime:`, schedule.unavailableStartTime);
-    console.log(`🔄 [Schedule ${index}] unavailableEndTime:`, schedule.unavailableEndTime);
 
     // LocalDate와 LocalTime을 결합하여 Date 객체 생성
     const startDateTime = `${schedule.unavailableDate}T${schedule.unavailableStartTime}`;
@@ -101,23 +124,17 @@ const convertSchedulesToSelections = (schedules) => {
     const start = new Date(startDateTime);
     const end = new Date(endDateTime);
 
-    console.log(`🔄 [Schedule ${index}] start Date 객체:`, start);
-    console.log(`🔄 [Schedule ${index}] end Date 객체:`, end);
-    console.log(`🔄 [Schedule ${index}] start 시간: ${start.getHours()}:${start.getMinutes()}:${start.getSeconds()}`);
-    console.log(`🔄 [Schedule ${index}] end 시간: ${end.getHours()}:${end.getMinutes()}:${end.getSeconds()}`);
 
     // 날짜 달력용: 09:00:00 ~ 23:59:59인 경우 날짜로 추가
     if (
       start.getHours() === 9 && start.getMinutes() === 0 && start.getSeconds() === 0 &&
       end.getHours() === 23 && end.getMinutes() === 59 && end.getSeconds() === 59
     ) {
-      console.log(`📅 [Schedule ${index}] 날짜로 추가:`, schedule.unavailableDate);
       dates.push(schedule.unavailableDate);
     }
     
     // 시간 달력용: 30분 단위로 시간 추가 (09:00:00 ~ 23:59:59도 포함)
     const current = new Date(start);
-    console.log(`⏰ [Schedule ${index}] 시간으로 처리 시작`);
     
     let count = 0;
     while (current < end) {
@@ -128,18 +145,14 @@ const convertSchedulesToSelections = (schedules) => {
       const minute = String(current.getMinutes()).padStart(2, '0');
       const timeString = `${year}-${month}-${day}T${hour}:${minute}`;
       
-      console.log(`⏰ [Schedule ${index}] 시간 추가:`, timeString);
       times.push(timeString);
       count++;
       
       // 30분 증가
       current.setMinutes(current.getMinutes() + 30);
     }
-    console.log(`⏰ [Schedule ${index}] 총 ${count}개 시간 추가됨`);
   });
 
-  console.log('✅ [convertSchedulesToSelections] 최종 dates:', dates);
-  console.log('✅ [convertSchedulesToSelections] 최종 times:', times);
 
   return { dates, times };
 };
@@ -154,9 +167,6 @@ const loadUserSchedule = async () => {
     // 백엔드에서 내 일정 조회
     const response = await scheduleAPI.getMyScheduleByShareCode(shareCode);
     
-    console.log('📥 [ScheduleInput] API 응답 전체:', response);
-    console.log('📥 [ScheduleInput] 응답 타입:', typeof response);
-    console.log('📥 [ScheduleInput] 배열인가?:', Array.isArray(response));
 
     // 응답 데이터 추출 (response.data 또는 response 자체가 배열일 수 있음)
     let schedules = response;
@@ -166,7 +176,6 @@ const loadUserSchedule = async () => {
       schedules = [];
     }
 
-    console.log('📥 [ScheduleInput] 처리할 일정 배열:', schedules);
 
     // 응답 데이터가 있으면 변환
     if (schedules && schedules.length > 0) {
@@ -174,12 +183,7 @@ const loadUserSchedule = async () => {
       selectedDates.value = [...dates];
       selectedTimes.value = [...times];
       
-      console.log('✅ [ScheduleInput] 변환된 날짜:', selectedDates.value);
-      console.log('✅ [ScheduleInput] 변환된 시간:', selectedTimes.value);
-      console.log('✅ [ScheduleInput] selectedDates.value.length:', selectedDates.value.length);
-      console.log('✅ [ScheduleInput] selectedTimes.value.length:', selectedTimes.value.length);
     } else {
-      console.log('ℹ️ [ScheduleInput] 저장된 일정이 없습니다.');
     }
   } catch (error) {
     console.error("❌ [ScheduleInput] 일정 조회 실패:", error);
@@ -397,7 +401,6 @@ const handleSave = async () => {
       scheduleRanges = convertTimesToRanges(selectedTimes.value);
     }
     
-    console.log("전송할 데이터:", scheduleRanges);
     
     // 백엔드로 전송
     await scheduleAPI.saveSchedule(shareCode, scheduleRanges);
@@ -473,7 +476,6 @@ const closeNicknameModal = () => {
   // 닉네임이 설정되었는지 확인
   if (userStore.nickname) {
     showNicknameModal.value = false;
-    console.log('✅ [ScheduleInput] 닉네임 설정 완료:', userStore.nickname);
   } else {
     // 닉네임이 없으면 모달을 닫지 않고 미팅 상세로 돌아감
     alert('닉네임을 설정해야 일정을 추가할 수 있습니다.');
@@ -522,6 +524,7 @@ const closeNicknameModal = () => {
             :month="currentMonth"
             :unavailableDates="[]"
             :selectedDates="selectedDates"
+            :minDate="meeting?.startDate || null"
             @update:year="(val) => (currentYear = val)"
             @update:month="(val) => (currentMonth = val)"
             @dateClick="handleDateClick"
@@ -530,6 +533,8 @@ const closeNicknameModal = () => {
           <TimeCalendar
             v-else
             :selectedTimes="selectedTimes"
+            :minDate="meeting?.startDate || null"
+            :startTime="meeting?.startTime || null"
             @timeClick="handleTimeClick"
           />
 

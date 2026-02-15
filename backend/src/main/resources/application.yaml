@@ -65,20 +65,26 @@ spring:
             scope: ${KAKAO_SCOPE}
 
           google:
-            client-name: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_NAME}
-            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID}
-            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET}
-            redirect-uri: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI}
-            authorization-grant-type: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_AUTHORIZATION_GRANT_TYPE}
-            scope:
-              - email
-              - profile
+            client-name: ${GOOGLE_CLIENT_NAME}
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+            authorization-grant-type: ${GOOGLE_AUTHORIZATION_GRANT_TYPE}
+            scope: ${GOOGLE_SCOPE}
+
         provider:
           kakao:
             authorization-uri: ${KAKAO_AUTHORIZATION_URI}
             token-uri: ${KAKAO_TOKEN_URI}
             user-info-uri: ${KAKAO_USER_INFO_URI}
             user-name-attribute: ${KAKAO_USER_NAME_ATTRIBUTE}
+
+          google:
+            authorization-uri: ${GOOGLE_AUTHORIZATION_URI}
+            token-uri: ${GOOGLE_TOKEN_URI}
+            user-info-uri: ${GOOGLE_USER_INFO_URI}
+            user-name-attribute: ${GOOGLE_USER_NAME_ATTRIBUTE}
+
 
 logging:
   level:

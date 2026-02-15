@@ -15,7 +15,6 @@ const handleKakaoLogin = async () => {
     // 카카오 로그인 페이지로 리다이렉트
     window.location.href = KAKAO_AUTH_URL;
   } catch (error) {
-    console.error("카카오 로그인 실패:", error);
     alert("로그인에 실패했습니다");
   } finally {
     isLoading.value = false;
@@ -25,41 +24,23 @@ const handleKakaoLogin = async () => {
 const handleGoogleLogin = async () => {
   isLoading.value = true;
   try {
-    // 실제 구글 로그인 구현 시 주석 해제
-    // window.location.href = GOOGLE_AUTH_URL;
-
-    // 임시: 로그인 처리
-    userStore.login({ id: 1, nickname: "구글유저" });
-    router.push("/");
+    window.location.href = GOOGLE_AUTH_URL;
   } catch (error) {
-    console.error("구글 로그인 실패:", error);
     alert("로그인에 실패했습니다");
   } finally {
     isLoading.value = false;
   }
 };
 
-const handleAppleLogin = async () => {
-  isLoading.value = true;
-  try {
-    // Apple 로그인 구현 예정
-    alert("Apple 로그인은 준비 중입니다.");
-  } catch (error) {
-    console.error("Apple 로그인 실패:", error);
-    alert("로그인에 실패했습니다");
-  } finally {
-    isLoading.value = false;
-  }
-};
 </script>
 
 <template>
-  <div class="bg-background-soft font-display text-text-main flex flex-col justify-between h-full min-h-screen antialiased overflow-hidden relative">
+  <div class="bg-background-light font-display text-text-main flex flex-col justify-between h-full min-h-screen antialiased overflow-hidden relative">
     <!-- Decorative Background Blurs -->
     <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      <div class="absolute top-[-5%] right-[-10%] w-[400px] h-[400px] bg-pastel-pink/30 rounded-full blur-[80px]"></div>
-      <div class="absolute bottom-[-5%] left-[-10%] w-[350px] h-[350px] bg-pastel-blue/20 rounded-full blur-[60px]"></div>
-      <div class="absolute top-[40%] left-[20%] w-[200px] h-[200px] bg-pastel-mint/20 rounded-full blur-[50px]"></div>
+      <div class="absolute top-[-5%] right-[-10%] w-[400px] h-[400px] bg-secondary/20 rounded-full blur-[80px]"></div>
+      <div class="absolute bottom-[-5%] left-[-10%] w-[350px] h-[350px] bg-primary/15 rounded-full blur-[60px]"></div>
+      <div class="absolute top-[40%] left-[20%] w-[200px] h-[200px] bg-tertiary/15 rounded-full blur-[50px]"></div>
     </div>
 
     <!-- Main Content -->
@@ -68,17 +49,17 @@ const handleAppleLogin = async () => {
       <div class="flex-1 flex flex-col justify-center items-center text-center mt-8 mb-6 space-y-6">
         <!-- Logo -->
         <div class="relative group">
-          <div class="absolute -inset-2 bg-gradient-to-tr from-pastel-pink to-pastel-blue rounded-[2rem] blur-md opacity-40"></div>
+          <div class="absolute -inset-2 bg-gradient-to-tr from-primary to-secondary rounded-[2rem] blur-md opacity-30"></div>
           <div class="relative w-28 h-28 bg-white rounded-[2rem] flex items-center justify-center shadow-soft transform rotate-3 transition-transform hover:rotate-0 duration-300">
-            <span class="material-icons text-pastel-blue text-5xl">calendar_month</span>
-            <div class="absolute top-4 right-5 w-3 h-3 bg-pastel-pink rounded-full"></div>
+            <span class="material-icons text-primary text-5xl">calendar_month</span>
+            <div class="absolute top-4 right-5 w-3 h-3 bg-accent-pink rounded-full"></div>
           </div>
         </div>
 
         <!-- Title -->
         <div class="space-y-1">
           <h1 class="text-3xl font-bold tracking-tight text-gray-800">
-            <span class="text-red-400">언제</span>볼래
+            <span class="text-accent-pink">언제</span>볼래
           </h1>
           <p class="text-sm font-semibold text-text-sub uppercase tracking-wider bg-white/50 px-3 py-1 rounded-full inline-block">When We Meet</p>
         </div>
@@ -95,7 +76,7 @@ const handleAppleLogin = async () => {
       <div class="w-full space-y-6 mb-10">
         <div class="relative flex py-1 items-center">
           <div class="flex-grow border-t border-gray-200"></div>
-          <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium bg-background-soft px-2">Simple Social Login</span>
+          <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium bg-background-light px-2">Simple Social Login</span>
           <div class="flex-grow border-t border-gray-200"></div>
         </div>
 
@@ -132,8 +113,7 @@ const handleAppleLogin = async () => {
             </div>
             <span class="text-sm">Login with Google</span>
           </button>
-
-          <!-- Apple Login -->
+          <!-- Apple Login
           <button 
             @click="handleAppleLogin"
             :disabled="isLoading"
@@ -146,7 +126,7 @@ const handleAppleLogin = async () => {
               </svg>
             </div>
             <span class="text-sm">Continue with Apple</span>
-          </button>
+          </button> -->
         </div>
       </div>
 
@@ -154,9 +134,9 @@ const handleAppleLogin = async () => {
       <div class="text-center pb-4">
         <p class="text-xs text-gray-400">
           By continuing, you agree to our 
-          <a class="text-gray-600 hover:text-pastel-blue font-semibold transition-colors" href="#">Terms of Service</a>
+          <a class="text-gray-600 hover:text-primary-dark font-semibold transition-colors" href="#">Terms of Service</a>
           and
-          <a class="text-gray-600 hover:text-pastel-blue font-semibold transition-colors" href="#">Privacy Policy</a>.
+          <a class="text-gray-600 hover:text-primary-dark font-semibold transition-colors" href="#">Privacy Policy</a>.
         </p>
       </div>
     </main>

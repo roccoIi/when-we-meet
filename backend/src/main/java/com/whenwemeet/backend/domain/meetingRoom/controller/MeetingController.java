@@ -1,10 +1,7 @@
 package com.whenwemeet.backend.domain.meetingRoom.controller;
 
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.*;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.CreateMeetingResponse;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.EnterShareLinkResponse;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingListResponse;
-import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingRoomInfoResponse;
+import com.whenwemeet.backend.domain.meetingRoom.dto.response.*;
 import com.whenwemeet.backend.domain.meetingRoom.service.MeetingService;
 import com.whenwemeet.backend.domain.user.entity.User;
 import com.whenwemeet.backend.global.response.CommonResponse;
@@ -38,10 +35,10 @@ public class MeetingController {
         if(user == null) return ResponseEntity.ok(CommonResponse.success());
 
         PageResponse<List<MeetingListResponse>> response = meetingService.getAllMeeting(user.getId(), page, limit, type, sort);
-        return ResponseEntity.ok(CommonResponse.success(response.getData(), response.getPagination()));
+        return ResponseEntity.ok(CommonResponse.success(response.data(), response.pagination()));
     }
 
-    @PostMapping()
+    @PostMapping("/create")
     public ResponseEntity<CommonResponse<?>> addMeeting(
             @AuthenticationPrincipal CustomOAuth2User user,
             @RequestBody MeetingCreateRequest meetingCreateRequest,
@@ -52,18 +49,17 @@ public class MeetingController {
         return ResponseEntity.ok(CommonResponse.success(response));
     }
 
-    @PutMapping("{shareCode}")
+    @PutMapping("/update")
     public ResponseEntity<CommonResponse<?>> updateMeeting(
             @AuthenticationPrincipal CustomOAuth2User user,
-            @PathVariable("shareCode") String shareCode,
             @RequestBody MeetingUpdateRequest meetingUpdateRequest)
     {
         log.info("[미팅 수정]");
-        meetingService.updateMeeting(user, shareCode, meetingUpdateRequest);
+        meetingService.updateMeeting(user, meetingUpdateRequest);
         return ResponseEntity.ok(CommonResponse.success());
     }
 
-    @GetMapping("{shareCode}")
+    @GetMapping("/{shareCode}")
     public ResponseEntity<CommonResponse<?>> getMeetingRoomInfoByShareCode(
             @AuthenticationPrincipal CustomOAuth2User user,
             @PathVariable("shareCode") String shareCode
@@ -73,13 +69,31 @@ public class MeetingController {
         return ResponseEntity.ok(CommonResponse.success(response));
     }
 
-    @DeleteMapping("/{roomId}")
+    @GetMapping("/{shareCode}/version")
+    public ResponseEntity<CommonResponse<?>> getMeetingRoomVersion(
+            @PathVariable("shareCode") String shareCode
+    ){
+        MeetingRoomVersionResponse response = meetingService.getMeetingRoomVersion(shareCode);
+        return ResponseEntity.ok(CommonResponse.success(response));
+    }
+
+    @DeleteMapping("/host")
     public ResponseEntity<CommonResponse<?>> deleteMeeting(
             @AuthenticationPrincipal CustomOAuth2User user,
-            @PathVariable("roomId") Long roomId)
+            @RequestBody DeleteRoomRequest deleteRoomRequest)
     {
-        log.info("[미팅 삭제] SoftDelete 진행");
-        meetingService.deleteMeeting(user.getId(), roomId);
+        log.info("[미팅 삭제(Host)] SoftDelete 진행");
+        meetingService.deleteMeeting(user.getId(), deleteRoomRequest);
+        return ResponseEntity.ok(CommonResponse.success());
+    }
+
+    @DeleteMapping("/member")
+    public ResponseEntity<CommonResponse<?>> leaveMeeting(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @RequestBody DeleteRoomRequest deleteRoomRequest
+    ){
+        log.info("[미팅 탈퇴]");
+        meetingService.leaveMeeting(user, deleteRoomRequest);
         return ResponseEntity.ok(CommonResponse.success());
     }
 

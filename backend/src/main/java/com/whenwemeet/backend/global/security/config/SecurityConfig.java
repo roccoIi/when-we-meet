@@ -53,6 +53,15 @@ public class SecurityConfig {
 
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(rq -> rq
+                        .requestMatchers(
+                                "/api/auth/**", // oauth 토큰 재발급
+                                "/oauth2/**",   // oauth2 리다이렉트
+                                "/login/oauth2/**",  // oauth2 리다이렉트
+                                "/api/meetings",  // meetingList 반환(home)
+                                "/api/meetings/create", // meeting 생성
+                                "/api/meetings/share",  // 초대링크 접속시 요약정보 반환
+                                "/api/user/first"  // 첫 접속 계정생성
+                        ).permitAll()
 //                        .requestMatchers("/api/meetings/share/**").permitAll()
 //                        .anyRequest().authenticated())
                         .anyRequest().permitAll())

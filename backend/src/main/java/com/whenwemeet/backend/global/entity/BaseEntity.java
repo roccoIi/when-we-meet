@@ -22,4 +22,5 @@ public abstract class BaseEntity {
 
     @Column(nullable = false)
     private boolean isDeleted = false;
+
 }

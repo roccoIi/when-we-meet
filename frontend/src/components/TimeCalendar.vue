@@ -10,18 +10,40 @@ const props = defineProps({
     type: Number,
     default: 7,
   },
+  minDate: {
+    type: String,
+    default: null, // "2026-02-15" 형식
+  },
+  startTime: {
+    type: String,
+    default: null, // "18:00:00" 형식
+  },
 });
 
 const emit = defineEmits(["timeClick"]);
 
+// minDate가 있으면 그 날짜부터 시작, 없으면 오늘부터
 const startDate = ref(new Date());
-startDate.value.setHours(0, 0, 0, 0);
+if (props.minDate) {
+  startDate.value = new Date(props.minDate);
+} else {
+  startDate.value.setHours(0, 0, 0, 0);
+}
 
-// 30분 단위 시간 슬롯 생성 (9:00 ~ 23:30)
-// { hour: 9, minute: 0 }, { hour: 9, minute: 30 }, { hour: 10, minute: 0 }, ...
+// 30분 단위 시간 슬롯 생성
+// startTime이 있으면 그 시간부터, 없으면 9:00부터 23:30까지
 const timeSlots = computed(() => {
   const slots = [];
-  for (let hour = 9; hour <= 23; hour++) {
+  let startHour = 9;
+  
+  // startTime이 있으면 파싱
+  if (props.startTime) {
+    const [hourStr] = props.startTime.split(':');
+    startHour = parseInt(hourStr, 10);
+  }
+  
+  // startHour부터 23:30까지 생성
+  for (let hour = startHour; hour <= 23; hour++) {
     slots.push({ hour, minute: 0 });
     slots.push({ hour, minute: 30 });
   }
@@ -65,9 +87,35 @@ const isSelected = (date, hour, minute) => {
 };
 
 const isPast = (date, hour, minute) => {
-  const now = new Date();
   const checkTime = new Date(date);
   checkTime.setHours(hour, minute, 0, 0);
+  
+  // minDate가 설정되어 있으면 그 날짜 이전을 회색 처리
+  if (props.minDate) {
+    const minDateTime = new Date(props.minDate);
+    minDateTime.setHours(0, 0, 0, 0);
+    
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    // minDate보다 이전 날짜는 모두 회색
+    if (checkDate < minDateTime) {
+      return true;
+    }
+    
+    // minDate와 같은 날이면 시간도 체크
+    if (checkDate.getTime() === minDateTime.getTime()) {
+      // minDate의 시작 시간을 0시로 간주하므로, 해당 날짜의 모든 시간은 사용 가능
+      return false;
+    }
+    
+    // minDate보다 이후 날짜면 현재 시간과 비교
+    const now = new Date();
+    return checkTime < now;
+  }
+  
+  // minDate가 없으면 오늘 이전을 회색 처리
+  const now = new Date();
   return checkTime < now;
 };
 

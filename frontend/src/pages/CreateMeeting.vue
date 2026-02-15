@@ -3,8 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useUserStore } from "../stores/user";
 import { useMeetingsStore } from "../stores/meetings";
-import NicknameModal from "../components/NicknameModal.vue";
-import { meetingAPI } from "../services";
+import { meetingAPI, userAPI } from "../services";
 
 const router = useRouter();
 const route = useRoute();
@@ -163,11 +162,13 @@ const currentMonthName = computed(() => {
 
 // 닉네임 모달 상태
 const showNicknameModal = ref(false);
+const nicknameInput = ref("");
+const isSettingNickname = ref(false);
+const nicknameError = ref("");
 
 onMounted(async () => {
   // App.vue의 초기화가 완료될 때까지 대기
   if (!userStore.isInitialized) {
-    console.log('⏳ [CreateMeeting] 초기화 대기 중...')
     let attempts = 0
     const maxAttempts = 50 // 5초 (100ms * 50)
     
@@ -175,19 +176,12 @@ onMounted(async () => {
       await new Promise(resolve => setTimeout(resolve, 100))
       attempts++
     }
-    
-    if (userStore.isInitialized) {
-      console.log('✅ [CreateMeeting] 초기화 완료')
-    } else {
-      console.log('⚠️ [CreateMeeting] 초기화 타임아웃')
-    }
   }
 
   // 수정 모드 확인
   if (route.query.mode === 'edit' && route.query.shareCode) {
     isEditMode.value = true;
     editShareCode.value = route.query.shareCode;
-    console.log('✏️ [CreateMeeting] 수정 모드:', editShareCode.value);
     
     // 기존 미팅 정보 로드
     await loadExistingMeeting(editShareCode.value);
@@ -204,52 +198,43 @@ const isPastDate = (date) => {
   return checkDate < today;
 };
 
-// 기존 미팅 정보 로드
+// 기존 미팅 정보 로드 (캐싱 사용)
 const loadExistingMeeting = async (shareCode) => {
   try {
-    console.log('🔄 [CreateMeeting] 기존 미팅 정보 로드 중...');
-    const response = await meetingAPI.getMeetingDetailByShareCode(shareCode);
-    const data = response.data || response;
     
-    console.log('📦 [CreateMeeting] 기존 미팅 데이터:', data);
+    // meetingsStore의 버전 체크 캐싱 사용
+    const data = await meetingsStore.loadMeetingByShareCode(shareCode);
+    
     
     // 모임 이름 설정
     if (data.name) {
       meetingName.value = data.name;
-      console.log('📝 [CreateMeeting] 모임 이름:', data.name);
     }
     
-    // 희망 날짜 설정 (meetingDate - LocalDate)
+    // 희망 날짜 설정 (meetingDate)
     if (data.meetingDate) {
-      const dateString = String(data.meetingDate); // "2026-02-15"
+      // meetingDate는 "2026-02-15T19:00:00" 형식
+      const dateString = String(data.meetingDate).split('T')[0]; // "2026-02-15"
       const [year, month, day] = dateString.split('-').map(Number);
       selectedDate.value = new Date(year, month - 1, day);
-      console.log('📅 [CreateMeeting] 희망 날짜:', dateString);
+      
+      // 시간도 meetingDate에서 추출
+      const timeString = String(data.meetingDate).split('T')[1]; // "19:00:00"
+      if (timeString) {
+        const [hour, minute] = timeString.split(':').map(Number);
+        selectedHour.value = hour;
+        selectedMinute.value = minute;
+      }
     }
     
-    // 희망 시작 시간 설정 (startTime - LocalTime)
-    if (data.startTime) {
-      const timeString = String(data.startTime); // "14:00:00" or "14:00"
-      const [hour, minute] = timeString.split(':').map(Number);
-      selectedHour.value = hour;
-      selectedMinute.value = minute;
-      console.log('⏰ [CreateMeeting] 희망 시작 시간:', timeString);
-    }
+    // 희망 종료 시간 설정 (백엔드 API 응답에 endTime이 있다면)
+    // 참고: meetingsStore에는 endTime이 저장되지 않으므로
+    // 필요하다면 별도로 API 호출이 필요할 수 있음
+    // 현재는 기본값(23:30) 사용
     
-    // 희망 종료 시간 설정 (endTime - LocalTime)
-    if (data.endTime) {
-      const timeString = String(data.endTime); // "16:00:00" or "16:00"
-      const [hour, minute] = timeString.split(':').map(Number);
-      endHour.value = hour;
-      endMinute.value = minute;
-      console.log('⏰ [CreateMeeting] 희망 종료 시간:', timeString);
-    }
-    
-    console.log('✅ [CreateMeeting] 기존 미팅 정보 로드 완료');
   } catch (error) {
-    console.error('❌ [CreateMeeting] 기존 미팅 정보 로드 실패:', error);
-    alert('미팅 정보를 불러오는데 실패했습니다.');
-    router.back();
+    alert('미팅 정보를 불러오는데 실패했습니다. 로그인 후 다시 시도해주세요.');
+    router.push('/');
   }
 };
 
@@ -340,6 +325,14 @@ const handleSubmit = async () => {
     return;
   }
 
+  // 생성 모드일 때 accessToken이 없으면 닉네임 모달 표시
+  if (!isEditMode.value && !userStore.getAccessToken()) {
+    nicknameError.value = "";
+    nicknameInput.value = "";
+    showNicknameModal.value = true;
+    return;
+  }
+
   isLoading.value = true;
   error.value = "";
 
@@ -349,18 +342,11 @@ const handleSubmit = async () => {
       const startDate = `${selectedDate.value.getFullYear()}-${String(selectedDate.value.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.value.getDate()).padStart(2, '0')}`;
       const startTime = `${String(selectedHour.value).padStart(2, '0')}:${String(selectedMinute.value).padStart(2, '0')}:00`;
       const endTime = `${String(endHour.value).padStart(2, '0')}:${String(endMinute.value).padStart(2, '0')}:00`;
-      
-      console.log('✏️ [CreateMeeting] 모임 수정 데이터:', {
-        name: meetingName.value,
-        meetingDate: null, // 확정일자는 수정하지 않음
-        startDate,
-        startTime,
-        endTime
-      });
 
-      await meetingAPI.updateMeetingSchedule(editShareCode.value, {
+      await meetingAPI.updateMeetingSchedule({
+        id: meetingsStore.currentMeeting?.id,
         name: meetingName.value,
-        meetingDate: null,
+        meetingDate: meetingsStore.currentMeeting?.confirmDate || null, // 기존 확정일자 유지
         startDate: startDate,
         startTime: startTime,
         endTime: endTime
@@ -372,21 +358,15 @@ const handleSubmit = async () => {
       // 생성 모드: CREATE API 호출
       const startDate = `${selectedDate.value.getFullYear()}-${String(selectedDate.value.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.value.getDate()).padStart(2, '0')}`;
       const startTime = `${String(selectedHour.value).padStart(2, '0')}:${String(selectedMinute.value).padStart(2, '0')}:00`;
-      
-      console.log('➕ [CreateMeeting] 모임 생성 데이터:', {
-        meetingName: meetingName.value,
-        startDate,
-        startTime
-      });
+      const endTime = `${String(endHour.value).padStart(2, '0')}:${String(endMinute.value).padStart(2, '0')}:00`;
 
       const response = await meetingAPI.createMeeting({
         meetingName: meetingName.value,
         startDate: startDate,
-        startTime: startTime
+        startTime: startTime,
+        endTime: endTime
       });
-      
-      console.log('✅ [CreateMeeting] 전체 응답:', response);
-      
+            
       const responseData = response.data || response;
       const actualData = responseData.data || responseData;
       const shareCode = actualData.shareCode;
@@ -400,7 +380,6 @@ const handleSubmit = async () => {
     }
   } catch (err) {
     error.value = isEditMode.value ? "모임 수정에 실패했습니다" : "모임 생성에 실패했습니다";
-    console.error(err);
   } finally {
     isLoading.value = false;
   }
@@ -410,16 +389,128 @@ const handleCancel = () => {
   router.back();
 };
 
-const closeNicknameModal = () => {
-  // 닉네임이 설정되었는지 확인
-  if (userStore.nickname) {
-    showNicknameModal.value = false;
-    console.log('✅ [CreateMeeting] 닉네임 설정 완료:', userStore.nickname);
-  } else {
-    // 닉네임이 없으면 메인으로 돌아감
-    alert('닉네임을 설정해야 모임을 만들 수 있습니다.');
-    router.push('/');
+const handleDelete = async () => {
+  if (!isEditMode.value || !editShareCode.value) {
+    return;
   }
+  
+  const confirmDelete = confirm(`"${meetingName.value}" 모임을 정말 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`);
+  
+  if (!confirmDelete) {
+    return;
+  }
+  
+  isLoading.value = true;
+  error.value = "";
+  
+  try {
+    
+    // meetingsStore의 currentMeeting 사용 (이미 로드되어 있음)
+    await meetingAPI.deleteMeeting({
+      id: meetingsStore.currentMeeting?.id,
+      version: meetingsStore.currentMeeting?.version
+    });
+    
+    
+    // meetingsStore에서 캐시 제거
+    meetingsStore.clearCurrentMeeting();
+    
+    alert('모임이 삭제되었습니다.');
+    router.push('/');
+  } catch (err) {
+    
+    const errorData = err.response?.data;
+    const errorMessage = errorData?.message || '모임 삭제에 실패했습니다.';
+    
+    error.value = errorMessage;
+    alert(errorMessage);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const handleNicknameSubmit = async () => {
+  const nickname = nicknameInput.value.trim();
+  
+  // 유효성 검사
+  if (!nickname) {
+    nicknameError.value = "닉네임을 입력해주세요.";
+    return;
+  }
+  
+  if (nickname.length > 10) {
+    nicknameError.value = "닉네임은 10자 이하로 입력해주세요.";
+    return;
+  }
+  
+  isSettingNickname.value = true;
+  nicknameError.value = "";
+  
+  try {
+    // 1단계: 게스트 유저 생성
+    await userAPI.createFirstUser(nickname);
+    
+    // 2단계: 사용자 정보 업데이트
+    userStore.login({
+      nickname: nickname,
+      profileImgUrl: '',
+      provider: ''
+    });
+    
+    // 3단계: 모달 닫기
+    showNicknameModal.value = false;
+    
+    // 4단계: 미팅룸 생성 API 호출
+    await createMeetingAfterLogin();
+    
+  } catch (error) {
+    const errorData = error.response?.data;
+    const backendErrorMessage = errorData?.message;
+    
+    nicknameError.value = backendErrorMessage || "닉네임 설정에 실패했습니다. 다시 시도해주세요.";
+  } finally {
+    isSettingNickname.value = false;
+  }
+};
+
+const createMeetingAfterLogin = async () => {
+  isLoading.value = true;
+  error.value = "";
+
+  try {
+    const startDate = `${selectedDate.value.getFullYear()}-${String(selectedDate.value.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.value.getDate()).padStart(2, '0')}`;
+    const startTime = `${String(selectedHour.value).padStart(2, '0')}:${String(selectedMinute.value).padStart(2, '0')}:00`;
+    const endTime = `${String(endHour.value).padStart(2, '0')}:${String(endMinute.value).padStart(2, '0')}:00`;
+
+    const response = await meetingAPI.createMeeting({
+      meetingName: meetingName.value,
+      startDate: startDate,
+      startTime: startTime,
+      endTime: endTime
+    });
+          
+    const responseData = response.data || response;
+    const actualData = responseData.data || responseData;
+    const shareCode = actualData.shareCode;
+    
+    if (!shareCode) {
+      throw new Error('shareCode를 받지 못했습니다');
+    }
+    
+    alert('모임이 생성되었습니다! 🎉');
+    router.push(`/meeting/${shareCode}`);
+  } catch (err) {
+    error.value = "모임 생성에 실패했습니다";
+    alert(error.value);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const closeNicknameModal = () => {
+  showNicknameModal.value = false;
+  nicknameInput.value = "";
+  nicknameError.value = "";
 };
 </script>
 
@@ -436,7 +527,7 @@ const closeNicknameModal = () => {
               id="meeting-name"
               v-model="meetingName"
               class="w-full bg-white border border-pastel-border rounded-xl px-4 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-soft" 
-              placeholder="예) 점심 약속 🥗" 
+              placeholder="예) 여우들의 송년회 🦊" 
               type="text"
               maxlength="30"
               autofocus
@@ -510,7 +601,7 @@ const closeNicknameModal = () => {
         </div>
 
         <!-- Time Selection -->
-        <div class="mb-24">
+        <div class="mb-44">
           <label class="block text-sm font-bold text-gray-600 mb-3 ml-1">모임 시간 선택</label>
           <div class="grid grid-cols-2 gap-4">
             <!-- Start Time -->
@@ -520,7 +611,7 @@ const closeNicknameModal = () => {
               </span>
               <div class="flex flex-col gap-3">
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">시</label>
+                  <label class="text-xs text-gray-500 mb-1 block">Hour</label>
                   <select 
                     v-model="selectedHour"
                     class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -535,7 +626,7 @@ const closeNicknameModal = () => {
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">분</label>
+                  <label class="text-xs text-gray-500 mb-1 block">Minute</label>
                   <select 
                     v-model="selectedMinute"
                     class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -559,7 +650,7 @@ const closeNicknameModal = () => {
               </span>
               <div class="flex flex-col gap-3">
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">시</label>
+                  <label class="text-xs text-gray-500 mb-1 block">Hour</label>
                   <select 
                     v-model="endHour"
                     class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -574,7 +665,7 @@ const closeNicknameModal = () => {
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">분</label>
+                  <label class="text-xs text-gray-500 mb-1 block">Minute</label>
                   <select 
                     v-model="endMinute"
                     class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -618,13 +709,93 @@ const closeNicknameModal = () => {
           <span class="material-symbols-rounded">{{ isEditMode ? 'edit' : 'check_circle' }}</span>
           {{ isLoading ? (isEditMode ? "수정 중..." : "생성 중...") : (isEditMode ? "모임 수정하기" : "모임 생성하기") }}
         </button>
+      
+      <!-- 삭제 버튼 (수정 모드일 때만 표시) -->
+      <button
+        v-if="isEditMode"
+        @click="handleDelete"
+        :disabled="isLoading"
+        class="w-full mt-3 bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 hover:border-red-300 font-bold text-base py-3 rounded-2xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span class="material-symbols-rounded">delete</span>
+        {{ isLoading ? "삭제 중..." : "모임 삭제하기" }}
+      </button>
     </div>
     </div>
 
-    <!-- Nickname Modal -->
-    <NicknameModal
+    <!-- Nickname Setting Modal -->
+    <div 
       v-if="showNicknameModal"
-      @close="closeNicknameModal"
-    />
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      @click.self="closeNicknameModal"
+    >
+      <div class="bg-white rounded-3xl shadow-soft max-w-md w-full p-8 relative">
+        <!-- Close Button -->
+        <button
+          @click="closeNicknameModal"
+          class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <span class="material-icons">close</span>
+        </button>
+
+        <!-- Icon -->
+        <div class="text-center mb-6">
+          <div class="relative inline-block mb-4">
+            <div class="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-full blur-md opacity-40"></div>
+            <div class="relative w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-soft">
+              <span class="material-icons text-white text-3xl">person_add</span>
+            </div>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">닉네임 설정</h3>
+          <p class="text-sm text-gray-600">
+            모임 생성을 위해 닉네임 설정이 필요합니다.
+          </p>
+        </div>
+
+        <!-- Input -->
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            닉네임
+          </label>
+          <input
+            v-model="nicknameInput"
+            type="text"
+            placeholder="닉네임을 입력하세요 (최대 10자)"
+            maxlength="10"
+            class="w-full px-4 py-3 bg-neutral-light border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            @keyup.enter="handleNicknameSubmit"
+            :disabled="isSettingNickname"
+          />
+          <p v-if="nicknameError" class="mt-2 text-sm text-red-500">
+            {{ nicknameError }}
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            {{ nicknameInput.length }}/10자
+          </p>
+        </div>
+
+        <!-- Buttons -->
+        <div class="space-y-3">
+          <button
+            @click="handleNicknameSubmit"
+            :disabled="isSettingNickname || !nicknameInput.trim()"
+            class="w-full px-6 py-3 bg-primary hover:bg-primary-dark text-gray-800 rounded-2xl font-bold shadow-glow transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <span v-if="!isSettingNickname">확인</span>
+            <span v-else class="flex items-center justify-center gap-2">
+              <div class="w-5 h-5 border-2 border-gray-800 border-t-transparent rounded-full animate-spin"></div>
+              설정 중...
+            </span>
+          </button>
+          <button
+            @click="closeNicknameModal"
+            :disabled="isSettingNickname"
+            class="w-full px-6 py-3 bg-white text-gray-700 border border-gray-200 rounded-2xl font-semibold hover:bg-gray-50 transition-all disabled:opacity-50"
+          >
+            취소
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

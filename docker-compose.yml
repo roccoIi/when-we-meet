@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: whenwemeet-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - whenwemeet-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis123}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: whenwemeet-backend:latest
+    container_name: whenwemeet-backend
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Docker 환경에서만 덮어쓸 항목들
+      SPRING_DATA_REDIS_HOST: redis
+    ports:
+      - "8080:8080"
+    networks:
+      - whenwemeet-network
+    volumes:
+      - backend_logs:/app/logs
+
+  # Frontend Web
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: whenwemeet-frontend:latest
+    container_name: whenwemeet-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - whenwemeet-network
+
+networks:
+  whenwemeet-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local
+  backend_logs:
+    driver: local

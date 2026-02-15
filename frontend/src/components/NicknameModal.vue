@@ -25,11 +25,9 @@ const handleSubmit = async () => {
   error.value = "";
 
   try {
-    console.log('🔄 [Nickname] 닉네임 설정 중...', nickname.value);
     
     // API 호출
     const response = await userAPI.setNickname(nickname.value);
-    console.log('✅ [Nickname] 닉네임 설정 성공:', response);
 
     // store 업데이트
     userStore.setNickname(nickname.value);

@@ -47,13 +47,6 @@ public class ScheduleServiceImpl implements ScheduleService{
         // 2) 현재 미팅룸에 참여중인 인원수 조회
         int allMembersNum = userMeetingRoomRepository.countByMeetingRoom(mr);
 
-//        // 2) 미팅룸에 속한 전체 맴버 조회
-//        List<UserMeetingRoom> allMembers = userMeetingRoomRepository.findAllByMeetingRoom(mr);
-//        List<String> allMembersNickname = allMembers.stream()
-//                .map((umr) -> umr.getUser().getNickname())
-//                .sorted()
-//                .toList();
-
         // 3) 월별 시작 및 종료 날짜 정의
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
@@ -131,12 +124,14 @@ public class ScheduleServiceImpl implements ScheduleService{
         MeetingRoom meetingRoom = meetingRoomRepository.findAllByShareCode(shareCode)
                 .orElseThrow(() -> new NotFoundException(M003));
 
-        // 2) 불가능한 시간대 병합
+        // 2) 불가능한 시간대 반환
         LocalDate today = LocalDate.now();
         LocalTime currentTime = LocalTime.now();
-        List<UnavailableTimeList> unavailableTimes = unavailableRepository
-                .findAllByMeetingRoomAndEndDateTimeGreaterThanEqual(meetingRoom, today, currentTime);
-        List<UnavailableTimeList> mergedUnavailableTimes = mergeOverlappingTimeIntervals(unavailableTimes);
+        List<UnavailableTimeList> unavailableTimes = unavailableRepository.findUnavailableTimes(
+                        meetingRoom.getId(), meetingRoom.getStartDate(), meetingRoom.getStartTime(), meetingRoom.getEndTime());
+
+        // 2-1) 불가능한 시간대 병합
+        List<UnavailableTimeList> mergedUnavailableTimes = mergeUnavailableTimeWithSweepLine(unavailableTimes);
 
         // 3) 최적의 시간대 찾기 (MAX_RECOMMEND_COUNT개만)
         List<RecommendList> recommendedSlots = new ArrayList<>();
@@ -180,6 +175,17 @@ public class ScheduleServiceImpl implements ScheduleService{
         log.info("최종 추천 시간대 {}개 반환", recommendedSlots.size());
         return recommendedSlots;
     }
+
+    @Override
+    public List<UnavailableTimeList> getAllUnavailableMyTimeList(Long userId, String shareCode) {
+        // 1) 유저-미팅룸 조회
+        UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomShareCode(userId, shareCode)
+                .orElseThrow(() -> new NotFoundException(M002));
+
+        // 2) 사용자가 설정한 모든 불가능한 시간대 반환
+        return unavailableRepository
+                .findAllByMeetingRoomAndUser(userId, umr.getMeetingRoom().getId());
+    }
     
     /**
      * 시간대 리스트 중 가장 긴 시간대를 찾습니다.
@@ -191,7 +197,7 @@ public class ScheduleServiceImpl implements ScheduleService{
                 .max(Comparator.comparingLong(slot -> 
                     java.time.Duration.between(slot.startTime(), slot.endTime()).toMinutes()
                 ))
-                .orElse(timeSlots.get(0));
+                .orElse(null);
     }
     
     /**
@@ -211,22 +217,13 @@ public class ScheduleServiceImpl implements ScheduleService{
         };
     }
 
-    @Override
-    public List<UnavailableTimeList> getAllUnavailableMyTimeList(Long userId, String shareCode) {
-        // 1) 유저-미팅룸 조회
-        UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomShareCode(userId, shareCode)
-                .orElseThrow(() -> new NotFoundException(M002));
 
-        // 2) 사용자가 설정한 모든 불가능한 시간대 반환
-        return unavailableRepository
-                .findAllByMeetingRoomAndUser(umr.getMeetingRoom(), umr.getUser());
-    }
 
     /**
      * 특정 날짜 범위에서 불가능한 시간대를 제외한 가능한 시간대를 계산합니다.
      * @param date 계산할 날짜
-     * @param dayStart 날짜 범위 시작 시간
-     * @param dayEnd 날짜 범위 종료 시간
+     * @param dayStart 가능한 날짜 범위 시작 시간
+     * @param dayEnd 가능한 날짜 범위 종료 시간
      * @param unavailableTimes 불가능한 시간대 리스트
      * @return 가능한 시간대 리스트
      */
@@ -242,8 +239,8 @@ public class ScheduleServiceImpl implements ScheduleService{
         List<UnavailableTimeList> overlappingUnavailable = unavailableTimes.stream()
                 .filter(unavailable -> 
                     // 불가능한 시간이 dayStart ~ dayEnd 범위와 겹치는 경우
-                    !unavailable.getEndDateTime().isBefore(dayStart) && 
-                    !unavailable.getStartDateTime().isAfter(dayEnd)
+                    unavailable.getStartDateTime().isBefore(dayEnd) &&
+                    unavailable.getEndDateTime().isAfter(dayStart)
                 )
                 .sorted(Comparator.comparing(UnavailableTimeList::getStartDateTime))
                 .toList();
@@ -307,7 +304,7 @@ public class ScheduleServiceImpl implements ScheduleService{
      * @param timeList 병합할 시간대 리스트
      * @return 병합된 시간대 리스트
      */
-    private List<UnavailableTimeList> mergeOverlappingTimeIntervals(List<UnavailableTimeList> timeList) {
+    private List<UnavailableTimeList> mergeUnavailableTimeWithSweepLine(List<UnavailableTimeList> timeList) {
         // 빈 리스트인 경우 그대로 반환
         if (timeList == null || timeList.isEmpty()) {
             return new ArrayList<>();
@@ -327,16 +324,18 @@ public class ScheduleServiceImpl implements ScheduleService{
         for (int i = 1; i < timeList.size(); i++) {
             UnavailableTimeList current = timeList.get(i);
 
-            // 현재 구간과 다음 구간이 겹치거나 인접한 경우
-            if (current.getStartDateTime().isAfter(end)) {
-                // 겹치지 않는 경우: 현재까지의 병합된 구간을 결과에 추가
-                mergedList.add(new UnavailableTimeListImpl(start, end));
+            // 현재 시작시간이 이전 종료시간보다 뒤라면 -> 겹치지 않는다.
+            if (!current.getStartDateTime().isBefore(end)) {
+                // 현재 구간까지 merge에 저장한다.
+                mergedList.add(new UnavailableTimeList(start, end));
 
                 // 새로운 구간 시작
                 start = current.getStartDateTime();
                 end = current.getEndDateTime();
-            } else {
-                // 끝 시간을 더 큰 값으로 확장
+            }
+            // 현재 시작시간이 아직 이전구간의 종료시간보다 이전이다 -> 현재 시작시간이 이전구간에 겹쳐있다.
+            else {
+                // 지금 보는 구간이 과거의 종료기간보다 늦게 끝난다면 더 뒷 값으로 확장
                 if (current.getEndDateTime().isAfter(end)) {
                     end = current.getEndDateTime();
                 }
@@ -344,7 +343,7 @@ public class ScheduleServiceImpl implements ScheduleService{
         }
 
         // 5) 마지막 구간 추가
-        mergedList.add(new UnavailableTimeListImpl(start, end));
+        mergedList.add(new UnavailableTimeList(start, end));
 
         for(UnavailableTimeList unavailableTime : mergedList) {
             log.info(unavailableTime.toString());
@@ -352,4 +351,5 @@ public class ScheduleServiceImpl implements ScheduleService{
 
         return mergedList;
     }
+
 }

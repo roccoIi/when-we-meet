@@ -1,9 +1,11 @@
 package com.whenwemeet.backend.domain.schedule.repository.custom;
 
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.whenwemeet.backend.domain.meetingRoom.entity.MeetingRoom;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.entity.UnavailableTime;
+import com.whenwemeet.backend.domain.user.entity.User;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -37,6 +39,40 @@ public class UnavailableCustomRepositoryImpl implements UnavailableCustomReposit
                         unavailableTime.unavailableStartTime.lt(meetingRoom.getEndTime()),
                         unavailableTime.unavailableEndTime.goe(meetingRoom.getStartTime())
                 )
+                .fetch();
+    }
+
+    @Override
+    public List<UnavailableTimeList> findUnavailableTimes(Long meetingRoomId, LocalDate startDate, LocalTime startTime, LocalTime endTime) {
+        return factory
+                .select(Projections.constructor(
+                        UnavailableTimeList.class,
+                        unavailableTime.unavailableDate,
+                        unavailableTime.unavailableStartTime,
+                        unavailableTime.unavailableEndTime
+                ))
+                .from(unavailableTime)
+                .where(
+                        unavailableTime.meetingRoom.id.eq(meetingRoomId),
+                        unavailableTime.unavailableDate.goe(startDate),
+                        unavailableTime.unavailableStartTime.lt(endTime),
+                        unavailableTime.unavailableEndTime.gt(startTime)
+                )
+                .fetch();
+    }
+
+    @Override
+    public List<UnavailableTimeList> findAllByMeetingRoomAndUser(Long userId, Long meetingRoomId) {
+        return factory
+                .select(Projections.constructor(
+                        UnavailableTimeList.class,
+                        unavailableTime.unavailableDate,
+                        unavailableTime.unavailableStartTime,
+                        unavailableTime.unavailableEndTime
+                ))
+                .from(unavailableTime)
+                .where(unavailableTime.meetingRoom.id.eq(meetingRoomId),
+                        unavailableTime.user.id.eq(userId))
                 .fetch();
     }
 }

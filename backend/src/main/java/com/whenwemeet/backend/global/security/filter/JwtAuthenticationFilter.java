@@ -52,11 +52,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // Guest 유저 생성 없이 접근 가능한 읽기 전용 URL 목록 (봇/크롤러 대응)
     private static final List<String> READ_ONLY_URLS = Arrays.asList(
             "/api/meetings",                   // GET: 미팅룸 리스트 조회
-            "/api/meetings/*",                 // GET: 미팅룸 정보 조회 (/api/meetings/{shareCode})
-            "/api/meetings/share/**",          // GET: 공유링크를 통한 미팅룸 정보 조회
-            "/api/schedules/unavailable/**",   // GET: 불가능한 시간 리스트
-            "/api/schedules/recommend/**",     // GET: 추천 시간 조회
-            "/api/user/info"
+//            "/api/meetings/*",                 // GET: 미팅룸 정보 조회 (/api/meetings/{shareCode})
+            "/api/meetings/share/**"          // GET: 공유링크를 통한 미팅룸 정보 조회
+//            "/api/schedules/unavailable/**",   // GET: 불가능한 시간 리스트
+//            "/api/schedules/recommend/**",     // GET: 추천 시간 조회
+//            "/api/user/info"
     );
 
     /**
@@ -121,6 +121,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // 1) accessToken 발급 후 헤더에 저장
                     Long userId = jwtUtil.getUserId(token);
                     token = jwtUtil.generateAccessToken(userId);
+                    response.setHeader("Authorization", "Bearer " + token);
 
                     // 2) refreshToken 재발급 후 쿠키 갱신 및 redis 갱신
                     jwtUtil.generateRefreshToken(userId, response);
@@ -146,8 +147,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String getTokenFromRequest(HttpServletRequest request) {
         String token = request.getHeader("Authorization");
+        log.info("🔍 Authorization 헤더 값: {}", token); // 추가
+
         if (token == null || !token.startsWith("Bearer ")) {
-            log.info("Authorization 헤더가 없거나 Bearer로 시작하지 않음");
+            if(token == null) log.info("Authorization 헤더가 없음");
+            else if(!token.startsWith("Bearer ")) log.info("헤더가 Bearer로 시작하지 않음");
             return null;
         }
         return token.substring(7);

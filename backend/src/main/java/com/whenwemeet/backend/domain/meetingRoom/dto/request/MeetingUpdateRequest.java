@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public record MeetingUpdateRequest(
+        Long id,
         String name,
         LocalDateTime meetingDate, // 확정일자 (nullable)
         LocalDate startDate, // 희망 시작 날짜 (nullable)

@@ -9,6 +9,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 public record MeetingRoomInfoResponse(
+        Long id,
         String name,
         Role role,
         Integer memberNumber,
@@ -16,7 +17,8 @@ public record MeetingRoomInfoResponse(
         List<UserInfoResponse> info,
         LocalDate meetingDate, // 희망 모임 시작일자
         LocalTime startTime, // 희망 모임 시작시간
-        LocalTime endTime // 희망 모임 끝시간
+        LocalTime endTime, // 희망 모임 끝시간
+        Long version // 버전정보
 ) {}
 
 

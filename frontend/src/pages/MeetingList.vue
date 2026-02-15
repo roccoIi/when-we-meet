@@ -73,22 +73,22 @@ const getDdayColor = (meetingDate) => {
   return 'mint-light/60';
 };
 
-// 날짜 포맷
+// 날짜 포맷 (한국식)
 const formatDate = (dateString) => {
   if (!dateString) return 'TBD';
   
   const date = new Date(dateString);
-  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  const month = date.getMonth() + 1;
   const day = date.getDate();
-  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
   
-  return `${month} ${day}, ${time}`;
+  return `${month}월 ${day}일, ${hour}:${minute}`;
 };
 
 onMounted(async () => {
   // App.vue의 초기화가 완료될 때까지 대기
   if (!userStore.isInitialized) {
-    console.log('⏳ [MeetingList] 초기화 대기 중...')
     // 초기화 완료를 기다림 (최대 5초)
     let attempts = 0
     const maxAttempts = 50 // 5초 (100ms * 50)
@@ -99,17 +99,11 @@ onMounted(async () => {
     }
     
     if (userStore.isInitialized) {
-      console.log('✅ [MeetingList] 초기화 완료, 모임 로드 시작')
     } else {
-      console.log('⚠️ [MeetingList] 초기화 타임아웃')
     }
   }
 
   // 디버깅: 사용자 정보 확인
-  console.log('👤 [MeetingList] 현재 사용자 정보:');
-  console.log('  - isLoggedIn:', userStore.isLoggedIn);
-  console.log('  - nickname:', userStore.nickname);
-  console.log('  - profileImgUrl:', userStore.profileImgUrl);
 
   await loadMeetings();
   setupInfiniteScroll();
@@ -157,7 +151,6 @@ const loadMeetings = async (reset = true) => {
       sort: sortOrder.value,
     });
 
-    console.log("API 응답:", response);
 
     // 백엔드 응답 구조에 맞게 데이터 추출
     // response.data = 모임 배열
@@ -176,8 +169,6 @@ const loadMeetings = async (reset = true) => {
     // pagination.hasMore를 사용하여 더 불러올 데이터 확인
     hasMore.value = pagination.hasMore ?? false;
 
-    console.log("로드된 모임 수:", meetings.length);
-    console.log("더 불러올 데이터:", hasMore.value);
   } catch (error) {
     console.error("모임 목록 조회 실패:", error);
     // 에러 시 빈 배열로 설정
@@ -204,7 +195,6 @@ const loadMoreMeetings = async () => {
 };
 
 const handleMeetingClick = (meeting) => {
-  meetingsStore.setCurrentMeeting(meeting);
   router.push(`/meeting/${meeting.shareCode}`);
 };
 
@@ -254,7 +244,7 @@ setInterval(() => {
       <!-- Title and Profile -->
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight text-slate-700">My Schedules</h1>
+          <h1 class="text-2xl font-bold tracking-tight text-slate-700">내 일정</h1>
           <p class="text-sm text-text-sub font-medium">Coordinate your sweet meetups</p>
         </div>
         
@@ -305,8 +295,8 @@ setInterval(() => {
               @change="loadMeetings(true)"
               class="appearance-none bg-white text-slate-600 font-bold text-sm py-2.5 pl-4 pr-10 rounded-xl shadow-sm border border-transparent focus:ring-2 focus:ring-primary/30 focus:outline-none cursor-pointer hover:bg-gray-50 transition-colors w-32"
             >
-              <option value="JOIN_DATE">Join At</option>
-              <option value="NAME">Name</option>
+              <option value="JOIN_DATE">참여일자</option>
+              <option value="NAME">이름</option>
               <option value="MEETING_DATE">D-Day</option>
             </select>
             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-mint-dark">

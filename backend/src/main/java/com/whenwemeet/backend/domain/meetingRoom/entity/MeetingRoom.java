@@ -16,20 +16,16 @@ import java.time.LocalTime;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@SQLDelete(sql = "UPDATE meeting_room SET is_deleted = true WHERE id = ?")
+@SQLDelete(sql = "UPDATE meeting_room SET is_deleted = true, version = version + 1 WHERE id = ? AND version = ?")
 public class MeetingRoom extends BaseEntity {
 
     @Id
-    @Tsid
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
     @Column(name = "name", nullable = false)
     private String name;
-
-    @Builder.Default
-    @Column(name = "member_number")
-    private Long memberNumber = 1L;
 
     @Column(name = "start_date")
     private LocalDate startDate;
@@ -37,15 +33,22 @@ public class MeetingRoom extends BaseEntity {
     @Column(name = "start_time")
     private LocalTime startTime;
 
-    @Builder.Default
     @Column(name = "end_time")
-    private LocalTime endTime = LocalTime.of(23, 59, 59);
+    private LocalTime endTime;
 
     @Column(name = "meeting_date")
     private LocalDateTime meetingDate;
 
     @Column(name = "share_code")
     private String shareCode;
+
+    @Builder.Default
+    @Column(name = "share_count")
+    private Integer shareCount = 30;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
     
     public void changeSetting(String name, LocalDateTime meetingDate, LocalDate startDate, LocalTime startTime, LocalTime endTime){
         if(name != null) this.name = name;
@@ -55,11 +58,15 @@ public class MeetingRoom extends BaseEntity {
         if(endTime != null) this.endTime = endTime;
     }
 
-    public void addMember(){
-        this.memberNumber++;
+    public void minusShareCount(){
+        this.shareCount--;
     }
 
-    public void removeMember(){
-        this.memberNumber--;
+    public void updateShareCode(String shareCode){
+        this.shareCode = shareCode;
+    }
+
+    public void initializeShareCount(){
+        this.shareCount = 30;
     }
 }

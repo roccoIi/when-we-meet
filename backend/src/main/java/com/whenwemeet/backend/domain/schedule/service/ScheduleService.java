@@ -5,6 +5,7 @@ import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
 import com.whenwemeet.backend.domain.schedule.dto.response.MembersScheduleListResponse;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.entity.DayType;
+import com.whenwemeet.backend.domain.user.entity.User;
 
 import java.util.List;
 
