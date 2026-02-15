@@ -10,8 +10,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                cleanWs disableDeferredWipeout: true, deleteDirs: true
-                checkout scm
+                git branch: 'main',
+                    credentialsId: 'github_token',
+                    url: 'https://github.com/roccoIi/when-we-meet.git'
             }
         }
 
