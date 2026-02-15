@@ -1,6 +1,29 @@
 version: '3.8'
 
 services:
+  mysql:
+    image: mysql:8
+    container_name: whenwemeet-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-8gANr9ovnR354i}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wwm}
+      MYSQL_USER: ${MYSQL_USER:-wwm_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-8gANr9ovnR354i}
+      TZ: Asia/Seoul
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - whenwemeet-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-8gANr9ovnR354i}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     container_name: whenwemeet-redis
@@ -27,12 +50,15 @@ services:
     container_name: whenwemeet-backend
     restart: unless-stopped
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
     env_file:
       - .env
     environment:
       # Docker 환경에서만 덮어쓸 항목들
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/wwm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
       SPRING_DATA_REDIS_HOST: redis
     ports:
       - "8080:8080"
@@ -64,6 +90,8 @@ networks:
     driver: bridge
 
 volumes:
+  mysql_data:
+    driver: local
   redis_data:
     driver: local
   backend_logs:
