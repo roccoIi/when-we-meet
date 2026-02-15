@@ -33,6 +33,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // 1. AccessToken 생성
         String accessToken = jwtUtil.generateAccessToken(customOAuth2User.getId());
+        System.out.println("accessToken: " + accessToken);
 
         // 2. RefreshToken 생성 및 쿠키전달
         jwtUtil.generateRefreshToken(customOAuth2User.getId(), response);

@@ -95,13 +95,16 @@ public class ScheduleServiceImpl implements ScheduleService{
     public void addIndividualSchedule(Long userId, String shareCode, List<ScheduleRequest> scheduleRequest) {
 
         // 1) 사용자가 해당 미팅룸에 속해있는지 확인 및 User, MeetingRoom 객체 반환
+        log.info("1) 사용자가 해당 미팅룸에 속해있는지 확인 및 User, MeetingRoom 객체 반환");
         UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomShareCode(userId, shareCode)
                 .orElseThrow(() -> new NotFoundException(M002));
 
         // 2) 기존의 스케줄은 모두 삭제
+        log.info("// 2) 기존의 스케줄은 모두 삭제");
         unavailableRepository.clearAllScheduleByUser(umr.getUser().getId(), umr.getMeetingRoom().getId());
 
         // 3) 새로 들어온 스케줄을 모두 입력
+        log.info("// 3) 새로 들어온 스케줄을 모두 입력");
         List<UnavailableTime> responseList = scheduleRequest.stream()
                 .map(sr -> UnavailableTime.builder()
                         .unavailableDate(sr.unavailableDate())
@@ -123,6 +126,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 
         // 2) 불가능한 시간대 반환
         LocalDate today = LocalDate.now();
+        LocalTime currentTime = LocalTime.now();
         List<UnavailableTimeList> unavailableTimes = unavailableRepository.findUnavailableTimes(
                         meetingRoom.getId(), meetingRoom.getStartDate(), meetingRoom.getStartTime(), meetingRoom.getEndTime());
 
@@ -168,6 +172,7 @@ public class ScheduleServiceImpl implements ScheduleService{
                 .comparing(RecommendList::day)
                 .thenComparing(RecommendList::startTime));
 
+        log.info("최종 추천 시간대 {}개 반환", recommendedSlots.size());
         return recommendedSlots;
     }
 

@@ -30,6 +30,7 @@ public class ScheduleController {
             @RequestParam("year") int year,
             @RequestParam("month") int month
     ){
+        log.info("[월별 멤버 가용성 조회] shareCode: {}, year: {}, month: {}", shareCode, year, month);
         MembersScheduleListResponse response = scheduleService.getMonthlyAvailableMemberList(shareCode, year, month);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
@@ -39,6 +40,7 @@ public class ScheduleController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @PathVariable("shareCode") String shareCode
     ){
+        log.info("[이용자 개인의 불가능한 시간 리스트 반환]");
         List<UnavailableTimeList> response = scheduleService.getAllUnavailableMyTimeList(user.getId(), shareCode);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
@@ -49,6 +51,7 @@ public class ScheduleController {
             @PathVariable("shareCode") String shareCode,
             @RequestBody List<ScheduleRequest> scheduleRequest
     ){
+        log.info("[현재 미팅룸에 불가능한 스케줄 저장]");
         scheduleService.addIndividualSchedule(user.getId(), shareCode, scheduleRequest);
         return ResponseEntity.ok(CommonResponse.success());
     }
@@ -58,6 +61,7 @@ public class ScheduleController {
             @PathVariable("shareCode") String shareCode,
             @PathVariable("type") DayType type
     ){
+        log.info("[가장 추천되는 날짜 및 시간 반환]");
         List<RecommendList> response = scheduleService.getRecommendSchedule(shareCode, type);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
