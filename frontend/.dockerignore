@@ -24,9 +24,10 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment
-.env
+# .env - Commented out to allow copying during build
 .env.*
 !.env.example
+!.env
 
 # Test
 coverage/
