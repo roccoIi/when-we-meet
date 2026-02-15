@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+LICENSE
+
+# IDE
+.idea
+.vscode
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build artifacts (will be generated in Docker)
+**/node_modules
+**/dist
+**/build
+**/target
+
+# Test
+**/test
+**/__tests__
+**/*.test.js
+**/*.spec.js
+
+# CI/CD
+.github
+.gitlab-ci.yml
+Jenkinsfile*
