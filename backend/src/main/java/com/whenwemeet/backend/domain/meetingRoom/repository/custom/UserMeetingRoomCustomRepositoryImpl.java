@@ -56,16 +56,6 @@ public class UserMeetingRoomCustomRepositoryImpl implements UserMeetingRoomCusto
     }
 
     @Override
-    public Long countByUserId(Long userId) {
-        return factory
-                .select(userMeetingRoom.count())
-                .from(userMeetingRoom)
-                .leftJoin(userMeetingRoom.meetingRoom, meetingRoom)
-                .where(userMeetingRoom.user.id.eq(userId), meetingRoom.isDeleted.isFalse())
-                .fetchOne();
-    }
-
-    @Override
     public Optional<UserMeetingRoom> findByUserIdAndMeetingRoomIdisHost(Long userId, Long meetingRoomId, Role role) {
         UserMeetingRoom result = factory
                 .selectFrom(userMeetingRoom)
@@ -121,17 +111,6 @@ public class UserMeetingRoomCustomRepositoryImpl implements UserMeetingRoomCusto
 
         return Optional.ofNullable(response);
     }
-
-//    @Override
-//    public List<String> findNicknamesByShareCode(String shareCode) {
-//        return factory
-//                .select(user.nickname)
-//                .from(userMeetingRoom)
-//                .leftJoin(userMeetingRoom.meetingRoom, meetingRoom)
-//                .leftJoin(userMeetingRoom.user, user)
-//                .where(meetingRoom.shareCode.eq(shareCode), meetingRoom.isDeleted.isFalse())
-//                .fetch();
-//    }
 
 
     private OrderSpecifier<?>[] createOrderSpecifier(SortType type, SortDirection direction) {

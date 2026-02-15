@@ -1,11 +1,9 @@
-package com.whenwemeet.backend.global.jwt.util;
+package com.whenwemeet.backend.global.util;
 
 import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
-import com.whenwemeet.backend.global.exception.type.UnAuthorizedException;
 import com.whenwemeet.backend.global.redis.RefreshRepository;
 import com.whenwemeet.backend.global.redis.RefreshToken;
-import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
@@ -15,7 +13,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -146,7 +143,6 @@ public class JwtUtil {
             log.error("JWT 토큰이 비어있습니다: {}", e.getMessage());
             return false;
         } catch (Exception e){
-            log.error("JWT 토큰 검증 중 오류 발생: {}", e.getMessage());
             return false;
         }
     }
@@ -183,13 +179,9 @@ public class JwtUtil {
     public String tokenByCookie(HttpServletRequest request, String tokenName){
         Cookie[] cookies = request.getCookies();
 
-        if(cookies == null) {
-            log.info("쿠키가 존재하지 않습니다.");
-            return null;
-        }
+        if(cookies == null) return null;
 
         // 원하는 이름의 토큰이 있는지 확인한다.
-        log.info("토큰을 확인합니다.");
         String token = null;
         for (Cookie cookie : cookies) {
             if(cookie.getName().equals(tokenName)){

@@ -17,12 +17,8 @@ import java.util.Optional;
 public interface UserMeetingRoomCustomRepository {
 
     List<MeetingListResponse> findAllByUserId(Long id, Long offset, Long limit, SortType type, SortDirection direction);
-    
-    Long countByUserId(Long userId);
 
     Optional<UserMeetingRoom> findByUserIdAndMeetingRoomIdisHost(Long userId, Long meetingRoomId, Role role);
-
-//    List<String> findNicknamesByShareCode(String shareCode);
 
     List<UserInfoResponse> findNicknamesByMeetingRoomId(Long id);
 

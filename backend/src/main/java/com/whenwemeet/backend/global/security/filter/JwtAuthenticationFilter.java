@@ -1,9 +1,7 @@
 package com.whenwemeet.backend.global.security.filter;
 
-import com.whenwemeet.backend.domain.user.entity.User;
 import com.whenwemeet.backend.domain.user.repository.UserRepository;
-import com.whenwemeet.backend.global.exception.type.NotFoundException;
-import com.whenwemeet.backend.global.jwt.util.JwtUtil;
+import com.whenwemeet.backend.global.util.JwtUtil;
 import com.whenwemeet.backend.global.security.authentication.AuthenticationFactory;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,8 +19,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
-import static com.whenwemeet.backend.global.exception.ErrorCode.C001;
 
 @Slf4j
 @Component
@@ -52,11 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // Guest 유저 생성 없이 접근 가능한 읽기 전용 URL 목록 (봇/크롤러 대응)
     private static final List<String> READ_ONLY_URLS = Arrays.asList(
             "/api/meetings",                   // GET: 미팅룸 리스트 조회
-//            "/api/meetings/*",                 // GET: 미팅룸 정보 조회 (/api/meetings/{shareCode})
             "/api/meetings/share/**"          // GET: 공유링크를 통한 미팅룸 정보 조회
-//            "/api/schedules/unavailable/**",   // GET: 불가능한 시간 리스트
-//            "/api/schedules/recommend/**",     // GET: 추천 시간 조회
-//            "/api/user/info"
     );
 
     /**
@@ -95,7 +87,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try{
-            log.info("헤더의 AccessToken 확인");
             String token = getTokenFromRequest(request);
 
             // --- 1) AccessToken이 없는 경우
@@ -109,14 +100,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
             if(token == null || !jwtUtil.validateToken(token)) {
-                if(token == null) log.info("AccessToken이 없습니다");
-                else if(!jwtUtil.validateToken(token)) log.info("AccessToken이 만료되었습니다.");
-
-                log.info("AccessToken에 이상이 있으므로 RefreshToken을 확인합니다.");
                 token = jwtUtil.tokenByCookie(request, REFRESH_TOKEN_NAME);
 
                 if(token != null && jwtUtil.verifyRefreshToken(token)) {
-                    log.info("RefreshToken이 존재합니다. AccessToken 및 RefreshToken을 재발급합니다.");
 
                     // 1) accessToken 발급 후 헤더에 저장
                     Long userId = jwtUtil.getUserId(token);
@@ -127,12 +113,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     jwtUtil.generateRefreshToken(userId, response);
                 }
                 else {
-                    log.info("RefreshToken이 존재하지 않습니다. 게스트로 인식하고 filter를 종료합니다.");
                     filterChain.doFilter(request, response);
                     return;
                 }
             }
-            log.info("AccessToken이 존재합니다. Authentication 객체 생성 후 필터를 넘깁니다.");
 
             Authentication authentication = authenticationFactory.createAuthentication(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -147,11 +131,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String getTokenFromRequest(HttpServletRequest request) {
         String token = request.getHeader("Authorization");
-        log.info("🔍 Authorization 헤더 값: {}", token); // 추가
 
         if (token == null || !token.startsWith("Bearer ")) {
-            if(token == null) log.info("Authorization 헤더가 없음");
-            else if(!token.startsWith("Bearer ")) log.info("헤더가 Bearer로 시작하지 않음");
             return null;
         }
         return token.substring(7);

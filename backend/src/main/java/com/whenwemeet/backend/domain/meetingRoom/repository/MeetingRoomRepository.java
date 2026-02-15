@@ -11,13 +11,10 @@ import javax.swing.text.html.Option;
 import java.util.Optional;
 
 public interface MeetingRoomRepository extends JpaRepository<MeetingRoom, Long> {
-    Optional<EnterShareLinkResponse> findByShareCode(String shareUrl);
 
     Optional<MeetingRoom> findAllByShareCode(String shareUrl);
 
     boolean existsByShareCode(String shareUrl);
-
-    Optional<Long> findIdByShareCode(String shareCode);
 
     Optional<MeetingRoomVersionResponse> findVersionByShareCode(String shareCode);
 }

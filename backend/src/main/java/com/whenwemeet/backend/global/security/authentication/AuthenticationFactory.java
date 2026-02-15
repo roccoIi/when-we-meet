@@ -3,7 +3,7 @@ package com.whenwemeet.backend.global.security.authentication;
 import com.whenwemeet.backend.domain.user.entity.User;
 import com.whenwemeet.backend.domain.user.repository.UserRepository;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
-import com.whenwemeet.backend.global.jwt.util.JwtUtil;
+import com.whenwemeet.backend.global.util.JwtUtil;
 import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
