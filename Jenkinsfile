@@ -10,6 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                cleanWs disableDeferredWipeout: true, deleteDirs: true
                 checkout scm
             }
         }
