@@ -36,8 +36,9 @@ public class SecurityConfig {
                 .cors((corsCustomizer) -> corsCustomizer.configurationSource(request -> {
                     CorsConfiguration configuration = new CorsConfiguration();
 
-                    configuration.setAllowedOrigins(List.of(
-                         "http://localhost:5173"
+                    configuration.setAllowedOriginPatterns(List.of(
+                            "http://localhost:5173",
+                            "https://*.whenwemeet.site"
                     ));
                     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
