@@ -31,7 +31,6 @@ public class MeetingController {
             @RequestParam(name = "limit", defaultValue = "10") Long limit,
             @RequestParam(name = "type", defaultValue = "JOIN_DATE") SortType type,
             @RequestParam(name = "sort", defaultValue = "DESC") SortDirection sort) {
-        log.info("[미팅룸 리스트 조회] page={}, limit={}", page, limit);
         if(user == null) return ResponseEntity.ok(CommonResponse.success());
 
         PageResponse<List<MeetingListResponse>> response = meetingService.getAllMeeting(user.getId(), page, limit, type, sort);
@@ -43,7 +42,6 @@ public class MeetingController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @RequestBody MeetingCreateRequest meetingCreateRequest,
             HttpServletResponse httpServletResponse){
-        log.info("[미팅 생성]");
         CreateMeetingResponse response = meetingService.addMeeting(user, meetingCreateRequest, httpServletResponse);
         log.info(response.shareCode());
         return ResponseEntity.ok(CommonResponse.success(response));
@@ -54,7 +52,6 @@ public class MeetingController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @RequestBody MeetingUpdateRequest meetingUpdateRequest)
     {
-        log.info("[미팅 수정]");
         meetingService.updateMeeting(user, meetingUpdateRequest);
         return ResponseEntity.ok(CommonResponse.success());
     }
@@ -64,7 +61,6 @@ public class MeetingController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @PathVariable("shareCode") String shareCode
     ){
-        log.info("[미팅룸 정보 반환] shareCode={}", shareCode);
         MeetingRoomInfoResponse response = meetingService.getMeetingRoomInfoByShareCode(user, shareCode);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
@@ -82,7 +78,6 @@ public class MeetingController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @RequestBody DeleteRoomRequest deleteRoomRequest)
     {
-        log.info("[미팅 삭제(Host)] SoftDelete 진행");
         meetingService.deleteMeeting(user.getId(), deleteRoomRequest);
         return ResponseEntity.ok(CommonResponse.success());
     }
@@ -92,7 +87,6 @@ public class MeetingController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @RequestBody DeleteRoomRequest deleteRoomRequest
     ){
-        log.info("[미팅 탈퇴]");
         meetingService.leaveMeeting(user, deleteRoomRequest);
         return ResponseEntity.ok(CommonResponse.success());
     }
@@ -101,7 +95,6 @@ public class MeetingController {
     public ResponseEntity<CommonResponse<?>> shareMeeting(
             @PathVariable("shareCode") String shareCode
     ){
-        log.info("[공유링크 접속 후 미팅룸 요약정보 반환]");
         EnterShareLinkResponse response = meetingService.getMeetingRoomSummary(shareCode);
         return ResponseEntity.ok(CommonResponse.success(response));
     }
@@ -112,7 +105,6 @@ public class MeetingController {
             @AuthenticationPrincipal CustomOAuth2User user,
             @PathVariable("shareCode") String shareCode
     ){
-        log.info("[미팅룸 입장 및 관계매핑]");
         meetingService.enterMeetingRoom(user.getId(), shareCode);
         return ResponseEntity.ok(CommonResponse.success());
     }

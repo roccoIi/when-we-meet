@@ -20,18 +20,12 @@ public interface UserMeetingRoomRepository extends JpaRepository<UserMeetingRoom
 
     Optional<UserMeetingRoom> findByUserIdAndMeetingRoomShareCode(Long userId, String shareCode);
 
-    Optional<UserMeetingRoom> findByUserAndMeetingRoomShareCode(User user, String shareCode);
-
     boolean existsByUserIdAndMeetingRoomId(Long userId, Long meetingRoomId);
 
     HashSet<UserMeetingRoom> findAllByUser(User user);
 
-    List<UserMeetingRoom> findAllByMeetingRoom(MeetingRoom meetingRoom);
-
     Integer countByMeetingRoom(MeetingRoom meetingRoom);
-
-    Integer countByMeetingRoomShareCode(String shareCode);
-
+    
     boolean existsByUserAndMeetingRoom(User user, MeetingRoom meetingRoom);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

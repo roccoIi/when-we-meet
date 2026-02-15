@@ -62,8 +62,6 @@ public class SecurityConfig {
                                 "/api/meetings/share",  // 초대링크 접속시 요약정보 반환
                                 "/api/user/first"  // 첫 접속 계정생성
                         ).permitAll()
-//                        .requestMatchers("/api/meetings/share/**").permitAll()
-//                        .anyRequest().authenticated())
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(login -> login

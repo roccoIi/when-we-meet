@@ -25,14 +25,6 @@ public interface UnavailableRepository extends JpaRepository<UnavailableTime, Lo
                     and u.user.id=:userId""")
     void clearAllScheduleByUser(@Param("userId") Long userId, @Param("meetingRoomId") Long meetingRoomId);
 
-    @Modifying(clearAutomatically = true)
-    @Query(value = """
-            UPDATE UnavailableTime u
-            SET u.user = :user
-            WHERE u.user = :guestUser
-            """)
-    void updateGuestTimeToUserTime(User user, User guestUser);
-
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             delete UnavailableTime u

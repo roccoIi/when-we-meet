@@ -6,7 +6,7 @@ import com.whenwemeet.backend.domain.user.entity.UserType;
 import com.whenwemeet.backend.domain.user.repository.UserRepository;
 import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
-import com.whenwemeet.backend.global.jwt.util.JwtUtil;
+import com.whenwemeet.backend.global.util.JwtUtil;
 import com.whenwemeet.backend.global.util.RandomProfile;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +35,7 @@ public class UserServiceImpl implements UserService{
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(U001));
 
-        log.info("닉네임 변경 진행");
         user.changeNickName(nickname);
-        log.info("닉네임 변경 완료");
     }
 
     @Override
