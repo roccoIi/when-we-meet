@@ -31,6 +31,8 @@ services:
     command: redis-server --requirepass ${SPRING_DATA_REDIS_PASSWORD}
     ports:
       - "6379:6379"
+    environment:
+      TZ=Asia/Seoul
     volumes:
       - redis_data:/data
     networks:
@@ -55,7 +57,7 @@ services:
     env_file:
       - .env
     environment:
-      # Docker 환경에서만 덮어쓸 항목들
+      TZ=Asia/Seoul
       SPRING_DATA_REDIS_HOST: redis
     ports:
       - "8080:8080"
@@ -72,6 +74,8 @@ services:
     image: whenwemeet-frontend:latest
     container_name: whenwemeet-frontend
     restart: unless-stopped
+    environment:
+      TZ=Asia/Seoul
     depends_on:
       - backend
     ports:

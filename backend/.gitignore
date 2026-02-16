@@ -44,11 +44,12 @@ out/
 
 ./src/main/resources/*.json
 .env
-.env.dev
+env.dev
 .DS_Store
 ._.DS_Store
 **/.DS_Store
 **/._.DS_Store
+**/application-dev.yml
 
 # AWS User-specific
 .idea/**/aws.xml
