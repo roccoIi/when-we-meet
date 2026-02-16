@@ -74,7 +74,7 @@ const handleRightButtonClick = () => {
   <!-- MeetingList 헤더 (검색창 + 정렬 포함) -->
   <header 
     v-if="headerConfig.type === 'list'"
-    class="sticky top-0 z-40 px-6 pb-4 pt-6 bg-background-light/95 backdrop-blur-sm transition-all duration-300"
+    class="sticky top-0 z-40 px-5 pb-3 pt-5 bg-background-light/95 backdrop-blur-sm transition-all duration-300"
   >
     <slot></slot>
   </header>
@@ -82,15 +82,15 @@ const handleRightButtonClick = () => {
   <!-- Simple 헤더 (홈 버튼) -->
   <header 
     v-else-if="headerConfig.type === 'simple'"
-    class="sticky top-0 z-40 flex items-center justify-between px-6 py-5 bg-background-light/95 backdrop-blur-sm"
+    class="sticky top-0 z-40 flex items-center justify-between px-5 py-4 bg-background-light/95 backdrop-blur-sm"
   >
     <button 
       v-if="headerConfig.showBackButton"
       @click="handleHomeClick"
-      class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
       title="홈으로"
     >
-      <span class="material-symbols-rounded text-gray-600 group-hover:text-primary-dark transition-colors">home</span>
+      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">home</span>
     </button>
     
     <div class="flex-1"></div>
@@ -99,9 +99,9 @@ const handleRightButtonClick = () => {
     <div v-if="!userStore.provider" class="flex-shrink-0">
       <button 
         @click="handleProfileClick"
-        class="px-4 py-2 bg-primary hover:bg-primary-dark text-gray-800 font-bold text-sm rounded-xl shadow-soft transition-all flex items-center gap-2"
+        class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-gray-800 font-bold text-xs rounded-xl shadow-soft transition-all flex items-center gap-1.5"
       >
-        <span class="material-icons text-lg">login</span>
+        <span class="material-icons text-base">login</span>
         <span>로그인</span>
       </button>
     </div>
@@ -112,10 +112,10 @@ const handleRightButtonClick = () => {
         v-if="userStore.profileImgUrl"
         :src="userStore.profileImgUrl" 
         :alt="userStore.nickname || 'User'"
-        class="relative w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm"
+        class="relative w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
       />
-      <div v-else class="relative w-11 h-11 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
-        <span class="material-icons text-gray-800">person</span>
+      <div v-else class="relative w-9 h-9 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
+        <span class="material-icons text-base text-gray-800">person</span>
       </div>
     </button>
   </header>
@@ -123,35 +123,35 @@ const handleRightButtonClick = () => {
   <!-- Titled 헤더 (홈 버튼 + 제목 + 오른쪽 버튼) -->
   <header 
     v-else-if="headerConfig.type === 'titled'"
-    class="sticky top-0 z-40 flex items-center justify-between px-6 py-5 bg-background-light/95 backdrop-blur-sm"
+    class="sticky top-0 z-40 flex items-center justify-between px-5 py-4 bg-background-light/95 backdrop-blur-sm"
   >
     <button 
       v-if="headerConfig.showBackButton"
       @click="handleHomeClick"
-      class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
       title="홈으로"
     >
-      <span class="material-symbols-rounded text-gray-600 group-hover:text-primary-dark transition-colors">home</span>
+      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">home</span>
     </button>
     
-    <h1 class="text-lg font-bold tracking-tight text-gray-700 flex-1 text-center">{{ headerConfig.title }}</h1>
+    <h1 class="text-base font-bold tracking-tight text-gray-700 flex-1 text-center">{{ headerConfig.title }}</h1>
     
     <!-- Right Button or Profile -->
     <button 
       v-if="headerConfig.showRightButton"
       @click="handleRightButtonClick"
-      class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
     >
-      <span class="material-symbols-rounded text-gray-600 group-hover:text-primary-dark transition-colors">{{ headerConfig.rightButtonIcon }}</span>
+      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">{{ headerConfig.rightButtonIcon }}</span>
     </button>
     
     <!-- Login Button or Profile Picture -->
     <div v-else-if="!userStore.provider" class="flex-shrink-0">
       <button 
         @click="handleProfileClick"
-        class="w-11 h-11 flex items-center justify-center rounded-full bg-primary hover:bg-primary-dark transition-colors shadow-sm"
+        class="w-9 h-9 flex items-center justify-center rounded-full bg-primary hover:bg-primary-dark transition-colors shadow-sm"
       >
-        <span class="material-icons text-gray-800 text-lg">login</span>
+        <span class="material-icons text-gray-800 text-base">login</span>
       </button>
     </div>
     
@@ -161,10 +161,10 @@ const handleRightButtonClick = () => {
         v-if="userStore.profileImgUrl"
         :src="userStore.profileImgUrl" 
         :alt="userStore.nickname || 'User'"
-        class="relative w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm"
+        class="relative w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
       />
-      <div v-else class="relative w-11 h-11 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
-        <span class="material-icons text-gray-800">person</span>
+      <div v-else class="relative w-9 h-9 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
+        <span class="material-icons text-base text-gray-800">person</span>
       </div>
     </button>
   </header>

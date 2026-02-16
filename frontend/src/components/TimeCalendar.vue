@@ -153,17 +153,17 @@ const getDayClass = (date) => {
 </script>
 
 <template>
-  <div class="bg-white rounded-xl p-4">
-    <div class="flex justify-between items-center mb-4">
+  <div class="bg-white rounded-xl p-3">
+    <div class="flex justify-between items-center mb-3">
       <button
-        class="w-9 h-9 border-none bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-200"
+        class="w-7 h-7 border-none bg-gray-100 rounded-lg cursor-pointer text-xs text-gray-600 transition-colors hover:bg-gray-200"
         @click="prevWeek"
       >
         ◀
       </button>
-      <h3 class="text-lg font-semibold text-pink-800">시간별 일정</h3>
+      <h3 class="text-sm font-semibold text-pink-800">시간별 일정</h3>
       <button
-        class="w-9 h-9 border-none bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-200"
+        class="w-7 h-7 border-none bg-gray-100 rounded-lg cursor-pointer text-xs text-gray-600 transition-colors hover:bg-gray-200"
         @click="nextWeek"
       >
         ▶
@@ -172,18 +172,18 @@ const getDayClass = (date) => {
 
     <div class="overflow-x-auto">
       <div class="min-w-full">
-        <table class="w-full border-collapse text-sm">
+        <table class="w-full border-collapse text-xs">
           <thead>
             <tr>
               <th
-                class="sticky left-0 bg-white z-10 min-w-[60px] px-2 py-3 font-semibold text-gray-600 border-b-2 border-gray-300"
+                class="sticky left-0 bg-white z-10 min-w-[50px] px-1.5 py-2 font-semibold text-gray-600 border-b-2 border-gray-300"
               >
                 시간
               </th>
               <th
                 v-for="date in dates"
                 :key="date.toISOString()"
-                class="min-w-[80px] px-2 py-3 font-semibold border-b-2 border-gray-300 whitespace-nowrap text-center"
+                class="min-w-[65px] px-1.5 py-2 font-semibold border-b-2 border-gray-300 whitespace-nowrap text-center"
                 :class="{
                   'text-sunday': getDayClass(date) === 'sunday',
                   'text-saturday': getDayClass(date) === 'saturday',
@@ -198,14 +198,14 @@ const getDayClass = (date) => {
           <tbody>
             <tr v-for="slot in timeSlots" :key="`${slot.hour}-${slot.minute}`">
               <td
-                class="sticky left-0 bg-white z-[5] px-2 py-0 font-medium text-gray-600 border-r border-gray-300 text-center align-top"
+                class="sticky left-0 bg-white z-[5] px-1.5 py-0 font-medium text-gray-600 border-r border-gray-300 text-center align-top"
               >
                 {{ formatTime(slot.hour, slot.minute) }}
               </td>
               <td
                 v-for="date in dates"
                 :key="`${date.toISOString()}-${slot.hour}-${slot.minute}`"
-                class="p-1 border border-gray-300 cursor-pointer transition-all text-center"
+                class="p-0.5 border border-gray-300 cursor-pointer transition-all text-center"
                 :class="{
                   'bg-gray-100 cursor-not-allowed opacity-50': isPast(
                     date,
@@ -217,7 +217,7 @@ const getDayClass = (date) => {
                 @click="handleTimeClick(date, slot.hour, slot.minute)"
               >
                 <div
-                  class="w-full h-8 rounded transition-all"
+                  class="w-full h-6 rounded transition-all"
                   :class="{
                     'bg-primary': isSelected(date, slot.hour, slot.minute),
                     'bg-gray-300': isPast(date, slot.hour, slot.minute),
@@ -235,7 +235,7 @@ const getDayClass = (date) => {
 <style scoped>
 /* 스크롤바 스타일링 */
 .overflow-x-auto::-webkit-scrollbar {
-  height: 8px;
+  height: 6px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {

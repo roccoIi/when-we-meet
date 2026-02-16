@@ -55,33 +55,33 @@ const formatDate = (dateString) => {
 
 <template>
   <div
-    class="bg-white rounded-2xl p-5 mb-3 shadow-sm cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+    class="bg-white rounded-xl p-4 mb-2.5 shadow-sm cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
   >
-    <div class="flex justify-between items-center mb-3">
+    <div class="flex justify-between items-center mb-2.5">
       <h3
-        class="text-lg font-semibold text-gray-800 flex-1 overflow-hidden text-ellipsis whitespace-nowrap mr-3"
+        class="text-base font-semibold text-gray-800 flex-1 overflow-hidden text-ellipsis whitespace-nowrap mr-2"
       >
         {{ meeting.name }}
       </h3>
       <span
-        class="px-3 py-1.5 rounded-xl text-white text-sm font-bold whitespace-nowrap"
+        class="px-2.5 py-1 rounded-lg text-white text-xs font-bold whitespace-nowrap"
         :style="{ backgroundColor: ddayColor }"
       >
         {{ dday }}
       </span>
     </div>
 
-    <div class="flex gap-4">
-      <div class="flex items-center gap-1.5">
-        <span class="text-base">👥</span>
-        <span class="text-sm text-gray-600">
+    <div class="flex gap-3">
+      <div class="flex items-center gap-1">
+        <span class="text-sm">👥</span>
+        <span class="text-xs text-gray-600">
           {{ meeting.memberNumber || 0 }}명 참여중
         </span>
       </div>
 
-      <div v-if="meeting.meetingDate" class="flex items-center gap-1.5">
-        <span class="text-base">📅</span>
-        <span class="text-sm text-gray-600">{{
+      <div v-if="meeting.meetingDate" class="flex items-center gap-1">
+        <span class="text-sm">📅</span>
+        <span class="text-xs text-gray-600">{{
           formatDate(meeting.meetingDate)
         }}</span>
       </div>

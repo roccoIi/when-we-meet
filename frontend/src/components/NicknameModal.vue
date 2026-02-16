@@ -54,32 +54,32 @@ const handleBackdropClick = (e) => {
     class="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000]"
     @click="handleBackdropClick"
   >
-    <div class="bg-white rounded-2xl p-6 w-[90%] max-w-[400px] shadow-xl">
-      <h2 class="text-xl font-bold mb-2 text-gray-800">닉네임 설정</h2>
-      <p class="text-sm text-gray-600 mb-5">사용하실 닉네임을 입력해주세요</p>
+    <div class="bg-white rounded-xl p-5 w-[90%] max-w-[360px] shadow-xl">
+      <h2 class="text-lg font-bold mb-1.5 text-gray-800">닉네임 설정</h2>
+      <p class="text-xs text-gray-600 mb-4">사용하실 닉네임을 입력해주세요</p>
 
       <input
         v-model="nickname"
         type="text"
-        class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base transition-colors focus:outline-none focus:border-primary"
+        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm transition-colors focus:outline-none focus:border-primary"
         placeholder="닉네임 (최대 10자)"
         maxlength="10"
         @keyup.enter="handleSubmit"
       />
 
-      <p v-if="error" class="text-red-500 text-sm mt-2">{{ error }}</p>
+      <p v-if="error" class="text-red-500 text-xs mt-1.5">{{ error }}</p>
 
-      <div class="flex gap-2 mt-5">
+      <div class="flex gap-2 mt-4">
         <button
           v-if="userStore.nickname"
-          class="flex-1 px-3 py-3 border-none rounded-lg text-base font-medium cursor-pointer transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="flex-1 px-3 py-2.5 border-none rounded-lg text-sm font-medium cursor-pointer transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
           @click="emit('close')"
           :disabled="isLoading"
         >
           취소
         </button>
         <button
-          class="flex-1 px-3 py-3 border-none rounded-lg text-base font-medium cursor-pointer transition-all bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+          class="flex-1 px-3 py-2.5 border-none rounded-lg text-sm font-medium cursor-pointer transition-all bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
           @click="handleSubmit"
           :disabled="isLoading"
         >

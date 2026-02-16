@@ -518,53 +518,53 @@ const closeNicknameModal = () => {
   <div>
     <div class="min-h-screen relative flex flex-col bg-background-light overflow-hidden text-gray-800 antialiased selection:bg-primary selection:text-neutral-dark">
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto no-scrollbar pb-32 px-6 pt-2">
+    <main class="flex-1 overflow-y-auto no-scrollbar pb-28 px-5 pt-2">
         <!-- Meeting Name Input -->
-        <div class="mb-6">
-          <label class="block text-sm font-bold text-gray-600 mb-2 ml-1" for="meeting-name">모임 이름</label>
+        <div class="mb-5">
+          <label class="block text-xs font-bold text-gray-600 mb-1.5 ml-1" for="meeting-name">모임 이름</label>
           <div class="relative">
             <input 
               id="meeting-name"
               v-model="meetingName"
-              class="w-full bg-white border border-pastel-border rounded-xl px-4 py-4 text-lg font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-soft" 
+              class="w-full bg-white border border-pastel-border rounded-xl px-3 py-3 text-base font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-soft" 
               placeholder="예) 여우들의 송년회 🦊" 
               type="text"
               maxlength="30"
               autofocus
             />
           </div>
-          <p class="text-right text-xs text-gray-400 mt-1 mr-1">
+          <p class="text-right text-[10px] text-gray-400 mt-0.5 mr-1">
             {{ meetingName.length }}/30
           </p>
         </div>
 
         <!-- Date Selection -->
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-3 ml-1">
-            <label class="block text-sm font-bold text-gray-600">날짜 선택</label>
-            <div class="flex items-center gap-2">
+        <div class="mb-5">
+          <div class="flex items-center justify-between mb-2 ml-1">
+            <label class="block text-xs font-bold text-gray-600">날짜 선택</label>
+            <div class="flex items-center gap-1.5">
               <button 
                 @click="prevMonth"
-                class="p-1 hover:bg-neutral-light rounded-full transition-colors"
+                class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
               >
-                <span class="material-symbols-rounded text-gray-400 text-lg">chevron_left</span>
+                <span class="material-symbols-rounded text-gray-400 text-base">chevron_left</span>
               </button>
-              <span class="text-sm font-bold text-gray-800">{{ currentMonthName }}</span>
+              <span class="text-xs font-bold text-gray-800">{{ currentMonthName }}</span>
               <button 
                 @click="nextMonth"
-                class="p-1 hover:bg-neutral-light rounded-full transition-colors"
+                class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
               >
-                <span class="material-symbols-rounded text-gray-400 text-lg">chevron_right</span>
+                <span class="material-symbols-rounded text-gray-400 text-base">chevron_right</span>
               </button>
             </div>
           </div>
           
-          <div class="bg-white rounded-2xl p-4 shadow-soft border border-gray-100">
-            <div class="grid grid-cols-7 gap-y-2 gap-x-1 mb-2 text-center">
+          <div class="bg-white rounded-xl p-3 shadow-soft border border-gray-100">
+            <div class="grid grid-cols-7 gap-y-1.5 gap-x-1 mb-1.5 text-center">
               <div 
                 v-for="day in ['일', '월', '화', '수', '목', '금', '토']"
                 :key="day"
-                class="text-[10px] font-bold text-gray-400 uppercase tracking-wide"
+                class="text-[9px] font-bold text-gray-400 uppercase tracking-wide"
               >
                 {{ day }}
               </div>
@@ -573,7 +573,7 @@ const closeNicknameModal = () => {
               <div 
                 v-for="n in calendarDays.findIndex(d => d !== null)"
                 :key="`empty-${n}`"
-                class="h-8"
+                class="h-7"
               ></div>
               
               <!-- Date cells -->
@@ -585,7 +585,7 @@ const closeNicknameModal = () => {
               >
                 <div 
                   :class="[
-                    'w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-medium transition-all',
+                    'w-7 h-7 mx-auto flex items-center justify-center rounded-full text-xs font-medium transition-all',
                     isPastDate(day) 
                       ? 'text-gray-400 cursor-not-allowed' 
                       : isSameDay(day, selectedDate)
@@ -601,20 +601,20 @@ const closeNicknameModal = () => {
         </div>
 
         <!-- Time Selection -->
-        <div class="mb-44">
-          <label class="block text-sm font-bold text-gray-600 mb-3 ml-1">모임 시간 선택</label>
-          <div class="grid grid-cols-2 gap-4">
+        <div class="mb-40">
+          <label class="block text-xs font-bold text-gray-600 mb-2 ml-1">모임 시간 선택</label>
+          <div class="grid grid-cols-2 gap-3">
             <!-- Start Time -->
-            <div class="bg-white rounded-2xl p-4 shadow-soft border border-gray-100">
-              <span class="text-xs font-bold text-gray-400 uppercase tracking-wide block mb-3 text-center">
+            <div class="bg-white rounded-xl p-3 shadow-soft border border-gray-100">
+              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide block mb-2 text-center">
                 {{ String(selectedHour).padStart(2, '0') }}:{{ String(selectedMinute).padStart(2, '0') }}부터
               </span>
-              <div class="flex flex-col gap-3">
+              <div class="flex flex-col gap-2">
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">Hour</label>
+                  <label class="text-[10px] text-gray-500 mb-0.5 block">Hour</label>
                   <select 
                     v-model="selectedHour"
-                    class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    class="w-full bg-neutral-light border-none rounded-lg px-2 py-1.5 text-center text-base font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     <option 
                       v-for="hour in availableHours" 
@@ -626,10 +626,10 @@ const closeNicknameModal = () => {
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">Minute</label>
+                  <label class="text-[10px] text-gray-500 mb-0.5 block">Minute</label>
                   <select 
                     v-model="selectedMinute"
-                    class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    class="w-full bg-neutral-light border-none rounded-lg px-2 py-1.5 text-center text-base font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     <option 
                       v-for="minute in availableMinutes" 
@@ -644,16 +644,16 @@ const closeNicknameModal = () => {
             </div>
 
             <!-- End Time -->
-            <div class="bg-white rounded-2xl p-4 shadow-soft border border-gray-100">
-              <span class="text-xs font-bold text-gray-400 uppercase tracking-wide block mb-3 text-center">
+            <div class="bg-white rounded-xl p-3 shadow-soft border border-gray-100">
+              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide block mb-2 text-center">
                 {{ String(endHour).padStart(2, '0') }}:{{ String(endMinute).padStart(2, '0') }}까지
               </span>
-              <div class="flex flex-col gap-3">
+              <div class="flex flex-col gap-2">
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">Hour</label>
+                  <label class="text-[10px] text-gray-500 mb-0.5 block">Hour</label>
                   <select 
                     v-model="endHour"
-                    class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    class="w-full bg-neutral-light border-none rounded-lg px-2 py-1.5 text-center text-base font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     <option 
                       v-for="hour in availableEndHours" 
@@ -665,10 +665,10 @@ const closeNicknameModal = () => {
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs text-gray-500 mb-1 block">Minute</label>
+                  <label class="text-[10px] text-gray-500 mb-0.5 block">Minute</label>
                   <select 
                     v-model="endMinute"
-                    class="w-full bg-neutral-light border-none rounded-lg px-3 py-2 text-center text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    class="w-full bg-neutral-light border-none rounded-lg px-2 py-1.5 text-center text-base font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     <option 
                       v-for="minute in availableEndMinutes" 
@@ -686,27 +686,27 @@ const closeNicknameModal = () => {
       </main>
 
     <!-- Bottom Fixed Area -->
-    <div class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] px-6 py-6 pb-8 max-w-app mx-auto">
-      <div class="flex items-center justify-between mb-5">
+    <div class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 rounded-t-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] px-5 py-5 pb-6 max-w-app mx-auto">
+      <div class="flex items-center justify-between mb-4">
         <div class="flex flex-col">
-          <span class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">최종 선택</span>
-          <div class="flex items-center gap-2">
-            <span class="material-symbols-rounded text-primary-dark text-lg">event</span>
-            <span class="text-base font-bold text-gray-800">{{ formattedDateShort }}</span>
+          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">최종 선택</span>
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-rounded text-primary-dark text-base">event</span>
+            <span class="text-sm font-bold text-gray-800">{{ formattedDateShort }}</span>
             <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
-            <span class="text-base font-medium text-gray-600">{{ formattedTimeRange }}</span>
+            <span class="text-sm font-medium text-gray-600">{{ formattedTimeRange }}</span>
           </div>
         </div>
       </div>
       
-      <p v-if="error" class="text-red-500 text-sm mb-3 text-center">{{ error }}</p>
+      <p v-if="error" class="text-red-500 text-xs mb-2.5 text-center">{{ error }}</p>
       
       <button 
         @click="handleSubmit"
         :disabled="isLoading || !meetingName.trim()"
-          class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-extrabold text-lg py-4 rounded-2xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-bold text-base py-3 rounded-xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span class="material-symbols-rounded">{{ isEditMode ? 'edit' : 'check_circle' }}</span>
+          <span class="material-symbols-rounded text-[20px]">{{ isEditMode ? 'edit' : 'check_circle' }}</span>
           {{ isLoading ? (isEditMode ? "수정 중..." : "생성 중...") : (isEditMode ? "모임 수정하기" : "모임 생성하기") }}
         </button>
       
@@ -715,9 +715,9 @@ const closeNicknameModal = () => {
         v-if="isEditMode"
         @click="handleDelete"
         :disabled="isLoading"
-        class="w-full mt-3 bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 hover:border-red-300 font-bold text-base py-3 rounded-2xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="w-full mt-2.5 bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 hover:border-red-300 font-bold text-sm py-2.5 rounded-xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <span class="material-symbols-rounded">delete</span>
+        <span class="material-symbols-rounded text-[18px]">delete</span>
         {{ isLoading ? "삭제 중..." : "모임 삭제하기" }}
       </button>
     </div>
@@ -729,32 +729,32 @@ const closeNicknameModal = () => {
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
       @click.self="closeNicknameModal"
     >
-      <div class="bg-white rounded-3xl shadow-soft max-w-md w-full p-8 relative">
+      <div class="bg-white rounded-2xl shadow-soft max-w-md w-full p-6 relative">
         <!-- Close Button -->
         <button
           @click="closeNicknameModal"
-          class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <span class="material-icons">close</span>
+          <span class="material-icons text-lg">close</span>
         </button>
 
         <!-- Icon -->
-        <div class="text-center mb-6">
-          <div class="relative inline-block mb-4">
+        <div class="text-center mb-5">
+          <div class="relative inline-block mb-3">
             <div class="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-full blur-md opacity-40"></div>
-            <div class="relative w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-soft">
-              <span class="material-icons text-white text-3xl">person_add</span>
+            <div class="relative w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-soft">
+              <span class="material-icons text-white text-2xl">person_add</span>
             </div>
           </div>
-          <h3 class="text-xl font-bold text-gray-800 mb-2">닉네임 설정</h3>
-          <p class="text-sm text-gray-600">
+          <h3 class="text-lg font-bold text-gray-800 mb-1.5">닉네임 설정</h3>
+          <p class="text-xs text-gray-600">
             모임 생성을 위해 닉네임 설정이 필요합니다.
           </p>
         </div>
 
         <!-- Input -->
-        <div class="mb-6">
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">
             닉네임
           </label>
           <input
@@ -762,35 +762,35 @@ const closeNicknameModal = () => {
             type="text"
             placeholder="닉네임을 입력하세요 (최대 10자)"
             maxlength="10"
-            class="w-full px-4 py-3 bg-neutral-light border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            class="w-full px-3 py-2.5 bg-neutral-light border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             @keyup.enter="handleNicknameSubmit"
             :disabled="isSettingNickname"
           />
-          <p v-if="nicknameError" class="mt-2 text-sm text-red-500">
+          <p v-if="nicknameError" class="mt-1.5 text-xs text-red-500">
             {{ nicknameError }}
           </p>
-          <p class="mt-2 text-xs text-gray-500">
+          <p class="mt-1.5 text-[10px] text-gray-500">
             {{ nicknameInput.length }}/10자
           </p>
         </div>
 
         <!-- Buttons -->
-        <div class="space-y-3">
+        <div class="space-y-2">
           <button
             @click="handleNicknameSubmit"
             :disabled="isSettingNickname || !nicknameInput.trim()"
-            class="w-full px-6 py-3 bg-primary hover:bg-primary-dark text-gray-800 rounded-2xl font-bold shadow-glow transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            class="w-full px-5 py-2.5 bg-primary hover:bg-primary-dark text-gray-800 rounded-xl text-sm font-bold shadow-glow transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             <span v-if="!isSettingNickname">확인</span>
-            <span v-else class="flex items-center justify-center gap-2">
-              <div class="w-5 h-5 border-2 border-gray-800 border-t-transparent rounded-full animate-spin"></div>
+            <span v-else class="flex items-center justify-center gap-1.5">
+              <div class="w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin"></div>
               설정 중...
             </span>
           </button>
           <button
             @click="closeNicknameModal"
             :disabled="isSettingNickname"
-            class="w-full px-6 py-3 bg-white text-gray-700 border border-gray-200 rounded-2xl font-semibold hover:bg-gray-50 transition-all disabled:opacity-50"
+            class="w-full px-5 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all disabled:opacity-50"
           >
             취소
           </button>

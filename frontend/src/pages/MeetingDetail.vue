@@ -423,50 +423,50 @@ const handleResetSchedule = async () => {
   <div>
     <div class="min-h-screen relative flex flex-col bg-background-light overflow-hidden text-gray-800 antialiased selection:bg-primary selection:text-neutral-dark font-display">
     <!-- 메인 컨텐츠 -->
-    <main v-if="meeting" class="flex-1 overflow-y-auto pb-32 px-6 pt-2">
+    <main v-if="meeting" class="flex-1 overflow-y-auto pb-24 px-5 pt-2">
       <!-- 모임 정보 -->
-      <div class="mb-8 pt-2">
-        <div class="flex items-start justify-between mb-4">
+      <div class="mb-6 pt-2">
+        <div class="flex items-start justify-between mb-3">
           <div class="flex-1">
-            <h2 class="text-3xl font-extrabold text-gray-800 leading-tight mb-2">{{ meeting.name }}</h2>
-            <p class="text-sm text-gray-500">
+            <h2 class="text-xl font-bold text-gray-800 leading-tight mb-1">{{ meeting.name }}</h2>
+            <p class="text-xs text-gray-500">
               Created by <span class="font-medium text-gray-700">{{ meeting.participants[0]?.nickname || '호스트' }}</span>
             </p>
           </div>
-          <div class="flex gap-2 flex-shrink-0 ml-3">
+          <div class="flex gap-1.5 flex-shrink-0 ml-3">
             <!-- HOST: 수정 버튼 -->
             <button 
               v-if="userRole === 'HOST'"
               @click="handleEditMeeting"
-              class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
               title="모임 정보 수정"
             >
-              <span class="material-symbols-rounded text-gray-600 group-hover:text-primary-dark transition-colors">edit</span>
+              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">edit</span>
             </button>
             
             <!-- MEMBER: 탈퇴 버튼 -->
             <button 
               v-if="userRole === 'MEMBER'"
               @click="handleLeaveMeeting"
-              class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-red-50 transition-colors group shadow-sm border border-gray-100"
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-red-50 transition-colors group shadow-sm border border-gray-100"
               title="모임 탈퇴"
             >
-              <span class="material-symbols-rounded text-gray-600 group-hover:text-red-500 transition-colors">logout</span>
+              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-red-500 transition-colors">logout</span>
             </button>
             
             <!-- 공유 버튼 (공통) -->
             <button 
               @click="handleShareClick"
-              class="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
             >
-              <span class="material-symbols-rounded text-gray-600 group-hover:text-primary-dark transition-colors">ios_share</span>
+              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">ios_share</span>
             </button>
           </div>
         </div>
 
           <!-- 참여자 정보 -->
-          <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-soft mt-2">
-            <div class="flex -space-x-3 rtl:space-x-reverse overflow-visible pt-1">
+          <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-soft mt-2">
+            <div class="flex -space-x-2.5 rtl:space-x-reverse overflow-visible">
               <div 
                 v-for="(participant, index) in meeting.participants.slice(0, 4)" 
                 :key="index"
@@ -475,23 +475,23 @@ const handleResetSchedule = async () => {
                 <img 
                   :src="participant.profileImgUrl" 
                   :alt="participant.nickname"
-                  class="w-10 h-10 border-2 border-pastel-border rounded-full object-cover cursor-pointer transition-transform hover:scale-110"
+                  class="w-8 h-8 border-2 border-pastel-border rounded-full object-cover cursor-pointer transition-transform hover:scale-110"
                 />
                 <!-- 툴팁 -->
-                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-800 text-white text-[10px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                   {{ participant.nickname }}
                 </div>
               </div>
               <div 
                 v-if="meeting.memberNumber > 4"
-                class="flex items-center justify-center w-10 h-10 text-xs font-bold text-gray-600 bg-neutral-light border-2 border-pastel-border rounded-full hover:bg-gray-200"
+                class="flex items-center justify-center w-8 h-8 text-[10px] font-bold text-gray-600 bg-neutral-light border-2 border-pastel-border rounded-full hover:bg-gray-200"
               >
                 +{{ meeting.memberNumber - 4 }}
               </div>
             </div>
             <button 
               @click="showNicknameModal = true"
-              class="text-sm font-semibold text-primary-dark hover:text-primary transition-colors"
+              class="text-xs font-semibold text-primary-dark hover:text-primary transition-colors"
             >
               내 닉네임
             </button>
@@ -499,7 +499,7 @@ const handleResetSchedule = async () => {
         </div>
 
         <!-- 달력 -->
-        <div class="bg-white rounded-2xl p-5 shadow-soft border border-gray-100 mb-6">
+        <div class="bg-white rounded-xl p-4 shadow-soft border border-gray-100 mb-5">
           <Calendar
             :year="currentYear"
             :month="currentMonth"
@@ -512,17 +512,17 @@ const handleResetSchedule = async () => {
           />
 
           <!-- 범례 -->
-          <div class="flex items-center justify-center gap-4 mt-6 text-xs font-medium">
-            <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-full bg-primary"></span>
+          <div class="flex items-center justify-center gap-3 mt-4 text-[10px] font-medium">
+            <div class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
               <span class="text-gray-500">높음 (80%+)</span>
             </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-full bg-tertiary border border-gray-100"></span>
+            <div class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-tertiary border border-gray-100"></span>
               <span class="text-gray-500">중간 (50%+)</span>
             </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-full bg-secondary"></span>
+            <div class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
               <span class="text-gray-500">낮음</span>
             </div>
           </div>
@@ -531,56 +531,59 @@ const handleResetSchedule = async () => {
         <!-- 확정된 일정 표시 (있는 경우) -->
         <div 
           v-if="confirmedSchedule"
-          class="bg-gradient-to-r from-primary/30 to-primary/10 border border-primary rounded-2xl p-4 mb-6 relative overflow-hidden"
+          class="bg-gradient-to-r from-primary/30 to-primary/10 border border-primary rounded-xl p-3 mb-5 relative overflow-hidden"
         >
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
           <div class="flex items-center justify-between">
             <div>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-bold text-gray-700 bg-primary px-2 py-0.5 rounded-full">확정됨</span>
+              <div class="flex items-center gap-2 mb-0.5">
+                <span class="text-[10px] font-bold text-gray-700 bg-primary px-1.5 py-0.5 rounded-full">확정됨</span>
               </div>
-              <h4 class="text-lg font-bold text-gray-800">{{ confirmedSchedule.displayDate }} {{ confirmedSchedule.displayTime }}</h4>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-gray-800">{{ confirmedSchedule.displayDate }}</span>
+                <span class="text-sm font-semibold text-gray-600">{{ confirmedSchedule.displayTime }}</span>
+              </div>
             </div>
             <button 
               v-if="userStore.nickname"
               @click="handleResetSchedule"
               :disabled="isUpdatingSchedule"
-              class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-red-500 hover:bg-red-50 transition-all shadow-sm disabled:opacity-50"
+              class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-red-500 hover:bg-red-50 transition-all shadow-sm disabled:opacity-50"
             >
-              <span class="material-symbols-rounded text-xl">close</span>
+              <span class="material-symbols-rounded text-lg">close</span>
             </button>
           </div>
         </div>
 
         <!-- 추천 일정 -->
-        <div class="bg-white border-t border-gray-100 rounded-t-3xl px-5 pt-6 pb-20 relative shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.03)]">
-          <div class="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-200 rounded-full"></div>
+        <div class="bg-white border-t border-gray-100 rounded-t-2xl px-4 pt-5 pb-16 relative shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.03)]">
+          <div class="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gray-200 rounded-full"></div>
           
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-rounded text-primary-dark">auto_awesome</span>
-              <h3 class="text-base font-bold text-gray-800">추천 일정</h3>
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-[20px] text-primary-dark">auto_awesome</span>
+              <h3 class="text-sm font-bold text-gray-800">추천 일정</h3>
             </div>
             
             <!-- 필터 버튼 -->
             <div class="flex gap-1">
               <button
                 @click="handleRecommendTypeChange('ALL')"
-                class="px-2 py-1 text-xs font-medium rounded-lg transition-all"
+                class="px-2 py-0.5 text-[10px] font-medium rounded-lg transition-all"
                 :class="recommendType === 'ALL' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               >
                 전체
               </button>
               <button
                 @click="handleRecommendTypeChange('WEEKDAY')"
-                class="px-2 py-1 text-xs font-medium rounded-lg transition-all"
+                class="px-2 py-0.5 text-[10px] font-medium rounded-lg transition-all"
                 :class="recommendType === 'WEEKDAY' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               >
                 주중
               </button>
               <button
                 @click="handleRecommendTypeChange('WEEKEND')"
-                class="px-2 py-1 text-xs font-medium rounded-lg transition-all"
+                class="px-2 py-0.5 text-[10px] font-medium rounded-lg transition-all"
                 :class="recommendType === 'WEEKEND' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               >
                 주말
@@ -588,24 +591,24 @@ const handleResetSchedule = async () => {
             </div>
           </div>
 
-          <div v-if="recommendedSchedules.length === 0" class="text-center py-10 text-gray-400 text-sm">
+          <div v-if="recommendedSchedules.length === 0" class="text-center py-8 text-gray-400 text-xs">
             아직 입력된 일정이 없습니다
           </div>
 
-          <div v-else class="space-y-3">
+          <div v-else class="space-y-2.5">
             <div
               v-for="item in recommendedSchedules"
               :key="`${item.day}-${item.startTime}`"
-              class="flex items-center justify-between p-4 rounded-xl relative overflow-hidden group"
+              class="flex items-center justify-between p-3 rounded-xl relative overflow-hidden group"
               :class="item.rank === 1 
                 ? 'bg-gradient-to-r from-primary/30 to-primary/10 border border-primary' 
                 : 'bg-white border border-gray-100 shadow-sm'"
             >
               <div v-if="item.rank === 1" class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
               
-              <div class="relative z-10 flex items-center gap-3">
+              <div class="relative z-10 flex items-center gap-2">
                 <!-- 순위 메달 이모지 -->
-                <div class="text-3xl flex-shrink-0">
+                <div class="text-2xl flex-shrink-0">
                   <span v-if="item.rank === 1">🥇</span>
                   <span v-else-if="item.rank === 2">🥈</span>
                   <span v-else-if="item.rank === 3">🥉</span>
@@ -614,12 +617,15 @@ const handleResetSchedule = async () => {
                 </div>
                 
                 <div class="flex flex-col flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span v-if="item.rank === 1" class="text-xs font-bold text-gray-700 bg-primary px-2 py-0.5 rounded-full">
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <span v-if="item.rank === 1" class="text-[10px] font-bold text-gray-700 bg-primary px-1.5 py-0.5 rounded-full">
                       추천
                     </span>
                   </div>
-                  <h4 class="text-lg font-bold text-gray-800">{{ item.displayDate }} {{ item.displayTime }}</h4>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-bold text-gray-800">{{ item.displayDate }}</span>
+                    <span class="text-sm font-semibold text-gray-600">{{ item.displayTime }}</span>
+                  </div>
                 </div>
               </div>
               
@@ -628,12 +634,12 @@ const handleResetSchedule = async () => {
                   v-if="userStore.nickname && !confirmedSchedule"
                   @click="handleConfirmSchedule(item)"
                   :disabled="isUpdatingSchedule"
-                  class="w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm disabled:opacity-50"
+                  class="w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-sm disabled:opacity-50"
                   :class="item.rank === 1 
                     ? 'bg-white text-primary hover:bg-primary hover:text-white' 
                     : 'bg-gray-50 text-gray-400 hover:text-white hover:bg-gray-400'"
                 >
-                  <span class="material-symbols-rounded">{{ item.rank === 1 ? 'check' : 'add' }}</span>
+                  <span class="material-symbols-rounded text-lg">{{ item.rank === 1 ? 'check' : 'add' }}</span>
                 </button>
               </div>
             </div>
@@ -644,21 +650,21 @@ const handleResetSchedule = async () => {
       <!-- 로딩 상태 -->
       <div v-else class="flex-1 flex items-center justify-center">
         <div class="text-center">
-          <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p class="text-gray-600">로딩 중...</p>
+          <div class="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p class="text-sm text-gray-600">로딩 중...</p>
         </div>
       </div>
 
     <!-- 그라데이션 오버레이 -->
-    <div class="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background-light to-transparent pointer-events-none z-20 max-w-app mx-auto"></div>
+    <div class="fixed bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background-light to-transparent pointer-events-none z-20 max-w-app mx-auto"></div>
 
     <!-- 하단 고정 버튼 -->
-    <div class="fixed bottom-0 left-0 right-0 z-30 max-w-app mx-auto px-6 pb-6">
+    <div class="fixed bottom-0 left-0 right-0 z-30 max-w-app mx-auto px-5 pb-5">
       <button
         @click="handleScheduleInput"
-        class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-extrabold text-lg py-4 rounded-2xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+        class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-bold text-base py-3 rounded-xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5"
       >
-          <span class="material-symbols-rounded">edit_calendar</span>
+          <span class="material-symbols-rounded text-[20px]">edit_calendar</span>
           내 일정 추가하기
         </button>
     </div>

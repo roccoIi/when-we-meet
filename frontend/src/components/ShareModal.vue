@@ -67,34 +67,34 @@ const handleBackdropClick = () => {
   <Transition name="slide-up">
     <div
       v-if="isOpen"
-      class="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-50 max-w-app mx-auto"
-      style="height: 40vh; min-height: 300px;"
+      class="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-50 max-w-app mx-auto"
+      style="height: 40vh; min-height: 280px;"
     >
       <!-- 상단 핸들 바 -->
-      <div class="flex justify-center pt-3 pb-2">
-        <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+      <div class="flex justify-center pt-2.5 pb-1.5">
+        <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
       </div>
 
       <!-- 모달 내용 -->
-      <div class="px-6 py-4 flex flex-col h-full">
+      <div class="px-5 py-3 flex flex-col h-full">
         <!-- 제목 -->
-        <h3 class="text-xl font-bold text-gray-800 mb-6 text-center">
+        <h3 class="text-lg font-bold text-gray-800 mb-5 text-center">
           초대 링크 공유하기
         </h3>
 
         <!-- 링크 표시 영역 -->
-        <div class="bg-gray-50 border border-gray-300 rounded-xl p-4 mb-6 flex items-center gap-3">
+        <div class="bg-gray-50 border border-gray-300 rounded-xl p-3 mb-5 flex items-center gap-2">
           <!-- 링크 텍스트 -->
           <div class="flex-1 overflow-hidden">
-            <p class="text-sm text-gray-600 mb-1">공유 링크</p>
-            <p class="text-sm text-gray-800 truncate font-medium">
+            <p class="text-xs text-gray-600 mb-0.5">공유 링크</p>
+            <p class="text-xs text-gray-800 truncate font-medium">
               {{ shareUrl }}
             </p>
           </div>
 
           <!-- 복사 버튼 -->
           <button
-            class="flex-shrink-0 px-4 py-2.5 bg-white border-2 border-primary text-primary rounded-lg font-semibold text-sm transition-all hover:bg-primary hover:text-white active:scale-95"
+            class="flex-shrink-0 px-3 py-2 bg-white border-2 border-primary text-primary rounded-lg font-semibold text-xs transition-all hover:bg-primary hover:text-white active:scale-95"
             @click="copyToClipboard"
           >
             복사
@@ -102,18 +102,18 @@ const handleBackdropClick = () => {
         </div>
 
         <!-- 안내 문구 -->
-        <p class="text-xs text-gray-500 text-center mb-6">
+        <p class="text-[10px] text-gray-500 text-center mb-5">
           이 링크를 받은 사람은 모임에 참여할 수 있습니다
         </p>
 
         <!-- 버튼 영역 -->
-        <div class="mt-auto flex flex-col gap-3 pb-6">
+        <div class="mt-auto flex flex-col gap-2.5 pb-5">
           <!-- 공유하기 버튼 (메인) -->
           <button
-            class="w-full px-6 py-4 bg-gradient-to-r from-primary to-purple-600 text-white border-none rounded-xl text-base font-bold cursor-pointer transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+            class="w-full px-5 py-3 bg-gradient-to-r from-primary to-purple-600 text-white border-none rounded-xl text-sm font-bold cursor-pointer transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
             @click="handleShare"
           >
-            <span class="flex items-center justify-center gap-2">
+            <span class="flex items-center justify-center gap-1.5">
               <span>📤</span>
               <span>다른 앱으로 공유하기</span>
             </span>
@@ -121,7 +121,7 @@ const handleBackdropClick = () => {
 
           <!-- 닫기 버튼 -->
           <button
-            class="w-full px-6 py-3 bg-white text-gray-600 border-2 border-gray-300 rounded-xl text-base font-semibold cursor-pointer transition-all hover:bg-gray-50 active:scale-95"
+            class="w-full px-5 py-2.5 bg-white text-gray-600 border-2 border-gray-300 rounded-xl text-sm font-semibold cursor-pointer transition-all hover:bg-gray-50 active:scale-95"
             @click="handleBackdropClick"
           >
             닫기
