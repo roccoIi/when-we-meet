@@ -5,13 +5,14 @@ import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.repository.MeetingRoomRepository;
 import com.whenwemeet.backend.domain.meetingRoom.repository.UserMeetingRoomRepository;
 import com.whenwemeet.backend.domain.schedule.dto.request.ScheduleRequest;
-import com.whenwemeet.backend.domain.schedule.dto.response.*;
+import com.whenwemeet.backend.domain.schedule.dto.response.DaysDetail;
+import com.whenwemeet.backend.domain.schedule.dto.response.MembersScheduleListResponse;
+import com.whenwemeet.backend.domain.schedule.dto.response.RecommendList;
+import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.entity.DayType;
 import com.whenwemeet.backend.domain.schedule.entity.UnavailableTime;
-import com.whenwemeet.backend.domain.schedule.repository.ScheduleRepository;
 import com.whenwemeet.backend.domain.schedule.repository.UnavailableRepository;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,9 +34,7 @@ public class ScheduleServiceImpl implements ScheduleService{
 
     private final MeetingRoomRepository meetingRoomRepository;
     private final UnavailableRepository unavailableRepository;
-    private final ScheduleRepository scheduleRepository;
     private final UserMeetingRoomRepository userMeetingRoomRepository;
-    private final EntityManager entityManager;
     private final int PLUSDAYS = 90;
     private final int MAX_RECOMMEND_COUNT = 5; // 추천 시간대 개수 (추후 10개로 확장 가능)
 
@@ -84,9 +83,6 @@ public class ScheduleServiceImpl implements ScheduleService{
             MembersScheduleByDate.add(daysDetail);
         }
 
-
-
-        // 임시 반환값
         return new MembersScheduleListResponse(allMembersNum, MembersScheduleByDate);
     }
 
@@ -95,16 +91,13 @@ public class ScheduleServiceImpl implements ScheduleService{
     public void addIndividualSchedule(Long userId, String shareCode, List<ScheduleRequest> scheduleRequest) {
 
         // 1) 사용자가 해당 미팅룸에 속해있는지 확인 및 User, MeetingRoom 객체 반환
-        log.info("1) 사용자가 해당 미팅룸에 속해있는지 확인 및 User, MeetingRoom 객체 반환");
         UserMeetingRoom umr = userMeetingRoomRepository.findByUserIdAndMeetingRoomShareCode(userId, shareCode)
                 .orElseThrow(() -> new NotFoundException(M002));
 
         // 2) 기존의 스케줄은 모두 삭제
-        log.info("// 2) 기존의 스케줄은 모두 삭제");
         unavailableRepository.clearAllScheduleByUser(umr.getUser().getId(), umr.getMeetingRoom().getId());
 
         // 3) 새로 들어온 스케줄을 모두 입력
-        log.info("// 3) 새로 들어온 스케줄을 모두 입력");
         List<UnavailableTime> responseList = scheduleRequest.stream()
                 .map(sr -> UnavailableTime.builder()
                         .unavailableDate(sr.unavailableDate())
@@ -172,7 +165,6 @@ public class ScheduleServiceImpl implements ScheduleService{
                 .comparing(RecommendList::day)
                 .thenComparing(RecommendList::startTime));
 
-        log.info("최종 추천 시간대 {}개 반환", recommendedSlots.size());
         return recommendedSlots;
     }
 

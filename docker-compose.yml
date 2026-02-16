@@ -59,6 +59,11 @@ services:
     environment:
       TZ=Asia/Seoul
       SPRING_DATA_REDIS_HOST: redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "300m"
+        max-file: "10"
     ports:
       - "8080:8080"
     networks:

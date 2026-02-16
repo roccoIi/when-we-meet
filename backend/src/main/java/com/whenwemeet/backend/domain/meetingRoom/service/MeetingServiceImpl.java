@@ -36,7 +36,6 @@ public class MeetingServiceImpl implements MeetingService{
     private final UserRepository userRepository;
     private final MeetingRoomRepository meetingRoomRepository;
     private final UserMeetingRoomRepository userMeetingRoomRepository;
-    private final JwtUtil jwtUtil;
     private final UnavailableRepository unavailableRepository;
 
     @Override

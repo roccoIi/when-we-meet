@@ -23,7 +23,6 @@ public class AuthController {
     public ResponseEntity<CommonResponse<?>> reissueAccessToken(
             HttpServletRequest request,
             HttpServletResponse response){
-        log.info("reissue access token");
         authService.reissueToken(request, response);
         return ResponseEntity.ok(CommonResponse.success());
     }
