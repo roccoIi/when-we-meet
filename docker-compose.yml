@@ -32,7 +32,7 @@ services:
     ports:
       - "6379:6379"
     environment:
-      TZ=Asia/Seoul
+      TZ: Asia/Seoul
     volumes:
       - redis_data:/data
     networks:
@@ -52,12 +52,14 @@ services:
     container_name: whenwemeet-backend
     restart: unless-stopped
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
     env_file:
       - .env
     environment:
-      TZ=Asia/Seoul
+      TZ: Asia/Seoul
       SPRING_DATA_REDIS_HOST: redis
     logging:
       driver: "json-file"
@@ -80,7 +82,7 @@ services:
     container_name: whenwemeet-frontend
     restart: unless-stopped
     environment:
-      TZ=Asia/Seoul
+      TZ: Asia/Seoul
     depends_on:
       - backend
     ports:
