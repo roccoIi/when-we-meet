@@ -21,7 +21,6 @@ logs/
 
 # Environment
 .env
-.env.dev
-
+**/application-dev.yml
 # Generated
 generated/
