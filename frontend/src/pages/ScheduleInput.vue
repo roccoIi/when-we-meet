@@ -487,14 +487,14 @@ const closeNicknameModal = () => {
 <template>
   <div class="min-h-screen relative flex flex-col bg-background-light overflow-hidden text-gray-800 antialiased selection:bg-primary selection:text-neutral-dark">
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto no-scrollbar pb-32 px-6 pt-2">
+    <main class="flex-1 overflow-y-auto no-scrollbar pb-28 px-5 pt-2">
       <!-- Title Section -->
-      <div class="mb-6 flex items-start justify-between">
+      <div class="mb-5 flex items-start justify-between">
         <div class="flex-1">
-          <h2 class="text-2xl font-bold text-gray-800 mb-2">
+          <h2 class="text-xl font-bold text-gray-800 mb-1.5">
             내 일정 제외하기
           </h2>
-          <p class="text-sm text-gray-600">
+          <p class="text-xs text-gray-600">
             모임이 
             <strong class="text-primary-dark font-semibold">{{
               viewMode === "date" ? "불가능한 날짜" : "불가능한 시간"
@@ -505,19 +505,19 @@ const closeNicknameModal = () => {
         <!-- View Mode Toggle Button -->
         <button 
           @click="toggleViewMode"
-          class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl bg-white hover:bg-neutral-light transition-colors shadow-sm border border-gray-100 flex-shrink-0 ml-4"
+          class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg bg-white hover:bg-neutral-light transition-colors shadow-sm border border-gray-100 flex-shrink-0 ml-3"
         >
-          <span class="material-symbols-rounded text-gray-600 text-2xl">
+          <span class="material-symbols-rounded text-gray-600 text-xl">
             {{ viewMode === "date" ? "schedule" : "calendar_month" }}
           </span>
-          <span class="text-xs text-gray-600 font-medium whitespace-nowrap">
+          <span class="text-[10px] text-gray-600 font-medium whitespace-nowrap">
             {{ viewMode === "date" ? "시간보기" : "날짜보기" }}
           </span>
         </button>
       </div>
 
         <!-- Calendar/Time Selection -->
-        <div class="bg-white rounded-2xl p-5 shadow-soft border border-gray-100 mb-6">
+        <div class="bg-white rounded-xl p-4 shadow-soft border border-gray-100 mb-5">
           <Calendar
             v-if="viewMode === 'date'"
             :year="currentYear"
@@ -539,11 +539,11 @@ const closeNicknameModal = () => {
           />
 
           <!-- Selection Count -->
-          <div class="mt-6 pt-4 border-t border-gray-100">
-            <div class="flex items-center justify-center gap-2">
-              <span class="material-icons text-primary-dark">event_available</span>
-              <p class="text-sm text-gray-600">
-                <span class="text-xl font-bold text-primary-dark">{{ selectedCount }}</span>
+          <div class="mt-5 pt-3 border-t border-gray-100">
+            <div class="flex items-center justify-center gap-1.5">
+              <span class="material-icons text-base text-primary-dark">event_available</span>
+              <p class="text-xs text-gray-600">
+                <span class="text-lg font-bold text-primary-dark">{{ selectedCount }}</span>
                 개의 {{ viewMode === "date" ? "날짜" : "시간" }} 선택됨
               </p>
             </div>
@@ -553,11 +553,11 @@ const closeNicknameModal = () => {
         <!-- Selected Items -->
         <div
           v-if="selectedCount > 0"
-          class="bg-white rounded-2xl p-5 mb-6 shadow-soft border border-gray-100"
+          class="bg-white rounded-xl p-4 mb-5 shadow-soft border border-gray-100"
         >
-          <div class="flex items-center gap-2 mb-4">
-            <span class="material-icons text-primary-dark text-lg">check_circle</span>
-            <h3 class="text-base font-bold text-gray-800">
+          <div class="flex items-center gap-1.5 mb-3">
+            <span class="material-icons text-base text-primary-dark">check_circle</span>
+            <h3 class="text-sm font-bold text-gray-800">
               선택한 {{ viewMode === "date" ? "날짜" : "시간" }}
             </h3>
           </div>
@@ -566,14 +566,14 @@ const closeNicknameModal = () => {
             <div
               v-for="date in [...selectedDates].sort()"
               :key="date"
-              class="flex items-center gap-2 px-3 py-2 bg-primary/20 border border-primary rounded-full text-sm text-gray-800 hover:bg-primary/30 transition-colors"
+              class="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/20 border border-primary rounded-full text-xs text-gray-800 hover:bg-primary/30 transition-colors"
             >
               <span class="font-medium">{{ formatDate(date) }}</span>
               <button
-                class="bg-none border-none text-gray-400 cursor-pointer p-0 w-4 h-4 flex items-center justify-center transition-colors hover:text-red-500"
+                class="bg-none border-none text-gray-400 cursor-pointer p-0 w-3.5 h-3.5 flex items-center justify-center transition-colors hover:text-red-500"
                 @click="handleDateClick(date)"
               >
-                <span class="material-icons text-sm">close</span>
+                <span class="material-icons text-xs">close</span>
               </button>
             </div>
           </div>
@@ -582,24 +582,24 @@ const closeNicknameModal = () => {
             <div
               v-for="(range, index) in groupedTimeRanges"
               :key="`range-${index}`"
-              class="flex items-center gap-2 px-3 py-2 bg-primary/20 border border-primary rounded-full text-sm text-gray-800 hover:bg-primary/30 transition-colors"
+              class="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/20 border border-primary rounded-full text-xs text-gray-800 hover:bg-primary/30 transition-colors"
             >
               <span class="font-medium">{{ formatTimeRange(range.start, range.end) }}</span>
               <button
-                class="bg-none border-none text-gray-400 cursor-pointer p-0 w-4 h-4 flex items-center justify-center transition-colors hover:text-red-500"
+                class="bg-none border-none text-gray-400 cursor-pointer p-0 w-3.5 h-3.5 flex items-center justify-center transition-colors hover:text-red-500"
                 @click="handleTimeRangeRemove(range.times)"
               >
-                <span class="material-icons text-sm">close</span>
+                <span class="material-icons text-xs">close</span>
               </button>
             </div>
           </div>
         </div>
 
         <!-- Info Box -->
-        <div class="bg-tertiary/30 rounded-2xl p-4 mb-6 border border-tertiary/50">
-          <div class="flex items-start gap-3">
-            <span class="material-icons text-amber-600 text-xl mt-0.5">lightbulb</span>
-            <p class="text-sm text-gray-600 leading-relaxed">
+        <div class="bg-tertiary/30 rounded-xl p-3 mb-5 border border-tertiary/50">
+          <div class="flex items-start gap-2">
+            <span class="material-icons text-amber-600 text-base mt-0.5">lightbulb</span>
+            <p class="text-xs text-gray-600 leading-relaxed">
               선택한 날짜들은 다른 참여자들과 비교하여 가장 많은 사람이 가능한 날짜를 추천해드립니다
             </p>
           </div>
@@ -607,13 +607,13 @@ const closeNicknameModal = () => {
       </main>
 
   <!-- Bottom Fixed Area -->
-  <div class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] px-6 py-6 pb-8 max-w-app mx-auto">
+  <div class="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 rounded-t-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] px-5 py-5 pb-6 max-w-app mx-auto">
     <button
       @click="handleSave"
       :disabled="isSaving || selectedCount === 0"
-      class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-extrabold text-lg py-4 rounded-2xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-bold text-base py-3 rounded-xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
     >
-        <span class="material-symbols-rounded">save</span>
+        <span class="material-symbols-rounded text-[20px]">save</span>
         {{ isSaving ? "저장 중..." : "일정 저장하기" }}
       </button>
   </div>

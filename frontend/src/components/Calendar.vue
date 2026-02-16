@@ -235,38 +235,38 @@ const getUnavailableMembers = (date) => {
 <template>
   <div>
     <!-- 달력 헤더 -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-4">
       <button
         @click="prevMonth"
-        class="p-1 hover:bg-neutral-light rounded-full transition-colors"
+        class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
       >
-        <span class="material-symbols-rounded text-gray-400">chevron_left</span>
+        <span class="material-symbols-rounded text-base text-gray-400">chevron_left</span>
       </button>
-      <h3 class="text-lg font-bold text-gray-800">
+      <h3 class="text-base font-bold text-gray-800">
         {{ currentYear }}년 {{ currentMonth }}월
       </h3>
       <button
         @click="nextMonth"
-        class="p-1 hover:bg-neutral-light rounded-full transition-colors"
+        class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
       >
-        <span class="material-symbols-rounded text-gray-400">chevron_right</span>
+        <span class="material-symbols-rounded text-base text-gray-400">chevron_right</span>
       </button>
     </div>
 
     <div class="w-full">
       <!-- 요일 헤더 -->
-      <div class="grid grid-cols-7 gap-y-4 gap-x-2 mb-2 text-center">
+      <div class="grid grid-cols-7 gap-y-3 gap-x-1.5 mb-1.5 text-center">
         <div
           v-for="(day, index) in ['일', '월', '화', '수', '목', '금', '토']"
           :key="day"
-          class="text-xs font-bold text-gray-400 uppercase tracking-wide"
+          class="text-[10px] font-bold text-gray-400 uppercase tracking-wide"
         >
           {{ day }}
         </div>
       </div>
 
       <!-- 날짜 그리드 -->
-      <div class="grid grid-cols-7 gap-y-4 gap-x-2 text-center">
+      <div class="grid grid-cols-7 gap-y-3 gap-x-1.5 text-center">
         <div
           v-for="(date, index) in calendarDates"
           :key="index"
@@ -276,7 +276,7 @@ const getUnavailableMembers = (date) => {
           <div
             v-if="date"
             :class="[
-              'w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-medium transition-colors',
+              'w-7 h-7 mx-auto flex items-center justify-center rounded-full text-xs font-medium transition-colors',
               {
                 'cursor-default': !date,
                 'bg-gray-200 text-gray-400 cursor-not-allowed': date && isPast(date),
@@ -290,7 +290,7 @@ const getUnavailableMembers = (date) => {
             <!-- 확정된 날짜 표시 -->
             <div 
               v-if="date && isConfirmedDate(date)"
-              class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FF8B94] rounded-full animate-pulse border-2 border-white"
+              class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#FF8B94] rounded-full animate-pulse border border-white"
             ></div>
             
             {{ date }}
@@ -299,9 +299,9 @@ const getUnavailableMembers = (date) => {
           <!-- 불가능한 멤버 툴팁 -->
           <div 
             v-if="date && monthlyAvailability && getUnavailableMembers(date).length > 0"
-            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg"
+            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-gray-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg"
           >
-            <div class="font-semibold mb-1">불가능한 멤버</div>
+            <div class="font-semibold mb-0.5">불가능한 멤버</div>
             <div class="flex flex-col gap-0.5">
               <span v-for="member in getUnavailableMembers(date)" :key="member">
                 • {{ member }}
@@ -309,7 +309,7 @@ const getUnavailableMembers = (date) => {
             </div>
             <!-- 화살표 -->
             <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-0.5">
-              <div class="border-4 border-transparent border-t-gray-800"></div>
+              <div class="border-[3px] border-transparent border-t-gray-800"></div>
             </div>
           </div>
         </div>
