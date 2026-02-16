@@ -536,13 +536,10 @@ const handleResetSchedule = async () => {
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
           <div class="flex items-center justify-between">
             <div>
-              <div class="flex items-center gap-2 mb-0.5">
+              <div class="flex items-center gap-2 mb-1">
                 <span class="text-[10px] font-bold text-gray-700 bg-primary px-1.5 py-0.5 rounded-full">확정됨</span>
               </div>
-              <div class="flex flex-col">
-                <span class="text-xs font-bold text-gray-800">{{ confirmedSchedule.displayDate }}</span>
-                <span class="text-sm font-semibold text-gray-600">{{ confirmedSchedule.displayTime }}</span>
-              </div>
+              <span class="text-sm font-bold text-gray-800">{{ confirmedSchedule.displayDate }} {{ confirmedSchedule.displayTime }}</span>
             </div>
             <button 
               v-if="userStore.nickname"
@@ -617,15 +614,12 @@ const handleResetSchedule = async () => {
                 </div>
                 
                 <div class="flex flex-col flex-1">
-                  <div class="flex items-center gap-1.5 mb-0.5">
+                  <div class="flex items-center gap-1.5 mb-1">
                     <span v-if="item.rank === 1" class="text-[10px] font-bold text-gray-700 bg-primary px-1.5 py-0.5 rounded-full">
                       추천
                     </span>
                   </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs font-bold text-gray-800">{{ item.displayDate }}</span>
-                    <span class="text-sm font-semibold text-gray-600">{{ item.displayTime }}</span>
-                  </div>
+                  <span class="text-sm font-bold text-gray-800">{{ item.displayDate }} {{ item.displayTime }}</span>
                 </div>
               </div>
               
