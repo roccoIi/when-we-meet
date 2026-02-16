@@ -75,14 +75,4 @@ public class SecurityConfig {
 
         return http.build();
     }
-
-
-
-    public static final String[] allowUrls = {
-            "/swagger-ui/**",
-            "/swagger-resources/**",
-            "/v3/api-docs/**",
-            "/login",
-            "/auth/login/kakao/**"
-    };
 }

@@ -47,7 +47,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
 
         // 3. 유저정보에 대한 DTO를 생성한다.
-        log.info("getAttributes -> {}", oAuth2User.getAttributes());
         OAuth2Response oAuth2Response = OAuth2Response.of(registrationId, oAuth2User.getAttributes());
 
         HttpServletRequest request =
@@ -73,10 +72,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     public User getUser(HttpServletRequest request, OAuth2Response oAuth2Response) {
 
         // 1) RefreshTokendl 들어있을 쿠키를 확인합니다.
-        log.info("Oauth로그인 중 중복계정 확인을 위해 쿠키 확인시작");
         String cookie = jwtUtil.tokenByCookie(request, REFRESH_TOKEN_NAME);
         if (cookie == null) {
-            log.info("[쿠키 미존재] 즉시 로그인 유저로 판단 Oauth로그인 및 회원가입 진행");
             return userRepository.findUserByProviderAndProviderID(oAuth2Response.getProvider(), oAuth2Response.getProviderId())
                     .orElseGet(() -> {
                         User newUser = oAuth2Response.toEntity();
@@ -85,36 +82,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         // 2) 쿠키에서 UserId 추출
-        log.info("2) 쿠키에서 UserId 추출");
         Long userId = jwtUtil.getUserId(cookie);
 
-        log.info("3) 해당 UserId를 사용중이었던 User객체 추출 (게스트)");
         // 3) 해당 UserId를 사용중이었던 User객체 추출 (게스트)
         User guestUser = userRepository.findUserById(userId)
                 .orElse(null);
-        Long tempId = guestUser == null ? null : guestUser.getId();
-        log.info("tempId = {}", tempId);
-        log.info("4) Oauth로그인한 정보가 이미 회원에 등록되어있는지 확인 (만약 없다면 Null)");
 
         // 4) Oauth로그인한 정보가 이미 회원에 등록되어있는지 확인 (만약 없다면 Null)
         User user = userRepository.findUserByProviderAndProviderID(oAuth2Response.getProvider(), oAuth2Response.getProviderId())
                 .orElse(null);
 
-        tempId = user == null ? null : user.getId();
-        log.info("tempId = {}", tempId);
         // 5-1) 만일 Oauth로 로그인한 기록이 없는 유저라면 기존 게스트유저 정보에 Oauth로그인 정보 추가입력
         if (user == null) {
-            log.info("5-1) 만일 Oauth로 로그인한 기록이 없는 유저라면 기존 게스트유저 정보에 Oauth로그인 정보 추가입력");
             guestUser.updateNewUser(oAuth2Response.toEntity());
             userRepository.save(guestUser);
 
             // 지금까지 사용했던 guest유저 반환
-            log.info("5-1) [완료] 기존 guestUser 반환");
             return guestUser;
 
             // 5-2) 만일 기존에 Oauth로그인 기록이 있다면, 지금까지 게스트유저로 입력한 모든 정보를 기존 Oauth계정으로 수정
         } else {
-            log.info("5-2) 만일 기존에 Oauth로그인 기록이 있다면, 지금까지 게스트유저로 입력한 모든 정보를 기존 Oauth계정으로 수정");
             // 참여중인 미팅룸의 ID 조회 (GuestUser, User)
             HashSet<UserMeetingRoom> guestUserMeetingRoomIdSet = userMeetingRoomRepository.findAllByUser(guestUser);
             HashSet<Long> userMeetingRoomIdSet = userMeetingRoomRepository.findMeetingRoomIdsByUser(user);
@@ -139,7 +126,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             unavailableRepository.saveAll(unavailableList);
 
             // 기존 Oauth 유저 반환
-            log.info("5-2) [완료] 기존 OAuthUser 반환");
             return user;
         }
     }
