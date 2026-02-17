@@ -240,16 +240,16 @@ const getUnavailableMembers = (date) => {
         @click="prevMonth"
         class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
       >
-        <span class="material-symbols-rounded text-base text-gray-400">chevron_left</span>
+        <span class="material-symbols-rounded text-lg text-gray-400">chevron_left</span>
       </button>
-      <h3 class="text-base font-bold text-gray-800">
+      <h3 class="text-lg font-bold text-gray-800">
         {{ currentYear }}년 {{ currentMonth }}월
       </h3>
       <button
         @click="nextMonth"
         class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
       >
-        <span class="material-symbols-rounded text-base text-gray-400">chevron_right</span>
+        <span class="material-symbols-rounded text-lg text-gray-400">chevron_right</span>
       </button>
     </div>
 
@@ -259,7 +259,7 @@ const getUnavailableMembers = (date) => {
         <div
           v-for="(day, index) in ['일', '월', '화', '수', '목', '금', '토']"
           :key="day"
-          class="text-[10px] font-bold text-gray-400 uppercase tracking-wide"
+          class="text-xs font-bold text-gray-400 uppercase tracking-wide"
         >
           {{ day }}
         </div>
@@ -276,7 +276,7 @@ const getUnavailableMembers = (date) => {
           <div
             v-if="date"
             :class="[
-              'w-7 h-7 mx-auto flex items-center justify-center rounded-full text-xs font-medium transition-colors',
+              'w-7 h-7 mx-auto flex items-center justify-center rounded-full text-sm font-medium transition-colors',
               {
                 'cursor-default': !date,
                 'bg-gray-200 text-gray-400 cursor-not-allowed': date && isPast(date),
@@ -299,7 +299,7 @@ const getUnavailableMembers = (date) => {
           <!-- 불가능한 멤버 툴팁 -->
           <div 
             v-if="date && monthlyAvailability && getUnavailableMembers(date).length > 0"
-            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-gray-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg"
+            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg"
           >
             <div class="font-semibold mb-0.5">불가능한 멤버</div>
             <div class="flex flex-col gap-0.5">
