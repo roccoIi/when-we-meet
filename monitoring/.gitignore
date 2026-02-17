@@ -1,8 +1,0 @@
-# Prometheus 데이터 디렉토리
-prometheus/data/
-
-# Grafana 데이터 디렉토리
-grafana/data/
-
-# 볼륨 마운트 디렉토리
-volumes/
