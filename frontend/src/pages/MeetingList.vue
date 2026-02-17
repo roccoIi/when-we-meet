@@ -345,7 +345,7 @@ setInterval(() => {
             <div class="flex justify-between items-start mb-2.5">
               <div class="flex flex-col flex-1">
                 <div class="flex items-center justify-between gap-2 mb-1">
-                  <h3 class="text-base font-bold text-slate-700 flex-1">{{ meeting.name }}</h3>
+                  <h3 class="text-lg font-bold text-slate-700 flex-1">{{ meeting.name }}</h3>
                   <!-- 역할 배지 -->
                   <span 
                     v-if="meeting.role === 'HOST'"
@@ -425,7 +425,7 @@ setInterval(() => {
         </div>
 
         <!-- No More Data -->
-        <div v-if="!hasMore && filteredMeetings.length > 0" class="text-center py-5 text-text-sub text-sm">
+        <div v-if="!hasMore && filteredMeetings.length > 0" class="text-center py-5 text-text-sub text-xs">
           모든 모임을 불러왔습니다
         </div>
       </div>

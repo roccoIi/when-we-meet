@@ -91,3 +91,23 @@ logging:
     root: ${LOGGING_LEVEL_ROOT}
     org.springframework: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK}
     org.hibernate: ${LOGGING_LEVEL_ORG_HIBERNATE}
+
+## Actuator & Monitoring 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE}
+      base-path: /actuator
+  endpoint:
+    prometheus:
+      enabled: ${MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED}
+    health:
+      enabled: ${MANAGEMENT_ENDPOINT_HEALTH_ENABLED}
+      show-details: ${MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS}
+    metrics:
+      enabled: ${MANAGEMENT_ENDPOINT_METRICS_ENABLED}
+  prometheus:
+    metrics:
+      export:
+        enabled: ${MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED}
