@@ -99,7 +99,9 @@ const loadMeetingDetail = async () => {
       memberNumber: data.memberNumber,
       participants: data.participants || [],
       startDate: data.startDate,
-      meetingDate: data.meetingDate
+      meetingDate: data.meetingDate,
+      startTime: data.startTime,
+      endTime: data.endTime
     }
     
     // 달력 초기 월을 startDate 기준으로 설정
@@ -122,12 +124,19 @@ const loadMeetingDetail = async () => {
       const dateTimeString = String(data.confirmDate);
       const [datePart, timePart] = dateTimeString.split('T');
       
+      // 시작 시간과 종료 시간 표시
+      let displayTime = timePart ? timePart.substring(0, 5) : '00:00';
+      
+      // startTime과 endTime이 있으면 범위로 표시
+      if (data.startTime && data.endTime) {
+        displayTime = formatTimeRange(data.startTime, data.endTime);
+      }
       
       confirmedSchedule.value = {
         day: datePart,
         startTime: timePart,
         displayDate: formatDate(datePart),
-        displayTime: timePart ? timePart.substring(0, 5) : '00:00' // "14:00"
+        displayTime: displayTime
       };
       
     } else {
@@ -429,7 +438,7 @@ const handleResetSchedule = async () => {
         <div class="flex items-start justify-between mb-3">
           <div class="flex-1">
             <h2 class="text-xl font-bold text-gray-800 leading-tight mb-1">{{ meeting.name }}</h2>
-            <p class="text-xs text-gray-500">
+            <p class="text-sm text-gray-500">
               Created by <span class="font-medium text-gray-700">{{ meeting.participants[0]?.nickname || '호스트' }}</span>
             </p>
           </div>
@@ -478,20 +487,20 @@ const handleResetSchedule = async () => {
                   class="w-8 h-8 border-2 border-pastel-border rounded-full object-cover cursor-pointer transition-transform hover:scale-110"
                 />
                 <!-- 툴팁 -->
-                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-800 text-white text-[10px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                   {{ participant.nickname }}
                 </div>
               </div>
               <div 
                 v-if="meeting.memberNumber > 4"
-                class="flex items-center justify-center w-8 h-8 text-[10px] font-bold text-gray-600 bg-neutral-light border-2 border-pastel-border rounded-full hover:bg-gray-200"
+                class="flex items-center justify-center w-8 h-8 text-xs font-bold text-gray-600 bg-neutral-light border-2 border-pastel-border rounded-full hover:bg-gray-200"
               >
                 +{{ meeting.memberNumber - 4 }}
               </div>
             </div>
             <button 
               @click="showNicknameModal = true"
-              class="text-xs font-semibold text-primary-dark hover:text-primary transition-colors"
+              class="text-sm font-semibold text-primary-dark hover:text-primary transition-colors"
             >
               내 닉네임
             </button>
@@ -512,7 +521,7 @@ const handleResetSchedule = async () => {
           />
 
           <!-- 범례 -->
-          <div class="flex items-center justify-center gap-3 mt-4 text-[10px] font-medium">
+          <div class="flex items-center justify-center gap-3 mt-4 text-xs font-medium">
             <div class="flex items-center gap-1">
               <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
               <span class="text-gray-500">높음 (80%+)</span>
@@ -537,9 +546,9 @@ const handleResetSchedule = async () => {
           <div class="flex items-center justify-between">
             <div>
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-[10px] font-bold text-gray-700 bg-primary px-1.5 py-0.5 rounded-full">확정됨</span>
+                <span class="text-xs font-bold text-gray-700 bg-primary px-1.5 py-0.5 rounded-full">확정됨</span>
               </div>
-              <span class="text-sm font-bold text-gray-800">{{ confirmedSchedule.displayDate }} {{ confirmedSchedule.displayTime }}</span>
+              <span class="text-base font-bold text-gray-800">{{ confirmedSchedule.displayDate }} {{ confirmedSchedule.displayTime }}</span>
             </div>
             <button 
               v-if="userStore.nickname"
@@ -559,28 +568,28 @@ const handleResetSchedule = async () => {
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-1.5">
               <span class="material-symbols-rounded text-[20px] text-primary-dark">auto_awesome</span>
-              <h3 class="text-sm font-bold text-gray-800">추천 일정</h3>
+              <h3 class="text-base font-bold text-gray-800">추천 일정</h3>
             </div>
             
             <!-- 필터 버튼 -->
             <div class="flex gap-1">
               <button
                 @click="handleRecommendTypeChange('ALL')"
-                class="px-2 py-0.5 text-[10px] font-medium rounded-lg transition-all"
+                class="px-2 py-0.5 text-xs font-medium rounded-lg transition-all"
                 :class="recommendType === 'ALL' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               >
                 전체
               </button>
               <button
                 @click="handleRecommendTypeChange('WEEKDAY')"
-                class="px-2 py-0.5 text-[10px] font-medium rounded-lg transition-all"
+                class="px-2 py-0.5 text-xs font-medium rounded-lg transition-all"
                 :class="recommendType === 'WEEKDAY' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               >
                 주중
               </button>
               <button
                 @click="handleRecommendTypeChange('WEEKEND')"
-                class="px-2 py-0.5 text-[10px] font-medium rounded-lg transition-all"
+                class="px-2 py-0.5 text-xs font-medium rounded-lg transition-all"
                 :class="recommendType === 'WEEKEND' ? 'bg-primary text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               >
                 주말
@@ -588,7 +597,7 @@ const handleResetSchedule = async () => {
             </div>
           </div>
 
-          <div v-if="recommendedSchedules.length === 0" class="text-center py-8 text-gray-400 text-xs">
+          <div v-if="recommendedSchedules.length === 0" class="text-center py-8 text-gray-400 text-sm">
             아직 입력된 일정이 없습니다
           </div>
 
@@ -615,11 +624,11 @@ const handleResetSchedule = async () => {
                 
                 <div class="flex flex-col flex-1">
                   <div class="flex items-center gap-1.5 mb-1">
-                    <span v-if="item.rank === 1" class="text-[10px] font-bold text-gray-700 bg-primary px-1.5 py-0.5 rounded-full">
+                    <span v-if="item.rank === 1" class="text-xs font-bold text-gray-700 bg-primary px-1.5 py-0.5 rounded-full">
                       추천
                     </span>
                   </div>
-                  <span class="text-sm font-bold text-gray-800">{{ item.displayDate }} {{ item.displayTime }}</span>
+                  <span class="text-base font-bold text-gray-800">{{ item.displayDate }} {{ item.displayTime }}</span>
                 </div>
               </div>
               
@@ -645,7 +654,7 @@ const handleResetSchedule = async () => {
       <div v-else class="flex-1 flex items-center justify-center">
         <div class="text-center">
           <div class="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p class="text-sm text-gray-600">로딩 중...</p>
+          <p class="text-base text-gray-600">로딩 중...</p>
         </div>
       </div>
 
@@ -656,7 +665,7 @@ const handleResetSchedule = async () => {
     <div class="fixed bottom-0 left-0 right-0 z-30 max-w-app mx-auto px-5 pb-5">
       <button
         @click="handleScheduleInput"
-        class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-bold text-base py-3 rounded-xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5"
+        class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-bold text-lg py-3 rounded-xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5"
       >
           <span class="material-symbols-rounded text-[20px]">edit_calendar</span>
           내 일정 추가하기

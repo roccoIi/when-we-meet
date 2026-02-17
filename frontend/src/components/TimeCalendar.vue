@@ -156,14 +156,14 @@ const getDayClass = (date) => {
   <div class="bg-white rounded-xl p-3">
     <div class="flex justify-between items-center mb-3">
       <button
-        class="w-7 h-7 border-none bg-gray-100 rounded-lg cursor-pointer text-xs text-gray-600 transition-colors hover:bg-gray-200"
+        class="w-7 h-7 border-none bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-200"
         @click="prevWeek"
       >
         ◀
       </button>
-      <h3 class="text-sm font-semibold text-pink-800">시간별 일정</h3>
+      <h3 class="text-base font-semibold text-pink-800">시간별 일정</h3>
       <button
-        class="w-7 h-7 border-none bg-gray-100 rounded-lg cursor-pointer text-xs text-gray-600 transition-colors hover:bg-gray-200"
+        class="w-7 h-7 border-none bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-200"
         @click="nextWeek"
       >
         ▶
@@ -172,7 +172,7 @@ const getDayClass = (date) => {
 
     <div class="overflow-x-auto">
       <div class="min-w-full">
-        <table class="w-full border-collapse text-xs">
+        <table class="w-full border-collapse text-sm">
           <thead>
             <tr>
               <th

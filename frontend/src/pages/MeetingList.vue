@@ -245,14 +245,14 @@ setInterval(() => {
       <div class="flex items-center justify-between mb-3">
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-700">내 일정</h1>
-          <p class="text-xs text-text-sub font-medium">Coordinate your sweet meetups</p>
+          <p class="text-sm text-text-sub font-medium">Coordinate your sweet meetups</p>
         </div>
         
         <!-- Login Button or Profile Picture -->
         <div v-if="!userStore.provider" class="flex-shrink-0">
           <button 
             @click="$router.push('/login')"
-            class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-gray-800 font-bold text-xs rounded-xl shadow-soft transition-all flex items-center gap-1.5"
+            class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-gray-800 font-bold text-sm rounded-xl shadow-soft transition-all flex items-center gap-1.5"
           >
             <span class="material-icons text-base">login</span>
             <span>로그인</span>
@@ -280,7 +280,7 @@ setInterval(() => {
         </div>
         <input 
           v-model="searchQuery"
-          class="block w-full pl-10 pr-3 py-2.5 border-none rounded-xl text-sm leading-5 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-soft transition-all" 
+          class="block w-full pl-10 pr-3 py-2.5 border-none rounded-xl text-base leading-5 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-soft transition-all" 
           placeholder="모임 이름 검색..." 
           type="text"
         />
@@ -293,7 +293,7 @@ setInterval(() => {
             <select 
               v-model="sortType"
               @change="loadMeetings(true)"
-              class="appearance-none bg-white text-slate-600 font-bold text-xs py-2 pl-3 pr-8 rounded-lg shadow-sm border border-transparent focus:ring-2 focus:ring-primary/30 focus:outline-none cursor-pointer hover:bg-gray-50 transition-colors w-28"
+              class="appearance-none bg-white text-slate-600 font-bold text-sm py-2 pl-3 pr-8 rounded-lg shadow-sm border border-transparent focus:ring-2 focus:ring-primary/30 focus:outline-none cursor-pointer hover:bg-gray-50 transition-colors w-28"
             >
               <option value="JOIN_DATE">참여일자</option>
               <option value="NAME">이름</option>
@@ -318,14 +318,14 @@ setInterval(() => {
       <!-- Loading State -->
       <div v-if="isLoading" class="text-center py-8">
         <div class="w-10 h-10 border-3 border-mint-primary/20 border-t-mint-primary rounded-full animate-spin mx-auto"></div>
-        <p class="mt-3 text-sm text-text-sub">로딩 중...</p>
+        <p class="mt-3 text-base text-text-sub">로딩 중...</p>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="filteredMeetings.length === 0" class="text-center py-16 text-text-sub">
         <span class="material-icons text-5xl mb-3 text-mint-primary/30">event_busy</span>
-        <p class="text-base font-semibold mb-1.5">아직 참여한 모임이 없습니다</p>
-        <p class="text-xs">새로운 모임을 만들어보세요!</p>
+        <p class="text-lg font-semibold mb-1.5">아직 참여한 모임이 없습니다</p>
+        <p class="text-sm">새로운 모임을 만들어보세요!</p>
       </div>
 
       <!-- Meeting Cards -->
@@ -349,31 +349,31 @@ setInterval(() => {
                   <!-- 역할 배지 -->
                   <span 
                     v-if="meeting.role === 'HOST'"
-                    class="px-1.5 py-0.5 bg-primary/20 text-primary-dark rounded text-[9px] font-bold whitespace-nowrap flex-shrink-0"
+                    class="px-1.5 py-0.5 bg-primary/20 text-primary-dark rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0"
                   >
                     👑 HOST
                   </span>
                   <span 
                     v-else
-                    class="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[9px] font-bold whitespace-nowrap flex-shrink-0"
+                    class="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0"
                   >
                     👤 MEMBER
                   </span>
                 </div>
-                <div class="flex items-center gap-1 text-[10px] font-semibold">
+                <div class="flex items-center gap-1 text-xs font-semibold">
                   <div v-if="meeting.meetingDate" class="flex items-center gap-1 text-slate-500">
                     <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
                     <span>확정됨</span>
                   </div>
                   <div v-else class="flex items-center gap-1 text-text-sub">
-                    <span class="material-icons text-xs text-mint-dark">how_to_vote</span>
+                    <span class="material-icons text-sm text-mint-dark">how_to_vote</span>
                     <span>투표 진행 중</span>
                   </div>
                 </div>
               </div>
               <div 
                 v-if="calculateDday(meeting.meetingDate)"
-                class="font-bold px-2.5 py-1 rounded-lg text-[10px] shadow-sm border backdrop-blur-sm flex-shrink-0 ml-2"
+                class="font-bold px-2.5 py-1 rounded-lg text-xs shadow-sm border backdrop-blur-sm flex-shrink-0 ml-2"
                 :class="meeting.meetingDate 
                   ? 'bg-white/80 text-primary-dark border-primary/20' 
                   : 'bg-tertiary/20 text-slate-600 border-transparent'"
@@ -383,8 +383,8 @@ setInterval(() => {
             </div>
 
             <!-- Meeting Date -->
-            <div class="flex items-center gap-1 mb-3 text-xs font-medium">
-              <span class="material-icons text-sm text-slate-400">event</span>
+            <div class="flex items-center gap-1 mb-3 text-sm font-medium">
+              <span class="material-icons text-base text-slate-400">event</span>
               <span class="text-slate-600">{{ formatDate(meeting.meetingDate) }}</span>
             </div>
 
@@ -395,13 +395,13 @@ setInterval(() => {
                 <div 
                   v-for="n in Math.min(3, meeting.memberNumber)" 
                   :key="n"
-                  class="h-7 w-7 rounded-full ring-2 ring-white bg-gradient-to-br from-primary/30 to-tertiary/30 flex items-center justify-center text-[10px] font-bold text-slate-600 shadow-sm"
+                  class="h-7 w-7 rounded-full ring-2 ring-white bg-gradient-to-br from-primary/30 to-tertiary/30 flex items-center justify-center text-xs font-bold text-slate-600 shadow-sm"
                 >
                   {{ n }}
                 </div>
                 <div 
                   v-if="meeting.memberNumber > 3"
-                  class="h-7 w-7 rounded-full ring-2 ring-white bg-tertiary/30 flex items-center justify-center text-[10px] font-bold text-slate-600 shadow-sm"
+                  class="h-7 w-7 rounded-full ring-2 ring-white bg-tertiary/30 flex items-center justify-center text-xs font-bold text-slate-600 shadow-sm"
                 >
                   +{{ meeting.memberNumber - 3 }}
                 </div>
@@ -409,8 +409,8 @@ setInterval(() => {
 
               <!-- Total Member Count -->
               <div class="flex items-center gap-1 bg-white/60 px-2.5 py-1 rounded-lg">
-                <span class="material-icons text-sm text-slate-400">group</span>
-                <span class="text-slate-600 text-xs font-bold">{{ meeting.memberNumber || 0 }}</span>
+                <span class="material-icons text-base text-slate-400">group</span>
+                <span class="text-slate-600 text-sm font-bold">{{ meeting.memberNumber || 0 }}</span>
               </div>
             </div>
           </div>
@@ -425,7 +425,7 @@ setInterval(() => {
         </div>
 
         <!-- No More Data -->
-        <div v-if="!hasMore && filteredMeetings.length > 0" class="text-center py-5 text-text-sub text-xs">
+        <div v-if="!hasMore && filteredMeetings.length > 0" class="text-center py-5 text-text-sub text-sm">
           모든 모임을 불러왔습니다
         </div>
       </div>
