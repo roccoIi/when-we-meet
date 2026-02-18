@@ -30,5 +30,5 @@ volumes:
   grafana_data:
 
 networks:
-  your_existing_network:
+  whenwemeet-network:
     external: true
