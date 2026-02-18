@@ -9,7 +9,7 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     networks:
-      - whenwemeet-network
+      - backend_whenwemeet-network
     restart: unless-stopped
 
   grafana:
@@ -19,7 +19,7 @@ services:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     networks:
-      - whenwemeet-network
+      - backend_whenwemeet-network
     environment:
       - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
@@ -30,5 +30,5 @@ volumes:
   grafana_data:
 
 networks:
-  whenwemeet-network:
+  backend_whenwemeet-network:
     external: true
