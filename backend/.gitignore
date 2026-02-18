@@ -167,8 +167,3 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-
-# docker-compose file
-docker-compose.yml
-
-# firebase

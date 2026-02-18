@@ -1,0 +1,9 @@
+apiVersion: 1                    # Grafana provisioning API 버전
+
+datasources:
+  - name: Prometheus             # Grafana에서 보일 데이터소스 이름
+    type: prometheus             # 데이터소스 타입
+    access: proxy                # Grafana 서버를 통해 프록시 방식 접근
+    url: http://prometheus:9090  # Docker 네트워크 내 Prometheus 주소
+    isDefault: true              # 기본 데이터소스로 설정
+    editable: true               # UI에서 수정 가능 여부

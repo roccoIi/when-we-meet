@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s           # 메트릭 수집 주기 (15초마다 Actuator 호출)
+  evaluation_interval: 15s       # alert rule 평가 주기
+
+scrape_configs:
+  - job_name: 'backend'          # 수집 작업 이름 (Grafana에서 보임)
+    metrics_path: '/actuator/prometheus'  # Spring Actuator 메트릭 엔드포인트
+    static_configs:
+      - targets:
+          - 'backend:8080'       # 수집 대상 (Docker 네트워크 내 backend 컨테이너)
