@@ -1,7 +1,6 @@
 package com.whenwemeet.backend.domain.meetingRoom.entity;
 
 import com.whenwemeet.backend.global.entity.BaseEntity;
-import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;

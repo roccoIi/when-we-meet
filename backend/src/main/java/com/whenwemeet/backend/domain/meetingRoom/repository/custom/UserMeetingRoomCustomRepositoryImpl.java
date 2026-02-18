@@ -5,12 +5,8 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortType;
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortDirection;
-import static com.whenwemeet.backend.domain.meetingRoom.entity.QUserMeetingRoom.*;
-import static com.whenwemeet.backend.domain.meetingRoom.entity.QMeetingRoom.*;
-import static com.whenwemeet.backend.domain.user.entity.QUser.*;
-
+import com.whenwemeet.backend.domain.meetingRoom.dto.request.SortType;
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.EnterShareLinkResponse;
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.MeetingListResponse;
 import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
@@ -22,6 +18,10 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static com.whenwemeet.backend.domain.meetingRoom.entity.QMeetingRoom.meetingRoom;
+import static com.whenwemeet.backend.domain.meetingRoom.entity.QUserMeetingRoom.userMeetingRoom;
+import static com.whenwemeet.backend.domain.user.entity.QUser.user;
 
 @Repository
 @AllArgsConstructor
