@@ -337,10 +337,6 @@ public class ScheduleServiceImpl implements ScheduleService{
         // 5) 마지막 구간 추가
         mergedList.add(new UnavailableTimeList(start, end));
 
-        for(UnavailableTimeList unavailableTime : mergedList) {
-            log.info(unavailableTime.toString());
-        }
-
         return mergedList;
     }
 
