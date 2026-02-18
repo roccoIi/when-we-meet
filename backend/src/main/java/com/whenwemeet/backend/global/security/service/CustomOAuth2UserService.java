@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -69,64 +70,86 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
      * @param oAuth2Response OAuth 업체 측에서 제공한 사용자 정보
      * @return 현재 사용자 객체
      */
+    @Transactional
     public User getUser(HttpServletRequest request, OAuth2Response oAuth2Response) {
 
-        // 1) RefreshTokendl 들어있을 쿠키를 확인합니다.
+        /**
+         * 1) 쿠키 존재?
+         *    ├─ i) NO → 일반 OAuth 로그인
+         *    │          ├─ a) 계정 없음 → 신규 생성
+         *    │          └─ b) 계정 있음 → 로그인
+         *    │
+         *    └─ ii) YES → guest 존재?
+         *             ├─ a) NO → 일반 로그인 처리
+         *             │
+         *             └─ b) YES → OAuth 존재?
+         *                        ├─ (1) NO → guest 업그레이드
+         *                        └─ (2) YES → 병합
+         */
+        // 1) 기본정보 유무 확인 (쿠키와 Oauth유저 정보)
         String cookie = jwtUtil.tokenByCookie(request, REFRESH_TOKEN_NAME);
-        if (cookie == null) {
-            return userRepository.findUserByProviderAndProviderID(oAuth2Response.getProvider(), oAuth2Response.getProviderId())
-                    .orElseGet(() -> {
-                        User newUser = oAuth2Response.toEntity();
-                        return userRepository.save(newUser);
-                    });
+        User oauthUser = userRepository.findUserByProviderAndProviderID(oAuth2Response.getProvider(), oAuth2Response.getProviderId())
+                .orElse(null);
+
+        // i) 쿠키가 없다
+        if(cookie == null){
+            return handleUserLogin(oauthUser, oAuth2Response);
         }
 
-        // 2) 쿠키에서 UserId 추출
+        // ii) 쿠키가 있다. -> 그럼 해당 쿠키의 정보를 가진 게스트 유저가 있는가?
         Long userId = jwtUtil.getUserId(cookie);
+        User guestUser = userRepository.findById(userId).orElse(null);
 
-        // 3) 해당 UserId를 사용중이었던 User객체 추출 (게스트)
-        User guestUser = userRepository.findUserById(userId)
-                .orElse(null);
-
-        // 4) Oauth로그인한 정보가 이미 회원에 등록되어있는지 확인 (만약 없다면 Null)
-        User user = userRepository.findUserByProviderAndProviderID(oAuth2Response.getProvider(), oAuth2Response.getProviderId())
-                .orElse(null);
-
-        // 5-1) 만일 Oauth로 로그인한 기록이 없는 유저라면 기존 게스트유저 정보에 Oauth로그인 정보 추가입력
-        if (user == null) {
-            guestUser.updateNewUser(oAuth2Response.toEntity());
-            userRepository.save(guestUser);
-
-            // 지금까지 사용했던 guest유저 반환
-            return guestUser;
-
-            // 5-2) 만일 기존에 Oauth로그인 기록이 있다면, 지금까지 게스트유저로 입력한 모든 정보를 기존 Oauth계정으로 수정
-        } else {
-            // 참여중인 미팅룸의 ID 조회 (GuestUser, User)
-            HashSet<UserMeetingRoom> guestUserMeetingRoomIdSet = userMeetingRoomRepository.findAllByUser(guestUser);
-            HashSet<Long> userMeetingRoomIdSet = userMeetingRoomRepository.findMeetingRoomIdsByUser(user);
-
-            // 두 Set의 차집합 필터링 이후 해당 값에 대한 유저 변경
-            List<Long> removeIdList = new ArrayList<>();
-            guestUserMeetingRoomIdSet.forEach(umr -> {
-                if (userMeetingRoomIdSet.contains(umr.getMeetingRoom().getId())) {
-                    // 여기선 겹치는 존재이기 때문에 guest데이터를 삭제해야한다. (한번에 삭제해야하니깐 그 리스트를 담아두는게 나을듯)
-                    removeIdList.add(umr.getId());
-                } else {
-                    //  여기선 겹치지 않기 때문에 userMeetingRoom 의 User를 변경해줘야 한다.
-                    umr.changeUser(user);
-                }
-            });
-            userMeetingRoomRepository.saveAll(guestUserMeetingRoomIdSet);
-            userMeetingRoomRepository.deleteAllById(removeIdList);
-
-            // 방별로 등록한 불가능일정 모두 수정 (Unavailable)
-            List<UnavailableTime> unavailableList = unavailableRepository.findAllByUser(guestUser);
-            unavailableList.forEach(ut -> ut.changeUser(user));
-            unavailableRepository.saveAll(unavailableList);
-
-            // 기존 Oauth 유저 반환
-            return user;
+        // a) 게스트 정보를 가진 유저가 존재하지 않는다.
+        if(guestUser == null){
+            return handleUserLogin(oauthUser, oAuth2Response);
         }
+
+        // b) 게스트 로그인 기록이 존재한다. 그럼 기존에 oauth로그인 기록이 존재하는가?
+        // (1) 존재하지 않는다. 그럼 기존 guest유저 정보를 oauth유저 정보로 승격한다.
+        if(oauthUser == null){
+            guestUser.updateNewUser(oAuth2Response.toEntity());
+            return userRepository.save(guestUser);
+        }
+
+        // (2) 존재한다. 기존 게스트 유저의 사용기록을 oauth유저로 이관한다.
+
+        // 참여중인 미팅룸의 ID 조회 (GuestUser, User)
+        HashSet<UserMeetingRoom> guestUserMeetingRoomIdSet = userMeetingRoomRepository.findAllByUser(guestUser);
+        HashSet<Long> userMeetingRoomIdSet = userMeetingRoomRepository.findMeetingRoomIdsByUser(oauthUser);
+
+        // 두 Set의 차집합 필터링 이후 해당 값에 대한 유저 변경
+        List<Long> removeIdList = new ArrayList<>();
+        guestUserMeetingRoomIdSet.forEach(umr -> {
+            if (userMeetingRoomIdSet.contains(umr.getMeetingRoom().getId())) {
+                // 여기선 겹치는 존재이기 때문에 guest데이터를 삭제해야한다. (한번에 삭제해야하니깐 그 리스트를 담아두는게 나을듯)
+                removeIdList.add(umr.getId());
+            } else {
+                //  여기선 겹치지 않기 때문에 userMeetingRoom 의 User를 변경해줘야 한다.
+                umr.changeUser(oauthUser);
+            }
+        });
+        userMeetingRoomRepository.saveAll(guestUserMeetingRoomIdSet);
+        userMeetingRoomRepository.deleteAllById(removeIdList);
+
+        // 방별로 등록한 불가능일정 모두 수정 (Unavailable)
+        List<UnavailableTime> unavailableList = unavailableRepository.findAllByUser(guestUser);
+        unavailableList.forEach(ut -> ut.changeUser(oauthUser));
+        unavailableRepository.saveAll(unavailableList);
+
+        // 기존 Oauth 유저 반환
+        return oauthUser;
+    }
+
+    private User handleUserLogin(User oauthUser, OAuth2Response oAuth2Response){
+        // Oauth로그인 이력은 있는가?
+        // 로그인 기록이 있다면 해당 정보를 반환한다.
+        if(oauthUser != null){
+            return oauthUser;
+        }
+
+        // 만약 없다면 새롭게 유저 정보를 생성하여 저장하고 반환한다.
+        User newUser = oAuth2Response.toEntity();
+        return userRepository.save(newUser);
     }
 }
