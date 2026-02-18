@@ -6,17 +6,15 @@ import com.whenwemeet.backend.domain.meetingRoom.entity.MeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.entity.enumType.Role;
 import com.whenwemeet.backend.domain.meetingRoom.repository.MeetingRoomRepository;
-import com.whenwemeet.backend.domain.schedule.repository.UnavailableRepository;
 import com.whenwemeet.backend.domain.meetingRoom.repository.UserMeetingRoomRepository;
+import com.whenwemeet.backend.domain.schedule.repository.UnavailableRepository;
 import com.whenwemeet.backend.domain.user.dto.response.UserInfoResponse;
 import com.whenwemeet.backend.domain.user.entity.User;
 import com.whenwemeet.backend.domain.user.repository.UserRepository;
 import com.whenwemeet.backend.global.entity.Pagination;
 import com.whenwemeet.backend.global.exception.type.DuplicateException;
-import com.whenwemeet.backend.global.util.JwtUtil;
-import com.whenwemeet.backend.global.response.PageResponse;
-import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 import com.whenwemeet.backend.global.exception.type.NotFoundException;
+import com.whenwemeet.backend.global.response.PageResponse;
 import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 
 @Slf4j
 @Service

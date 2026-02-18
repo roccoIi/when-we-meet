@@ -4,11 +4,12 @@ import com.whenwemeet.backend.domain.meetingRoom.entity.UserMeetingRoom;
 import com.whenwemeet.backend.domain.meetingRoom.repository.UserMeetingRoomRepository;
 import com.whenwemeet.backend.domain.schedule.entity.UnavailableTime;
 import com.whenwemeet.backend.domain.schedule.repository.UnavailableRepository;
-import com.whenwemeet.backend.global.util.JwtUtil;
-import com.whenwemeet.backend.global.security.dto.OAuth2Response;
 import com.whenwemeet.backend.domain.user.entity.User;
+import com.whenwemeet.backend.domain.user.entity.UserType;
 import com.whenwemeet.backend.domain.user.repository.UserRepository;
 import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
+import com.whenwemeet.backend.global.security.dto.OAuth2Response;
+import com.whenwemeet.backend.global.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -98,7 +99,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         // ii) 쿠키가 있다. -> 그럼 해당 쿠키의 정보를 가진 게스트 유저가 있는가?
         Long userId = jwtUtil.getUserId(cookie);
-        User guestUser = userRepository.findById(userId).orElse(null);
+        User guestUser = userRepository.findById(userId) // 동일한 아이디가 있어도 그게 진짜 guest일때만 guestUser, 아니면 null
+                .filter(user -> user.getRole() == UserType.GUEST)
+                .orElse(null);
 
         // a) 게스트 정보를 가진 유저가 존재하지 않는다.
         if(guestUser == null){

@@ -5,12 +5,10 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.whenwemeet.backend.domain.meetingRoom.entity.MeetingRoom;
 import com.whenwemeet.backend.domain.schedule.dto.response.UnavailableTimeList;
 import com.whenwemeet.backend.domain.schedule.entity.UnavailableTime;
-import com.whenwemeet.backend.domain.user.entity.User;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 

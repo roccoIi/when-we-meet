@@ -4,7 +4,6 @@ import com.whenwemeet.backend.global.security.filter.JwtAuthenticationFilter;
 import com.whenwemeet.backend.global.security.handler.OAuth2FailureHandler;
 import com.whenwemeet.backend.global.security.handler.OAuth2SuccessHandler;
 import com.whenwemeet.backend.global.security.service.CustomOAuth2UserService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,10 +12,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Collections;
 import java.util.List;
 
 @Configuration
