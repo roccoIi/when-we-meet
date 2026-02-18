@@ -1,7 +1,5 @@
 package com.whenwemeet.backend.global.util;
 
-import static com.whenwemeet.backend.global.exception.ErrorCode.*;
-import com.whenwemeet.backend.global.exception.type.NotFoundException;
 import com.whenwemeet.backend.global.redis.RefreshRepository;
 import com.whenwemeet.backend.global.redis.RefreshToken;
 import io.jsonwebtoken.*;
@@ -18,6 +16,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -169,11 +168,18 @@ public class JwtUtil {
     }
 
     public boolean verifyRefreshToken(String token) {
-        long userIdInToken = getUserId(token);
-        RefreshToken tokenInRedis = refreshRepository.findById(userIdInToken)
-                .orElseThrow(() -> new NotFoundException(T001));
+        try {
+            long userIdInToken = getUserId(token);
 
-        return validateToken(token) && tokenInRedis.getRefreshToken().equals(token);
+            Optional<RefreshToken> tokenInRedis =
+                    refreshRepository.findById(userIdInToken);
+
+            return tokenInRedis.filter(refreshToken -> validateToken(token)
+                    && refreshToken.getRefreshToken().equals(token)).isPresent();
+
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public String tokenByCookie(HttpServletRequest request, String tokenName){
