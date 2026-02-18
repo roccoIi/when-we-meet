@@ -3,7 +3,6 @@ package com.whenwemeet.backend.domain.meetingRoom.controller;
 import com.whenwemeet.backend.domain.meetingRoom.dto.request.*;
 import com.whenwemeet.backend.domain.meetingRoom.dto.response.*;
 import com.whenwemeet.backend.domain.meetingRoom.service.MeetingService;
-import com.whenwemeet.backend.domain.user.entity.User;
 import com.whenwemeet.backend.global.response.CommonResponse;
 import com.whenwemeet.backend.global.response.PageResponse;
 import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;

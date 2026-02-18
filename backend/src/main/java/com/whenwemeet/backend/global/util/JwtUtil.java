@@ -1,7 +1,5 @@
 package com.whenwemeet.backend.global.util;
 
-import static com.whenwemeet.backend.global.exception.ErrorCode.*;
-import com.whenwemeet.backend.global.exception.type.NotFoundException;
 import com.whenwemeet.backend.global.redis.RefreshRepository;
 import com.whenwemeet.backend.global.redis.RefreshToken;
 import io.jsonwebtoken.*;
