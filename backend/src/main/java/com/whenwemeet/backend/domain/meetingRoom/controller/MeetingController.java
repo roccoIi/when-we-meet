@@ -43,7 +43,6 @@ public class MeetingController {
             @RequestBody MeetingCreateRequest meetingCreateRequest,
             HttpServletResponse httpServletResponse){
         CreateMeetingResponse response = meetingService.addMeeting(user, meetingCreateRequest, httpServletResponse);
-        log.info(response.shareCode());
         return ResponseEntity.ok(CommonResponse.success(response));
     }
 
