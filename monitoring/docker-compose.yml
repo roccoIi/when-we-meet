@@ -6,7 +6,7 @@ services:
     image: prom/prometheus
     container_name: prometheus
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /opt/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     networks:
       - backend_whenwemeet-network
@@ -17,7 +17,7 @@ services:
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - /opt/monitoring/grafana/provisioning:/etc/grafana/provisioning
     networks:
       - backend_whenwemeet-network
     environment:
