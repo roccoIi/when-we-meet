@@ -25,7 +25,7 @@ services:
     networks:
       - backend_whenwemeet-network
     environment:
-      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana/
+      - GF_SERVER_ROOT_URL=https://whenwemeet.site/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
     restart: unless-stopped
 
