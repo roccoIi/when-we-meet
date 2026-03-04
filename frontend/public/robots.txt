@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /create
+Allow: /login
+Disallow: /meeting/
+Disallow: /invite/
+Disallow: /oauth/
+Disallow: /access-denied
+
+Sitemap: https://whenwemeet.site/sitemap.xml
