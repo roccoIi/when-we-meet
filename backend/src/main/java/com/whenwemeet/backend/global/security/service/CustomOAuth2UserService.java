@@ -71,7 +71,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
      * @param oAuth2Response OAuth 업체 측에서 제공한 사용자 정보
      * @return 현재 사용자 객체
      */
-    @Transactional
     public User getUser(HttpServletRequest request, OAuth2Response oAuth2Response) {
 
         /**
