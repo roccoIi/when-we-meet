@@ -22,7 +22,7 @@ defineProps({
         <!-- 아이콘 -->
         <div class="mb-6">
           <div class="mx-auto w-24 h-24 bg-red-50 rounded-full flex items-center justify-center">
-            <span class="material-symbols-rounded text-red-500 text-6xl">lock</span>
+            <span class="material-symbols-rounded text-red-500 text-6xl" aria-hidden="true">lock</span>
           </div>
         </div>
         

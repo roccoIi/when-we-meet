@@ -51,7 +51,7 @@ const handleGoogleLogin = async () => {
         <div class="relative group">
           <div class="absolute -inset-2 bg-gradient-to-tr from-primary to-secondary rounded-[2rem] blur-md opacity-30"></div>
           <div class="relative w-28 h-28 bg-white rounded-[2rem] flex items-center justify-center shadow-soft transform rotate-3 transition-transform hover:rotate-0 duration-300">
-            <span class="material-icons text-primary text-5xl">calendar_month</span>
+            <span class="material-icons text-primary text-5xl" aria-hidden="true">calendar_month</span>
             <div class="absolute top-4 right-5 w-3 h-3 bg-accent-pink rounded-full"></div>
           </div>
         </div>

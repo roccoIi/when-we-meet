@@ -547,14 +547,14 @@ const closeNicknameModal = () => {
                 @click="prevMonth"
                 class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
               >
-                <span class="material-symbols-rounded text-gray-400 text-lg">chevron_left</span>
+                <span class="material-symbols-rounded text-gray-400 text-lg" aria-hidden="true">chevron_left</span>
               </button>
               <span class="text-sm font-bold text-gray-800">{{ currentMonthName }}</span>
               <button 
                 @click="nextMonth"
                 class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
               >
-                <span class="material-symbols-rounded text-gray-400 text-lg">chevron_right</span>
+                <span class="material-symbols-rounded text-gray-400 text-lg" aria-hidden="true">chevron_right</span>
               </button>
             </div>
           </div>
@@ -691,7 +691,7 @@ const closeNicknameModal = () => {
         <div class="flex flex-col">
           <span class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-0.5">최종 선택</span>
           <div class="flex items-center gap-1.5">
-            <span class="material-symbols-rounded text-primary-dark text-lg">event</span>
+            <span class="material-symbols-rounded text-primary-dark text-lg" aria-hidden="true">event</span>
             <span class="text-base font-bold text-gray-800">{{ formattedDateShort }}</span>
             <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
             <span class="text-base font-medium text-gray-600">{{ formattedTimeRange }}</span>
@@ -706,7 +706,7 @@ const closeNicknameModal = () => {
         :disabled="isLoading || !meetingName.trim()"
           class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-bold text-lg py-3 rounded-xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span class="material-symbols-rounded text-[20px]">{{ isEditMode ? 'edit' : 'check_circle' }}</span>
+          <span class="material-symbols-rounded text-[20px]" aria-hidden="true">{{ isEditMode ? 'edit' : 'check_circle' }}</span>
           {{ isLoading ? (isEditMode ? "수정 중..." : "생성 중...") : (isEditMode ? "모임 수정하기" : "모임 생성하기") }}
         </button>
       
@@ -717,7 +717,7 @@ const closeNicknameModal = () => {
         :disabled="isLoading"
         class="w-full mt-2.5 bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 hover:border-red-300 font-bold text-base py-2.5 rounded-xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <span class="material-symbols-rounded text-[18px]">delete</span>
+        <span class="material-symbols-rounded text-[18px]" aria-hidden="true">delete</span>
         {{ isLoading ? "삭제 중..." : "모임 삭제하기" }}
       </button>
     </div>
@@ -735,7 +735,7 @@ const closeNicknameModal = () => {
           @click="closeNicknameModal"
           class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <span class="material-icons text-lg">close</span>
+          <span class="material-icons text-lg" aria-hidden="true">close</span>
         </button>
 
         <!-- Icon -->
@@ -743,7 +743,7 @@ const closeNicknameModal = () => {
           <div class="relative inline-block mb-3">
             <div class="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-full blur-md opacity-40"></div>
             <div class="relative w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-soft">
-              <span class="material-icons text-white text-2xl">person_add</span>
+              <span class="material-icons text-white text-2xl" aria-hidden="true">person_add</span>
             </div>
           </div>
           <h3 class="text-lg font-bold text-gray-800 mb-1.5">닉네임 설정</h3>

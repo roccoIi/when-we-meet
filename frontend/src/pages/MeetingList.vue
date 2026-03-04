@@ -254,7 +254,7 @@ setInterval(() => {
             @click="$router.push('/login')"
             class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-gray-800 font-bold text-sm rounded-xl shadow-soft transition-all flex items-center gap-1.5"
           >
-            <span class="material-icons text-base">login</span>
+            <span class="material-icons text-base" aria-hidden="true">login</span>
             <span>로그인</span>
           </button>
         </div>
@@ -268,7 +268,7 @@ setInterval(() => {
             class="relative w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
           />
           <div v-else class="relative w-9 h-9 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
-            <span class="material-icons text-base text-gray-800">person</span>
+            <span class="material-icons text-base text-gray-800" aria-hidden="true">person</span>
           </div>
         </button>
       </div>
@@ -276,7 +276,7 @@ setInterval(() => {
       <!-- Search Bar -->
       <div class="relative mb-2.5 group">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <span class="material-icons text-base text-mint-dark/80">search</span>
+          <span class="material-icons text-base text-mint-dark/80" aria-hidden="true">search</span>
         </div>
         <input 
           v-model="searchQuery"
@@ -300,7 +300,7 @@ setInterval(() => {
               <option value="MEETING_DATE">D-Day</option>
             </select>
             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-mint-dark">
-              <span class="material-icons text-xs">expand_more</span>
+              <span class="material-icons text-xs" aria-hidden="true">expand_more</span>
             </div>
           </div>
           <button 
@@ -323,7 +323,7 @@ setInterval(() => {
 
       <!-- Empty State -->
       <div v-else-if="filteredMeetings.length === 0" class="text-center py-16 text-text-sub">
-        <span class="material-icons text-5xl mb-3 text-mint-primary/30">event_busy</span>
+        <span class="material-icons text-5xl mb-3 text-mint-primary/30" aria-hidden="true">event_busy</span>
         <p class="text-lg font-semibold mb-1.5">아직 참여한 모임이 없습니다</p>
         <p class="text-sm">새로운 모임을 만들어보세요!</p>
       </div>
@@ -366,7 +366,7 @@ setInterval(() => {
                     <span>확정됨</span>
                   </div>
                   <div v-else class="flex items-center gap-1 text-text-sub">
-                    <span class="material-icons text-sm text-mint-dark">how_to_vote</span>
+                    <span class="material-icons text-sm text-mint-dark" aria-hidden="true">how_to_vote</span>
                     <span>투표 진행 중</span>
                   </div>
                 </div>
@@ -384,7 +384,7 @@ setInterval(() => {
 
             <!-- Meeting Date -->
             <div class="flex items-center gap-1 mb-3 text-sm font-medium">
-              <span class="material-icons text-base text-slate-400">event</span>
+              <span class="material-icons text-base text-slate-400" aria-hidden="true">event</span>
               <span class="text-slate-600">{{ formatDate(meeting.meetingDate) }}</span>
             </div>
 
@@ -409,7 +409,7 @@ setInterval(() => {
 
               <!-- Total Member Count -->
               <div class="flex items-center gap-1 bg-white/60 px-2.5 py-1 rounded-lg">
-                <span class="material-icons text-base text-slate-400">group</span>
+                <span class="material-icons text-base text-slate-400" aria-hidden="true">group</span>
                 <span class="text-slate-600 text-sm font-bold">{{ meeting.memberNumber || 0 }}</span>
               </div>
             </div>
@@ -438,7 +438,7 @@ setInterval(() => {
           @click="handleCreateMeeting"
           class="w-14 h-14 bg-primary rounded-full shadow-lg shadow-primary/40 flex items-center justify-center text-gray-800 hover:scale-105 active:scale-95 transition-all duration-300 group border-2 border-white"
         >
-          <span class="material-icons text-2xl group-hover:rotate-90 transition-transform duration-300 text-slate-700">add</span>
+          <span class="material-icons text-2xl group-hover:rotate-90 transition-transform duration-300 text-slate-700" aria-hidden="true">add</span>
         </button>
       </div>
     </div>

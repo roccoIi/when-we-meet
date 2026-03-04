@@ -450,7 +450,7 @@ const handleResetSchedule = async () => {
               class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
               title="모임 정보 수정"
             >
-              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">edit</span>
+              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors" aria-hidden="true">edit</span>
             </button>
             
             <!-- MEMBER: 탈퇴 버튼 -->
@@ -460,7 +460,7 @@ const handleResetSchedule = async () => {
               class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-red-50 transition-colors group shadow-sm border border-gray-100"
               title="모임 탈퇴"
             >
-              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-red-500 transition-colors">logout</span>
+              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-red-500 transition-colors" aria-hidden="true">logout</span>
             </button>
             
             <!-- 공유 버튼 (공통) -->
@@ -468,7 +468,7 @@ const handleResetSchedule = async () => {
               @click="handleShareClick"
               class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
             >
-              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">ios_share</span>
+              <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors" aria-hidden="true">ios_share</span>
             </button>
           </div>
         </div>
@@ -556,7 +556,7 @@ const handleResetSchedule = async () => {
               :disabled="isUpdatingSchedule"
               class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-red-500 hover:bg-red-50 transition-all shadow-sm disabled:opacity-50"
             >
-              <span class="material-symbols-rounded text-lg">close</span>
+              <span class="material-symbols-rounded text-lg" aria-hidden="true">close</span>
             </button>
           </div>
         </div>
@@ -567,7 +567,7 @@ const handleResetSchedule = async () => {
           
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-1.5">
-              <span class="material-symbols-rounded text-[20px] text-primary-dark">auto_awesome</span>
+              <span class="material-symbols-rounded text-[20px] text-primary-dark" aria-hidden="true">auto_awesome</span>
               <h3 class="text-base font-bold text-gray-800">추천 일정</h3>
             </div>
             
@@ -642,7 +642,7 @@ const handleResetSchedule = async () => {
                     ? 'bg-white text-primary hover:bg-primary hover:text-white' 
                     : 'bg-gray-50 text-gray-400 hover:text-white hover:bg-gray-400'"
                 >
-                  <span class="material-symbols-rounded text-lg">{{ item.rank === 1 ? 'check' : 'add' }}</span>
+                  <span class="material-symbols-rounded text-lg" aria-hidden="true">{{ item.rank === 1 ? 'check' : 'add' }}</span>
                 </button>
               </div>
             </div>
@@ -667,7 +667,7 @@ const handleResetSchedule = async () => {
         @click="handleScheduleInput"
         class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-bold text-lg py-3 rounded-xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5"
       >
-          <span class="material-symbols-rounded text-[20px]">edit_calendar</span>
+          <span class="material-symbols-rounded text-[20px]" aria-hidden="true">edit_calendar</span>
           내 일정 추가하기
         </button>
     </div>
