@@ -240,7 +240,7 @@ const getUnavailableMembers = (date) => {
         @click="prevMonth"
         class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
       >
-        <span class="material-symbols-rounded text-lg text-gray-400">chevron_left</span>
+        <span class="material-symbols-rounded text-lg text-gray-400" aria-hidden="true">chevron_left</span>
       </button>
       <h3 class="text-lg font-bold text-gray-800">
         {{ currentYear }}년 {{ currentMonth }}월
@@ -249,7 +249,7 @@ const getUnavailableMembers = (date) => {
         @click="nextMonth"
         class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
       >
-        <span class="material-symbols-rounded text-lg text-gray-400">chevron_right</span>
+        <span class="material-symbols-rounded text-lg text-gray-400" aria-hidden="true">chevron_right</span>
       </button>
     </div>
 

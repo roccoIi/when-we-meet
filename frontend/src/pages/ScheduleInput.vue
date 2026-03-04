@@ -507,7 +507,7 @@ const closeNicknameModal = () => {
           @click="toggleViewMode"
           class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg bg-white hover:bg-neutral-light transition-colors shadow-sm border border-gray-100 flex-shrink-0 ml-3"
         >
-          <span class="material-symbols-rounded text-gray-600 text-xl">
+          <span class="material-symbols-rounded text-gray-600 text-xl" aria-hidden="true">
             {{ viewMode === "date" ? "schedule" : "calendar_month" }}
           </span>
           <span class="text-xs text-gray-600 font-medium whitespace-nowrap">
@@ -541,7 +541,7 @@ const closeNicknameModal = () => {
           <!-- Selection Count -->
           <div class="mt-5 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-center gap-1.5">
-              <span class="material-icons text-lg text-primary-dark">event_available</span>
+              <span class="material-icons text-lg text-primary-dark" aria-hidden="true">event_available</span>
               <p class="text-sm text-gray-600">
                 <span class="text-xl font-bold text-primary-dark">{{ selectedCount }}</span>
                 개의 {{ viewMode === "date" ? "날짜" : "시간" }} 선택됨
@@ -556,7 +556,7 @@ const closeNicknameModal = () => {
           class="bg-white rounded-xl p-4 mb-5 shadow-soft border border-gray-100"
         >
           <div class="flex items-center gap-1.5 mb-3">
-            <span class="material-icons text-lg text-primary-dark">check_circle</span>
+            <span class="material-icons text-lg text-primary-dark" aria-hidden="true">check_circle</span>
             <h3 class="text-base font-bold text-gray-800">
               선택한 {{ viewMode === "date" ? "날짜" : "시간" }}
             </h3>
@@ -573,7 +573,7 @@ const closeNicknameModal = () => {
                 class="bg-none border-none text-gray-400 cursor-pointer p-0 w-3.5 h-3.5 flex items-center justify-center transition-colors hover:text-red-500"
                 @click="handleDateClick(date)"
               >
-                <span class="material-icons text-sm">close</span>
+                <span class="material-icons text-sm" aria-hidden="true">close</span>
               </button>
             </div>
           </div>
@@ -589,7 +589,7 @@ const closeNicknameModal = () => {
                 class="bg-none border-none text-gray-400 cursor-pointer p-0 w-3.5 h-3.5 flex items-center justify-center transition-colors hover:text-red-500"
                 @click="handleTimeRangeRemove(range.times)"
               >
-                <span class="material-icons text-sm">close</span>
+                <span class="material-icons text-sm" aria-hidden="true">close</span>
               </button>
             </div>
           </div>
@@ -598,7 +598,7 @@ const closeNicknameModal = () => {
         <!-- Info Box -->
         <div class="bg-tertiary/30 rounded-xl p-3 mb-5 border border-tertiary/50">
           <div class="flex items-start gap-2">
-            <span class="material-icons text-amber-600 text-lg mt-0.5">lightbulb</span>
+            <span class="material-icons text-amber-600 text-lg mt-0.5" aria-hidden="true">lightbulb</span>
             <p class="text-sm text-gray-600 leading-relaxed">
               선택한 날짜들은 다른 참여자들과 비교하여 가장 많은 사람이 가능한 날짜를 추천해드립니다
             </p>
@@ -613,7 +613,7 @@ const closeNicknameModal = () => {
       :disabled="isSaving || selectedCount === 0"
       class="w-full bg-primary hover:bg-primary-dark text-gray-800 font-bold text-lg py-3 rounded-xl shadow-glow transition-all transform active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
     >
-        <span class="material-symbols-rounded text-[20px]">save</span>
+        <span class="material-symbols-rounded text-[20px]" aria-hidden="true">save</span>
         {{ isSaving ? "저장 중..." : "일정 저장하기" }}
       </button>
   </div>

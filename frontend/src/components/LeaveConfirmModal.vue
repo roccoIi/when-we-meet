@@ -37,7 +37,7 @@ const handleCancel = () => {
         <div class="relative inline-block mb-4">
           <div class="absolute inset-0 bg-red-500 rounded-full blur-md opacity-20"></div>
           <div class="relative w-16 h-16 bg-red-50 rounded-full flex items-center justify-center shadow-soft">
-            <span class="material-symbols-rounded text-red-500 text-3xl">logout</span>
+            <span class="material-symbols-rounded text-red-500 text-3xl" aria-hidden="true">logout</span>
           </div>
         </div>
         <h3 class="text-xl font-bold text-gray-800 mb-3">모임 탈퇴</h3>

@@ -90,7 +90,7 @@ const handleRightButtonClick = () => {
       class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
       title="홈으로"
     >
-      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">home</span>
+      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors" aria-hidden="true">home</span>
     </button>
     
     <div class="flex-1"></div>
@@ -101,7 +101,7 @@ const handleRightButtonClick = () => {
         @click="handleProfileClick"
         class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-gray-800 font-bold text-xs rounded-xl shadow-soft transition-all flex items-center gap-1.5"
       >
-        <span class="material-icons text-base">login</span>
+        <span class="material-icons text-base" aria-hidden="true">login</span>
         <span>로그인</span>
       </button>
     </div>
@@ -115,7 +115,7 @@ const handleRightButtonClick = () => {
         class="relative w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
       />
       <div v-else class="relative w-9 h-9 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
-        <span class="material-icons text-base text-gray-800">person</span>
+        <span class="material-icons text-base text-gray-800" aria-hidden="true">person</span>
       </div>
     </button>
   </header>
@@ -131,7 +131,7 @@ const handleRightButtonClick = () => {
       class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
       title="홈으로"
     >
-      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">home</span>
+      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors" aria-hidden="true">home</span>
     </button>
     
     <h1 class="text-base font-bold tracking-tight text-gray-700 flex-1 text-center">{{ headerConfig.title }}</h1>
@@ -142,7 +142,7 @@ const handleRightButtonClick = () => {
       @click="handleRightButtonClick"
       class="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-neutral-light transition-colors group shadow-sm border border-gray-100"
     >
-      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors">{{ headerConfig.rightButtonIcon }}</span>
+      <span class="material-symbols-rounded text-[20px] text-gray-600 group-hover:text-primary-dark transition-colors" aria-hidden="true">{{ headerConfig.rightButtonIcon }}</span>
     </button>
     
     <!-- Login Button or Profile Picture -->
@@ -151,7 +151,7 @@ const handleRightButtonClick = () => {
         @click="handleProfileClick"
         class="w-9 h-9 flex items-center justify-center rounded-full bg-primary hover:bg-primary-dark transition-colors shadow-sm"
       >
-        <span class="material-icons text-gray-800 text-base">login</span>
+        <span class="material-icons text-gray-800 text-base" aria-hidden="true">login</span>
       </button>
     </div>
     
@@ -164,7 +164,7 @@ const handleRightButtonClick = () => {
         class="relative w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
       />
       <div v-else class="relative w-9 h-9 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
-        <span class="material-icons text-base text-gray-800">person</span>
+        <span class="material-icons text-base text-gray-800" aria-hidden="true">person</span>
       </div>
     </button>
   </header>

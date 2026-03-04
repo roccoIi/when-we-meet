@@ -282,7 +282,7 @@ const closeNicknameModal = () => {
       <!-- Error State -->
       <div v-else-if="errorMessage" class="bg-white rounded-3xl shadow-soft p-8 text-center border border-gray-100">
         <div class="w-20 h-20 mx-auto mb-4 bg-red-50 rounded-full flex items-center justify-center">
-          <span class="material-icons text-red-400 text-4xl">error_outline</span>
+          <span class="material-icons text-red-400 text-4xl" aria-hidden="true">error_outline</span>
         </div>
         <h2 class="text-2xl font-bold text-gray-800 mb-3">모임을 찾을 수 없습니다</h2>
         <p class="text-gray-600 mb-6">{{ errorMessage }}</p>
@@ -306,7 +306,7 @@ const closeNicknameModal = () => {
             <div class="relative inline-block mb-4">
               <div class="absolute inset-0 bg-gradient-to-br from-primary to-pastel-blue rounded-full blur-md opacity-40"></div>
               <div class="relative w-20 h-20 bg-gradient-to-br from-primary to-pastel-blue rounded-full flex items-center justify-center shadow-soft">
-                <span class="material-icons text-white text-4xl">group_add</span>
+                <span class="material-icons text-white text-4xl" aria-hidden="true">group_add</span>
               </div>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">모임 초대</h2>
@@ -322,7 +322,7 @@ const closeNicknameModal = () => {
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600 font-medium">참여 인원</span>
               <span class="flex items-center gap-2">
-                <span class="material-icons text-primary-dark text-lg">group</span>
+                <span class="material-icons text-primary-dark text-lg" aria-hidden="true">group</span>
                 <span class="text-lg font-bold text-primary-dark">{{ meetingInfo.participantCount }}명</span>
               </span>
             </div>
@@ -357,7 +357,7 @@ const closeNicknameModal = () => {
           <!-- Info Text -->
           <div class="mt-6 pt-6 border-t border-gray-100">
             <div class="flex items-start gap-2 text-xs text-gray-500">
-              <span class="material-icons text-amber-500 text-sm">info</span>
+              <span class="material-icons text-amber-500 text-sm" aria-hidden="true">info</span>
               <p class="leading-relaxed">
                 모임에 참여하면 일정을 입력하고 다른 참여자들과 만날 날짜를 조율할 수 있습니다
               </p>
@@ -379,7 +379,7 @@ const closeNicknameModal = () => {
           @click="closeNicknameModal"
           class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <span class="material-icons">close</span>
+          <span class="material-icons" aria-hidden="true">close</span>
         </button>
 
         <!-- Icon -->
@@ -387,7 +387,7 @@ const closeNicknameModal = () => {
           <div class="relative inline-block mb-4">
             <div class="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-full blur-md opacity-40"></div>
             <div class="relative w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-soft">
-              <span class="material-icons text-white text-3xl">person_add</span>
+              <span class="material-icons text-white text-3xl" aria-hidden="true">person_add</span>
             </div>
           </div>
           <h3 class="text-xl font-bold text-gray-800 mb-2">닉네임 설정</h3>
