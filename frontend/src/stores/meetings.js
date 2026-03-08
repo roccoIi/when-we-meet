@@ -152,6 +152,13 @@ export const useMeetingsStore = defineStore('meetings', () => {
     currentMeeting.value = null
   }
 
+  /**
+   * 미팅 목록 초기화 (로그아웃 시 사용)
+   */
+  const clearMeetings = () => {
+    meetings.value = []
+  }
+
   return {
     meetings,
     currentMeeting,
@@ -163,7 +170,8 @@ export const useMeetingsStore = defineStore('meetings', () => {
     setSortBy,
     getSortedMeetings,
     loadMeetingByShareCode,
-    clearCurrentMeeting
+    clearCurrentMeeting,
+    clearMeetings
   }
 })
 

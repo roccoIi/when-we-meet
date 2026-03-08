@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/user";
 import { useMeetingsStore } from "../stores/meetings";
 import { meetingAPI } from "../services";
+import AppHeader from "../components/AppHeader.vue";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -235,53 +236,21 @@ setInterval(() => {
     hour12: false 
   });
 }, 60000);
+
 </script>
 
 <template>
   <div class="bg-background-light font-display text-gray-800 min-h-screen flex flex-col overflow-hidden relative">
-    <!-- Search and Sort Section (sticky) -->
-    <div class="sticky top-0 z-30 px-5 pb-1 pt-5 bg-background-light/95 backdrop-blur-sm transition-all duration-300">
-      <!-- Title and Profile -->
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <h1 class="text-xl font-bold tracking-tight text-slate-700">내 일정</h1>
-          <p class="text-sm text-text-sub font-medium">Coordinate your meetups</p>
-        </div>
-        
-        <!-- Login Button or Profile Picture -->
-        <div v-if="!userStore.provider" class="flex-shrink-0">
-          <button 
-            @click="$router.push('/login')"
-            class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-gray-800 font-bold text-sm rounded-xl shadow-soft transition-all flex items-center gap-1.5"
-          >
-            <span class="material-icons text-base" aria-hidden="true">login</span>
-            <span>로그인</span>
-          </button>
-        </div>
-        
-        <button v-else @click="userStore.openNicknameModal()" class="relative group flex-shrink-0">
-          <div class="absolute inset-0 bg-primary rounded-full blur opacity-40 group-hover:opacity-60 transition-opacity"></div>
-          <img 
-            v-if="userStore.profileImgUrl"
-            :src="userStore.profileImgUrl" 
-            :alt="userStore.nickname || 'User'"
-            class="relative w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
-          />
-          <div v-else class="relative w-9 h-9 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
-            <span class="material-icons text-base text-gray-800" aria-hidden="true">person</span>
-          </div>
-        </button>
-      </div>
-
+    <AppHeader>
       <!-- Search Bar -->
       <div class="relative mb-2.5 group">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <span class="material-icons text-base text-mint-dark/80" aria-hidden="true">search</span>
         </div>
-        <input 
+        <input
           v-model="searchQuery"
-          class="block w-full pl-10 pr-3 py-2.5 border-none rounded-xl text-base leading-5 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-soft transition-all" 
-          placeholder="모임 이름 검색..." 
+          class="block w-full pl-10 pr-3 py-2.5 border-none rounded-xl text-base leading-5 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-soft transition-all"
+          placeholder="모임 이름 검색..."
           type="text"
         />
       </div>
@@ -290,7 +259,7 @@ setInterval(() => {
       <div class="flex items-center justify-between pb-1.5 px-1">
         <div class="flex items-center gap-1.5">
           <div class="relative group">
-            <select 
+            <select
               v-model="sortType"
               @change="loadMeetings(true)"
               class="appearance-none bg-white text-slate-600 font-bold text-sm py-2 pl-3 pr-8 rounded-lg shadow-sm border border-transparent focus:ring-2 focus:ring-primary/30 focus:outline-none cursor-pointer hover:bg-gray-50 transition-colors w-28"
@@ -303,7 +272,7 @@ setInterval(() => {
               <span class="material-icons text-xs" aria-hidden="true">expand_more</span>
             </div>
           </div>
-          <button 
+          <button
             @click="toggleSortOrder"
             class="flex items-center justify-center w-8 h-8 bg-white text-primary-dark rounded-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all group border border-transparent hover:border-primary/20"
           >
@@ -311,7 +280,7 @@ setInterval(() => {
           </button>
         </div>
       </div>
-    </div>
+    </AppHeader>
 
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto px-5 pt-2 pb-24 no-scrollbar space-y-4">

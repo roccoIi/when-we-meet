@@ -50,42 +50,51 @@ const handleBackdropClick = (e) => {
 </script>
 
 <template>
-  <div
-    class="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000]"
-    @click="handleBackdropClick"
-  >
-    <div class="bg-white rounded-xl p-5 w-[90%] max-w-[360px] shadow-xl">
-      <h2 class="text-lg font-bold mb-1.5 text-gray-800">닉네임 설정</h2>
-      <p class="text-xs text-gray-600 mb-4">사용하실 닉네임을 입력해주세요</p>
+  <Teleport to="body">
+    <div
+      class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] flex items-end justify-center"
+      @click="handleBackdropClick"
+    >
+      <div class="bg-white w-full max-w-md rounded-t-3xl shadow-xl">
+        <!-- 핸들 바 -->
+        <div class="flex justify-center pt-3 pb-1">
+          <div class="w-10 h-1 rounded-full bg-gray-200"></div>
+        </div>
 
-      <input
-        v-model="nickname"
-        type="text"
-        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm transition-colors focus:outline-none focus:border-primary"
-        placeholder="닉네임 (최대 10자)"
-        maxlength="10"
-        @keyup.enter="handleSubmit"
-      />
+        <div class="px-6 pt-3 pb-8">
+          <h2 class="text-lg font-bold mb-1 text-gray-800">닉네임 설정</h2>
+          <p class="text-xs text-gray-500 mb-5">사용하실 닉네임을 입력해주세요</p>
 
-      <p v-if="error" class="text-red-500 text-xs mt-1.5">{{ error }}</p>
+          <input
+            v-model="nickname"
+            type="text"
+            class="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-gray-50"
+            placeholder="닉네임 (최대 10자)"
+            maxlength="10"
+            @keyup.enter="handleSubmit"
+          />
 
-      <div class="flex gap-2 mt-4">
-        <button
-          v-if="userStore.nickname"
-          class="flex-1 px-3 py-2.5 border-none rounded-lg text-sm font-medium cursor-pointer transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="emit('close')"
-          :disabled="isLoading"
-        >
-          취소
-        </button>
-        <button
-          class="flex-1 px-3 py-2.5 border-none rounded-lg text-sm font-medium cursor-pointer transition-all bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="handleSubmit"
-          :disabled="isLoading"
-        >
-          {{ isLoading ? "저장 중..." : "확인" }}
-        </button>
+          <p v-if="error" class="text-red-500 text-xs mt-2">{{ error }}</p>
+
+          <div class="flex gap-2 mt-5">
+            <button
+              v-if="userStore.nickname"
+              class="flex-1 px-3 py-3 rounded-2xl text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="emit('close')"
+              :disabled="isLoading"
+            >
+              취소
+            </button>
+            <button
+              class="flex-1 px-3 py-3 rounded-2xl text-sm font-semibold transition-all bg-primary text-gray-800 hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="handleSubmit"
+              :disabled="isLoading"
+            >
+              {{ isLoading ? "저장 중..." : "확인" }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>

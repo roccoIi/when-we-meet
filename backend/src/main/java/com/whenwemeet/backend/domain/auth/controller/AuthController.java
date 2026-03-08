@@ -27,4 +27,12 @@ public class AuthController {
         return ResponseEntity.ok(CommonResponse.success());
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<CommonResponse<?>> logout(
+            HttpServletRequest request,
+            HttpServletResponse response){
+        authService.logout(request, response);
+        return ResponseEntity.ok(CommonResponse.success());
+    }
+
 }

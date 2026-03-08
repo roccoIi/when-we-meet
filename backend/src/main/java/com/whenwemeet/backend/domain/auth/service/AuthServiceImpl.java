@@ -3,6 +3,7 @@ package com.whenwemeet.backend.domain.auth.service;
 import static com.whenwemeet.backend.global.exception.ErrorCode.*;
 
 import com.whenwemeet.backend.global.exception.type.UnAuthorizedException;
+import com.whenwemeet.backend.global.redis.RefreshRepository;
 import com.whenwemeet.backend.global.util.JwtUtil;
 import com.whenwemeet.backend.global.security.authentication.AuthenticationFactory;
 import com.whenwemeet.backend.global.security.dto.CustomOAuth2User;
@@ -11,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final JwtUtil jwtUtil;
     private final AuthenticationFactory authenticationFactory;
+    private final RefreshRepository refreshRepository;
 
     @Value("${spring.jwt.name.refresh-token}")
     private String REFRESH_TOKEN_NAME;
@@ -45,5 +48,19 @@ public class AuthServiceImpl implements AuthService {
         // 5. accessToken도 재발급해서 헤더로 넘긴다.
         String accessToken = jwtUtil.generateAccessToken(customOAuth2User.getId());
         response.setHeader("Authorization", "Bearer " + accessToken);
+    }
+
+    @Override
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = jwtUtil.tokenByCookie(request, REFRESH_TOKEN_NAME);
+
+        if (refreshToken != null && jwtUtil.validateToken(refreshToken)) {
+            Long userId = jwtUtil.getUserId(refreshToken);
+            refreshRepository.deleteById(userId);
+        }
+
+        ResponseCookie cookie = jwtUtil.expireRefreshTokenCookie(response);
+
+        response.setHeader("Set-Cookie", cookie.toString());
     }
 }
