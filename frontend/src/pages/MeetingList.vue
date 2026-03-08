@@ -245,7 +245,7 @@ setInterval(() => {
       <div class="flex items-center justify-between mb-3">
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-700">내 일정</h1>
-          <p class="text-sm text-text-sub font-medium">Coordinate your sweet meetups</p>
+          <p class="text-sm text-text-sub font-medium">Coordinate your meetups</p>
         </div>
         
         <!-- Login Button or Profile Picture -->

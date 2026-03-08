@@ -153,20 +153,20 @@ const getDayClass = (date) => {
 </script>
 
 <template>
-  <div class="bg-white rounded-xl p-3">
-    <div class="flex justify-between items-center mb-3">
+  <div>
+    <div class="flex items-center justify-between mb-4">
       <button
-        class="w-7 h-7 border-none bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-200"
+        class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
         @click="prevWeek"
       >
-        ◀
+        <span class="material-symbols-rounded text-lg text-gray-400" aria-hidden="true">chevron_left</span>
       </button>
-      <h3 class="text-base font-semibold text-pink-800">시간별 일정</h3>
+      <h3 class="text-lg font-bold text-gray-800">시간별 일정</h3>
       <button
-        class="w-7 h-7 border-none bg-gray-100 rounded-lg cursor-pointer text-sm text-gray-600 transition-colors hover:bg-gray-200"
+        class="p-0.5 hover:bg-neutral-light rounded-full transition-colors"
         @click="nextWeek"
       >
-        ▶
+        <span class="material-symbols-rounded text-lg text-gray-400" aria-hidden="true">chevron_right</span>
       </button>
     </div>
 
