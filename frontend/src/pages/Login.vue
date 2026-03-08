@@ -67,7 +67,7 @@ const handleGoogleLogin = async () => {
         <!-- Description -->
         <div class="max-w-[280px]">
           <p class="text-base text-gray-500 font-medium leading-relaxed">
-            Pick a date, find a time,<br/>make memories together.
+            모임을 생성하고 일정을 조율하세요,<br/>Pick a date, find a time.
           </p>
         </div>
       </div>
@@ -76,7 +76,7 @@ const handleGoogleLogin = async () => {
       <div class="w-full space-y-6 mb-10">
         <div class="relative flex py-1 items-center">
           <div class="flex-grow border-t border-gray-200"></div>
-          <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium bg-background-light px-2">Simple Social Login</span>
+          <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium bg-background-light px-2">간편 소셜 로그인</span>
           <div class="flex-grow border-t border-gray-200"></div>
         </div>
 
