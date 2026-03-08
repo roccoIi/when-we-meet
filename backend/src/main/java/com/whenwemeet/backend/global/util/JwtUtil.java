@@ -146,6 +146,16 @@ public class JwtUtil {
         }
     }
 
+    public ResponseCookie expireRefreshTokenCookie(HttpServletResponse response) {
+        return ResponseCookie.from(REFRESH_TOKEN_NAME, "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+    }
+
     private ResponseCookie createCookie(String key, String value, long expireTime) {
         return ResponseCookie.from(key, value)
                 .httpOnly(true)

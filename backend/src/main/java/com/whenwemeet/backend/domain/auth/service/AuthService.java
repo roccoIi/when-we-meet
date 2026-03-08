@@ -5,4 +5,5 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public interface AuthService {
     void reissueToken(HttpServletRequest request, HttpServletResponse response);
+    void logout(HttpServletRequest request, HttpServletResponse response);
 }
